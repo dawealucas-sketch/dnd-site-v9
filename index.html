@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Compendium — Enter</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+    .login-wrap { width:min(400px,92vw); display:flex; flex-direction:column; align-items:center; gap:1.5rem; }
+    .login-glyph { font-size:3rem; color:var(--gold-dim); }
+    .login-title { font-size:2rem; letter-spacing:0.1em; text-align:center; }
+    .login-sub { font-size:1rem; color:var(--text-muted); font-style:italic; text-align:center; }
+    .login-box { width:100%; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; }
+    .login-box label { font-family:var(--font-display); font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim); margin-bottom:3px; display:block; }
+    .login-box input { font-size:1rem; padding:10px 12px; }
+    .login-box button { width:100%; padding:12px; font-size:0.85rem; letter-spacing:0.1em; margin-top:4px; }
+    .login-error { color:var(--red); font-size:0.85rem; text-align:center; font-family:var(--font-display); min-height:1.2em; }
+    .login-hint { font-size:0.8rem; color:var(--text-dim); text-align:center; font-style:italic; }
+    .tab-row { display:flex; width:100%; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    .tab-btn { flex:1; padding:10px; font-family:var(--font-display); font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase; border:none; border-radius:0; color:var(--text-dim); background:var(--input-bg); cursor:pointer; transition:background 0.15s,color 0.15s; }
+    .tab-btn.active { background:var(--panel); color:var(--gold); border-bottom:2px solid var(--gold-dim); }
+    .tab-btn:first-child { border-right:1px solid var(--border); }
+    .panel-section { display:none; flex-direction:column; gap:1rem; }
+    .panel-section.active { display:flex; }
+    .divider-line { height:1px; background:var(--border); margin:0.25rem 0; }
+    .spinner { display:none; text-align:center; color:var(--text-dim); font-size:0.85rem; font-style:italic; }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-glyph">✦</div>
+    <h1 class="login-title">The Compendium</h1>
+    <p class="login-sub">Your party's tome of records</p>
+
+    <div class="login-box">
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="showTab('player')">Player Login</button>
+        <button class="tab-btn" onclick="showTab('dm')">Dungeon Master</button>
+      </div>
+
+      <!-- Player tab -->
+      <div class="panel-section active" id="tab-player">
+        <div id="player-mode-login">
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <div><label>Username</label><input id="pl-username" placeholder="Your username..." autocomplete="username" /></div>
+            <div><label>Password</label><input id="pl-password" type="password" placeholder="Your password..." autocomplete="current-password" /></div>
+            <div class="login-error" id="pl-error"></div>
+            <div class="spinner" id="pl-spinner">Checking credentials...</div>
+            <button class="primary" onclick="playerLogin()">Log In</button>
+            <div class="divider-line"></div>
+            <p style="font-size:0.8rem;color:var(--text-dim);text-align:center;">First time here? <a href="#" onclick="showRegister();return false;" style="color:var(--gold-dim);">Create an account</a></p>
+          </div>
+        </div>
+        <div id="player-mode-register" style="display:none;">
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <p style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">Enter the party access code your DM gave you, then choose your username and password.</p>
+            <div><label>Party Access Code</label><input id="reg-code" type="password" placeholder="Ask your DM..." /></div>
+            <div><label>Choose a Username</label><input id="reg-username" placeholder="e.g. Thorin" maxlength="24" /></div>
+            <div><label>Choose a Password</label><input id="reg-password" type="password" placeholder="Something memorable..." /></div>
+            <div><label>Confirm Password</label><input id="reg-confirm" type="password" placeholder="Same again..." /></div>
+            <div class="login-error" id="reg-error"></div>
+            <div class="spinner" id="reg-spinner">Creating account...</div>
+            <button class="primary" onclick="registerPlayer()">Create Account</button>
+            <div class="divider-line"></div>
+            <p style="font-size:0.8rem;color:var(--text-dim);text-align:center;">Already have an account? <a href="#" onclick="showLogin();return false;" style="color:var(--gold-dim);">Log in</a></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- DM tab -->
+      <div class="panel-section" id="tab-dm">
+        <div><label>DM Master Password</label><input id="dm-password" type="password" placeholder="Enter DM password..." autocomplete="current-password" /></div>
+        <div class="login-error" id="dm-error"></div>
+        <div class="spinner" id="dm-spinner">Verifying...</div>
+        <button class="primary" onclick="dmLogin()">Enter as Dungeon Master</button>
+      </div>
+    </div>
+
+    <p class="login-hint">New player? Click "Create an account" to register.</p>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    async function hashStr(s) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    function showTab(t) {
+      document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active',(i===0&&t==='player')||(i===1&&t==='dm')));
+      document.getElementById('tab-player').classList.toggle('active', t==='player');
+      document.getElementById('tab-dm').classList.toggle('active', t==='dm');
+    }
+    function showRegister() { document.getElementById('player-mode-login').style.display='none'; document.getElementById('player-mode-register').style.display='block'; }
+    function showLogin()    { document.getElementById('player-mode-register').style.display='none'; document.getElementById('player-mode-login').style.display='block'; }
+
+    function setLoading(spinnerId, on) {
+      document.getElementById(spinnerId).style.display = on ? 'block' : 'none';
+    }
+
+    async function playerLogin() {
+      const username = document.getElementById('pl-username').value.trim();
+      const password = document.getElementById('pl-password').value;
+      const errEl = document.getElementById('pl-error');
+      errEl.textContent = '';
+      if (!username || !password) { errEl.textContent = 'Please fill in both fields.'; return; }
+      setLoading('pl-spinner', true);
+      try {
+        const players = await PlayerStore.getPlayers();
+        const entry = players[username.toLowerCase()];
+        if (!entry) { errEl.textContent = 'Username not found.'; return; }
+        const h = await hashStr(password);
+        if (h !== entry.passwordHash) { errEl.textContent = 'Incorrect password.'; return; }
+        sessionStorage.setItem('dnd-role', 'player');
+        sessionStorage.setItem('dnd-username', entry.displayName);
+        sessionStorage.setItem('dnd-chat-name', entry.displayName);
+        window.location.href = 'home.html';
+      } catch { errEl.textContent = 'Connection error. Try again.'; }
+      finally { setLoading('pl-spinner', false); }
+    }
+
+    async function registerPlayer() {
+      const code     = document.getElementById('reg-code').value;
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const confirm  = document.getElementById('reg-confirm').value;
+      const errEl    = document.getElementById('reg-error');
+      errEl.textContent = '';
+      if (!code||!username||!password||!confirm) { errEl.textContent = 'Please fill in all fields.'; return; }
+      if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; return; }
+      if (password.length < 4)  { errEl.textContent = 'Password must be at least 4 characters.'; return; }
+      if (username.length < 2)  { errEl.textContent = 'Username must be at least 2 characters.'; return; }
+      const codeHash  = await hashStr(code);
+      const validHash = await hashStr('Hi1234');
+      if (codeHash !== validHash) { errEl.textContent = 'Incorrect access code.'; return; }
+      setLoading('reg-spinner', true);
+      try {
+        const players = await PlayerStore.getPlayers();
+        if (players[username.toLowerCase()]) { errEl.textContent = 'That username is already taken.'; return; }
+        const passwordHash = await hashStr(password);
+        players[username.toLowerCase()] = { displayName: username, passwordHash, createdAt: Date.now() };
+        await PlayerStore.savePlayers(players);
+        sessionStorage.setItem('dnd-role', 'player');
+        sessionStorage.setItem('dnd-username', username);
+        sessionStorage.setItem('dnd-chat-name', username);
+        window.location.href = 'home.html';
+      } catch { errEl.textContent = 'Connection error. Try again.'; }
+      finally { setLoading('reg-spinner', false); }
+    }
+
+    async function dmLogin() {
+      const password = document.getElementById('dm-password').value;
+      const errEl = document.getElementById('dm-error');
+      errEl.textContent = '';
+      if (!password) { errEl.textContent = 'Please enter the DM password.'; return; }
+      setLoading('dm-spinner', true);
+      const h     = await hashStr(password);
+      const valid = await hashStr('Bobster the 2nd');
+      setLoading('dm-spinner', false);
+      if (h !== valid) { errEl.textContent = 'Incorrect DM password.'; return; }
+      sessionStorage.setItem('dnd-role', 'dm');
+      sessionStorage.setItem('dnd-username', 'Dungeon Master');
+      sessionStorage.setItem('dnd-chat-name', 'Dungeon Master');
+      window.location.href = 'home.html';
+    }
+
+    // Enter key support
+    ['pl-username','pl-password'].forEach(id => document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') playerLogin(); }));
+    ['reg-code','reg-username','reg-password','reg-confirm'].forEach(id => document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') registerPlayer(); }));
+    document.getElementById('dm-password').addEventListener('keydown', e => { if(e.key==='Enter') dmLogin(); });
+
+    if (sessionStorage.getItem('dnd-role')) window.location.href = 'home.html';
+  </script>
+</body>
+</html>

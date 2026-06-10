@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat — The Compendium</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .nav { flex-shrink: 0; }
+
+    .chat-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      overflow: hidden;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      gap: 1rem;
+      box-sizing: border-box;
+    }
+
+    /* Sidebar */
+    .chat-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      overflow-y: auto;
+    }
+    .sidebar-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; }
+    .sidebar-title { font-family: var(--font-display); font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 8px; }
+    .user-name-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .user-name-wrap input { font-size: 0.9rem; padding: 5px 8px; }
+    .user-name-wrap button { font-size: 0.7rem; padding: 5px 10px; }
+    .online-list { display: flex; flex-direction: column; gap: 5px; }
+    .online-entry { display: flex; align-items: center; gap: 7px; font-size: 0.85rem; color: var(--text-muted); }
+    .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .online-dot.dm { background: var(--gold); }
+    .dice-help { font-size: 0.8rem; color: var(--text-dim); line-height: 1.6; font-style: italic; }
+    .dice-help code { font-family: monospace; color: var(--gold-dim); background: var(--input-bg); padding: 1px 5px; border-radius: 3px; font-style: normal; }
+
+    /* Main chat */
+    .chat-main { display: flex; flex-direction: column; overflow: hidden; }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 4px 0 8px;
+    }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 10px;
+      border-radius: 6px;
+      position: relative;
+      transition: background 0.1s;
+      max-width: 100%;
+    }
+    .msg:hover { background: var(--panel); }
+    .msg:hover .msg-del { opacity: 1; }
+    .msg-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+    .msg-author { font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.06em; color: var(--gold-pale); }
+    .msg-author.dm-author { color: var(--red); }
+    .msg-time { font-size: 0.7rem; color: var(--text-dim); }
+    .msg-body { font-size: 0.95rem; color: var(--text); line-height: 1.5; word-break: break-word; }
+    .msg-del {
+      opacity: 0;
+      position: absolute;
+      right: 8px;
+      top: 6px;
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      transition: opacity 0.1s, border-color 0.15s, color 0.15s;
+    }
+    .msg-del:hover { border-color: var(--red-dim); color: var(--red); }
+
+    /* Dice roll message */
+    .msg.dice { background: rgba(200,148,58,0.05); border-left: 2px solid var(--gold-dim); padding-left: 12px; }
+    .dice-result { display: flex; align-items: center; gap: 10px; margin-top: 3px; flex-wrap: wrap; }
+    .dice-total { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; color: var(--gold-pale); line-height: 1; }
+    .dice-breakdown { font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
+    .dice-label { font-size: 0.8rem; color: var(--text-dim); }
+
+    /* Image message */
+    .msg-img { max-width: 280px; max-height: 200px; border-radius: 6px; border: 1px solid var(--border); margin-top: 4px; cursor: pointer; object-fit: cover; display: block; }
+
+    /* System message */
+    .msg.system { opacity: 0.6; font-style: italic; padding: 3px 10px; }
+    .msg.system .msg-body { font-size: 0.82rem; color: var(--text-dim); }
+
+    /* Divider */
+    .date-divider { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .date-divider::before, .date-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .date-divider span { font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; white-space: nowrap; }
+
+    /* Input bar */
+    .chat-input-bar {
+      flex-shrink: 0;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .input-row { display: flex; gap: 8px; align-items: flex-end; }
+    .msg-textarea {
+      flex: 1;
+      resize: none;
+      height: 38px;
+      max-height: 120px;
+      font-size: 0.95rem;
+      padding: 8px 10px;
+      line-height: 1.4;
+      overflow-y: auto;
+    }
+    .input-actions { display: flex; gap: 6px; align-items: flex-end; }
+    .input-actions button { padding: 8px 14px; font-size: 0.7rem; height: 38px; }
+    .img-btn { position: relative; overflow: hidden; }
+    .img-btn input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .preview-bar { display: flex; align-items: center; gap: 8px; }
+    .preview-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
+    .preview-name { font-size: 0.8rem; color: var(--text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .preview-clear { font-size: 0.75rem; padding: 3px 8px; }
+    .input-hint { font-size: 0.72rem; color: var(--text-dim); font-style: italic; }
+
+    /* Lightbox */
+    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 500; align-items: center; justify-content: center; cursor: pointer; }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
+
+    /* Name picker modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 300; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 1.5rem; width: min(360px, 90vw); display: flex; flex-direction: column; gap: 1rem; }
+    .modal h3 { font-size: 1.1rem; }
+    .modal p { font-size: 0.9rem; color: var(--text-muted); }
+    .modal input { font-size: 1rem; padding: 10px 12px; }
+    .modal button { padding: 10px; font-size: 0.8rem; }
+
+    .blocked-msg { text-align: center; padding: 1rem; color: var(--text-dim); font-style: italic; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-logo">⚔ The Compendium</span>
+    <div class="nav-links">
+      <a href="home.html">Home</a>
+      <a href="party.html">Party</a>
+      <a href="chat.html" class="active">Chat</a>
+      <a href="game.html">Dice Game</a>
+    </div>
+  </nav>
+
+  <div class="chat-layout">
+    <!-- Sidebar -->
+    <div class="chat-sidebar">
+      <div class="sidebar-panel">
+        <div class="sidebar-title">Chatting As</div>
+        <div id="current-name" style="font-family:var(--font-display);font-size:1rem;color:var(--gold-pale);letter-spacing:0.05em;"></div>
+        <div id="current-role" style="font-size:0.78rem;color:var(--text-dim);margin-top:3px;font-style:italic;"></div>
+      </div>
+
+      <div class="sidebar-panel">
+        <div class="sidebar-title">Dice Commands</div>
+        <div class="dice-help">
+          Type <code>/roll</code> followed by your dice:<br/>
+          <code>/roll 1d20</code><br/>
+          <code>/roll 2d6+3</code><br/>
+          <code>/roll 4d6</code>
+        </div>
+      </div>
+
+      <div class="sidebar-panel">
+        <div class="sidebar-title">Online</div>
+        <div class="online-list" id="online-list">
+          <div style="font-size:0.8rem;color:var(--text-dim);font-style:italic;">No one yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat main -->
+    <div class="chat-main">
+      <div class="chat-messages" id="chat-messages">
+        <div class="blocked-msg">Loading messages...</div>
+      </div>
+
+      <div class="chat-input-bar">
+        <div id="preview-bar" class="preview-bar" style="display:none;">
+          <img id="preview-thumb" class="preview-thumb" src="" alt="preview" />
+          <span id="preview-name" class="preview-name"></span>
+          <button class="preview-clear danger" onclick="clearImage()">✕ Remove</button>
+        </div>
+        <div class="input-row">
+          <textarea class="msg-textarea" id="msg-input" placeholder="Type a message or /roll 1d20..." rows="1" oninput="autoResize(this)"></textarea>
+          <div class="input-actions">
+            <button class="img-btn" title="Attach image">
+              🖼 Image
+              <input type="file" accept="image/*" onchange="handleImage(this)" />
+            </button>
+            <button class="primary" onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+        <div class="input-hint">Press Enter to send · Shift+Enter for new line · /roll XdY+Z for dice</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image lightbox -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <img id="lightbox-img" src="" alt="full image" />
+  </div>
+
+<script src="auth.js"></script>
+  <script>
+    if (!Auth.require()) throw new Error('not logged in');
+    const isDM = Auth.isDM();
+
+    // State
+    let myName = sessionStorage.getItem('dnd-username') || sessionStorage.getItem('dnd-chat-name') || '';
+    let pendingImage = null;
+    let localMessages = []; // authoritative local cache — never goes backwards
+    let lastSavedId = '';   // id of last message we successfully saved
+    let pollTimer = null;
+
+    // ── Name display (locked to login username) ──
+    document.getElementById('current-name').textContent = myName || 'Unknown';
+    document.getElementById('current-role').textContent = isDM ? '⚔ Dungeon Master' : 'Player';
+
+    // ── Online presence ──
+    async function markOnline() { /* handled via chat activity */ }
+    async function refreshOnline() {
+      const el = document.getElementById('online-list');
+      if (myName) {
+        el.innerHTML = '<div class="online-entry"><div class="online-dot' + (isDM?' dm':'') + '"></div><span>' + myName + ' (you)</span></div>';
+      }
+    }
+
+    // ── Messages ──
+    async function loadMessages() {
+      return await ChatStore.getMessages();
+    }
+    async function saveMessages(msgs) {
+      await ChatStore.saveMessages(msgs);
+    }
+
+    function formatTime(ts) {
+      const d = new Date(ts);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    function formatDate(ts) {
+      const d = new Date(ts);
+      const today = new Date();
+      if (d.toDateString() === today.toDateString()) return 'Today';
+      const yesterday = new Date(today); yesterday.setDate(today.getDate()-1);
+      if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+      return d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+    }
+
+    function renderMessages(msgs) {
+      const el = document.getElementById('chat-messages');
+      const wasAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+
+      if (msgs.length === 0) {
+        el.innerHTML = '<div class="blocked-msg">No messages yet. Say hello!</div>';
+        return;
+      }
+
+      el.innerHTML = '';
+      let lastDate = '';
+
+      msgs.forEach(msg => {
+        const dateStr = formatDate(msg.ts);
+        if (dateStr !== lastDate) {
+          const div = document.createElement('div');
+          div.className = 'date-divider';
+          div.innerHTML = `<span>${dateStr}</span>`;
+          el.appendChild(div);
+          lastDate = dateStr;
+        }
+
+        const div = document.createElement('div');
+        const isOwn = msg.author === myName;
+        const isDMMsg = msg.dm;
+
+
+        if (msg.type === 'system') {
+          div.className = 'msg system';
+          div.innerHTML = '<div class="msg-body">' + escHtml(msg.text) + '</div>';
+        } else if (msg.type === 'dice') {
+          div.className = 'msg dice';
+          div.innerHTML = buildMsgHeader(msg, isOwn) +
+            '<div class="dice-label">rolled ' + escHtml(msg.formula) + '</div>' +
+            '<div class="dice-result"><span class="dice-total">' + msg.total + '</span><span class="dice-breakdown">' + msg.breakdown + '</span></div>';
+        } else if (msg.type === 'image') {
+          div.className = 'msg';
+          div.innerHTML = buildMsgHeader(msg, isOwn) +
+            (msg.text ? '<div class="msg-body">' + escHtml(msg.text) + '</div>' : '') +
+            '<img class="msg-img" src="' + msg.imageData + '" alt="shared image" onclick="openLightbox(this.src)" />';
+        } else {
+          div.className = 'msg';
+          div.innerHTML = buildMsgHeader(msg, isOwn) +
+            '<div class="msg-body">' + escHtml(msg.text) + '</div>';
+        }
+        el.appendChild(div);
+      });
+
+      if (wasAtBottom || localMessages.length === 0) el.scrollTop = el.scrollHeight;
+      localMessages = msgs;
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Chat colour helpers (defined once, used in renderMessages) ──
+    const CHAT_COLORS = {
+      'Ember':       {style:'solid',    hex:'#e8663a'},
+      'Arcane':      {style:'solid',    hex:'#9b59b6'},
+      'Frost':       {style:'solid',    hex:'#5dade2'},
+      'Venom':       {style:'solid',    hex:'#27ae60'},
+      'Crimson':     {style:'solid',    hex:'#c0392b'},
+      'Solar':       {style:'gradient', hex:['#f39c12','#ffe066']},
+      'Void':        {style:'gradient', hex:['#6c3483','#1a252f']},
+      'Tundra':      {style:'gradient', hex:['#aed6f1','#5dade2']},
+      'Inferno':     {style:'gradient', hex:['#e74c3c','#f39c12']},
+      'Jade':        {style:'solid',    hex:'#1abc9c'},
+      'Dusk':        {style:'gradient', hex:['#d35400','#6c3483']},
+      'Celestial':   {style:'gradient', hex:['#f8c471','#aed6f1']},
+      'Abyssal':     {style:'gradient', hex:['#1a252f','#6c3483']},
+      'Rose':        {style:'solid',    hex:'#ec407a'},
+      'Starfire':    {style:'gradient', hex:['#fffde7','#5dade2']},
+      'Obsidian':    {style:'gradient', hex:['#37474f','#1a252f']},
+      'Aurora':      {style:'gradient', hex:['#80deea','#ce93d8']},
+      'Dragonblood': {style:'gradient', hex:['#b71c1c','#f39c12']},
+      'Moonsilver':  {style:'gradient', hex:['#e0e0e0','#90caf9']},
+      'Mythril':     {style:'gradient', hex:['#90caf9','#e0e0e0']},
+      'Sunforged':   {style:'gradient', hex:['#ffca28','#e8663a']},
+      'Shadowmeld':  {style:'gradient', hex:['#4a148c','#1a252f']},
+      'Thornweald':  {style:'gradient', hex:['#558b2f','#1abc9c']},
+      'Prismatic':   {style:'gradient', hex:['#ff6ec7','#5dade2']},
+      'Godforge':    {style:'gradient', hex:['#ff6f00','#fffde7']},
+      'Eternal':     {style:'gradient', hex:['#ffd700','#e8663a']},
+    };
+
+    function getNameStyle(colorName) {
+      if (!colorName) return '';
+      const col = CHAT_COLORS[colorName];
+      if (!col) return '';
+      if (col.style === 'gradient')
+        return 'background:linear-gradient(90deg,' + col.hex[0] + ',' + col.hex[1] + ');-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:inline-block;';
+      return 'color:' + col.hex + ';';
+    }
+
+    function buildMsgHeader(msg, isOwn) {
+      const isDMMsg = msg.dm;
+      const nameStyle = (!isDMMsg && msg.colorName) ? ' style="' + getNameStyle(msg.colorName) + '"' : '';
+      const dmClass = isDMMsg ? ' dm-author' : '';
+      const titleSpan = (!isDMMsg && msg.chatTitle)
+        ? '<span style="font-size:0.7rem;font-style:italic;color:var(--text-dim);margin-left:6px;">' + escHtml(msg.chatTitle) + '</span>'
+        : '';
+      const delBtn = isOwn ? '<button class="msg-del danger" onclick="deleteMsg('' + msg.id + '')">Delete</button>' : '';
+      return '<div class="msg-header"><span class="msg-author' + dmClass + '"' + nameStyle + '>' + escHtml(msg.author) + '</span>' + titleSpan + '<span class="msg-time">' + formatTime(msg.ts) + '</span></div>' + delBtn;
+    }
+
+    // ── Dice rolling ──
+    function rollDice(formula) {
+      const clean = formula.trim().toLowerCase().replace(/\s+/g,'');
+      const match = clean.match(/^(\d+)d(\d+)([+-]\d+)?$/);
+      if (!match) return null;
+      const count = Math.min(parseInt(match[1]), 100);
+      const sides = Math.min(parseInt(match[2]), 1000);
+      const mod = match[3] ? parseInt(match[3]) : 0;
+      if (count < 1 || sides < 1) return null;
+      const rolls = Array.from({length: count}, () => Math.floor(Math.random() * sides) + 1);
+      const total = rolls.reduce((a,b) => a+b, 0) + mod;
+      const breakdown = '[' + rolls.join(', ') + ']' + (mod !== 0 ? (mod > 0 ? ' +' : ' ') + mod : '');
+      return { total, breakdown, formula: clean };
+    }
+
+    // ── Send message ──
+    async function sendMessage() {
+      if (!myName) return;
+      const input = document.getElementById('msg-input');
+      const text = input.value.trim();
+
+      if (!text && !pendingImage) return;
+
+      // Clear input right away so it feels snappy
+      const textToSend = text;
+      input.value = '';
+      input.style.height = '38px';
+
+      // Build on top of what we already have locally
+      const msgs = [...localMessages];
+      const id = Date.now() + '-' + Math.random().toString(36).slice(2,7);
+      let chatMeta = { activeColor: null, activeTitle: null };
+      try { const cm = sessionStorage.getItem('dnd-chat-color'); if(cm) chatMeta = JSON.parse(cm); } catch {}
+      const base = { id, author: myName, dm: isDM, ts: Date.now(), colorName: chatMeta.activeColor, chatTitle: chatMeta.activeTitle };
+
+      if (pendingImage) {
+        msgs.push({ ...base, type: 'image', text: textToSend, imageData: pendingImage.dataUrl });
+        clearImage();
+      } else if (textToSend.startsWith('/roll ')) {
+        const formula = textToSend.slice(6).trim();
+        const result = rollDice(formula);
+        if (result) {
+          msgs.push({ ...base, type: 'dice', ...result });
+        } else {
+          msgs.push({ ...base, type: 'text', text: '⚠ Invalid dice formula. Try /roll 2d6+3' });
+        }
+      } else {
+        msgs.push({ ...base, type: 'text', text: textToSend });
+      }
+
+      // Update local cache and render before saving — instant feedback
+      localMessages = msgs;
+      lastSavedId = id;
+      renderMessages(msgs);
+      await saveMessages(msgs);
+    }
+
+    async function deleteMsg(id) {
+      const msgs = await loadMessages();
+      const idx = msgs.findIndex(m => m.id === id);
+      if (idx === -1) return;
+      if (msgs[idx].author !== myName) return; // extra guard
+      msgs.splice(idx, 1);
+      await saveMessages(msgs);
+      renderMessages(msgs);
+    }
+
+    // ── Image handling ──
+    function handleImage(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (file.size > 3 * 1024 * 1024) { alert('Image must be under 3MB.'); return; }
+      const reader = new FileReader();
+      reader.onload = e => {
+        pendingImage = { dataUrl: e.target.result, name: file.name };
+        document.getElementById('preview-thumb').src = e.target.result;
+        document.getElementById('preview-name').textContent = file.name;
+        document.getElementById('preview-bar').style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
+    }
+    function clearImage() {
+      pendingImage = null;
+      document.getElementById('preview-bar').style.display = 'none';
+      document.getElementById('preview-thumb').src = '';
+    }
+
+    // ── Lightbox ──
+    function openLightbox(src) { document.getElementById('lightbox-img').src = src; document.getElementById('lightbox').classList.add('open'); }
+    function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+
+    // ── Textarea auto-resize ──
+    function autoResize(el) {
+      el.style.height = '38px';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    // ── Enter to send ──
+    document.getElementById('msg-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    // ── Polling (refresh every 3s) ──
+    async function poll() {
+      const remote = await loadMessages();
+
+      // Always accept remote if it has MORE messages than local
+      // Only protect against remote being shorter during an active send
+      const remoteIsNewer = remote.length > localMessages.length;
+      const remoteHasNewMsg = remote.length > 0 && localMessages.length > 0 &&
+        remote[remote.length - 1].id !== localMessages[localMessages.length - 1].id;
+
+      // If we just sent a message, wait until remote confirms it before syncing
+      // This prevents a brief stale read from wiping our just-sent message
+      if (lastSavedId) {
+        const confirmed = remote.some(m => m.id === lastSavedId);
+        if (confirmed) {
+          lastSavedId = ''; // save confirmed — clear the guard
+          renderMessages(remote);
+        }
+        // If not confirmed yet, don't overwrite — wait for next poll
+      } else if (remoteIsNewer || remoteHasNewMsg) {
+        renderMessages(remote);
+      }
+
+      await markOnline();
+      await refreshOnline();
+    }
+
+    async function init() {
+      const msgs = await loadMessages();
+      renderMessages(msgs);
+      if (myName) markOnline();
+      refreshOnline();
+      pollTimer = setInterval(poll, 3000);
+    }
+
+    init();
+  </script>
+</body>
+</html>

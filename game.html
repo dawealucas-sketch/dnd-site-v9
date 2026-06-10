@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dice Game — The Compendium</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .game-wrap { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .game-header { text-align: center; margin-bottom: 2rem; }
+    .game-header h2 { font-size: 1.8rem; margin-bottom: 0.4rem; }
+    .game-header p { color: var(--text-muted); font-style: italic; }
+
+    .score-bar { display: flex; align-items: center; justify-content: space-between; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1.25rem; margin-bottom: 1rem; }
+    .score-val { font-family: var(--font-display); font-size: 1.6rem; color: var(--gold-pale); }
+    .score-label { font-family: var(--font-display); font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
+
+    .dice-area { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 1.5rem 0; }
+    .die { width: 72px; height: 72px; border-radius: 12px; background: var(--bg2); border: 2px solid var(--border2); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; color: var(--text-muted); transition: all 0.2s; user-select: none; }
+    .die.rolled { border-color: var(--gold-dim); color: var(--gold-pale); }
+    .die.rolling { animation: shake 0.35s ease; }
+    .die.nat20 { border-color: #5aaa50; color: #5aaa50; }
+    .die.nat1  { border-color: var(--red); color: var(--red); }
+    @keyframes shake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-8deg) scale(1.1)} 40%{transform:rotate(8deg) scale(1.1)} 60%{transform:rotate(-5deg)} 80%{transform:rotate(5deg)} }
+
+    .roll-btn { display:block; width:100%; padding:14px; font-family:var(--font-display); font-size:1rem; letter-spacing:0.12em; margin-bottom:0.75rem; }
+    .roll-btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .roll-btn.bonus-btn { border-color:#5aaa50; color:#5aaa50; }
+    .roll-btn.bonus-btn:hover:not(:disabled) { border-color:#7acc70; color:#7acc70; }
+
+    .result-msg { text-align:center; font-family:var(--font-display); font-size:0.9rem; letter-spacing:0.08em; color:var(--gold-dim); min-height:1.4em; margin-bottom:1rem; }
+
+    .progress-wrap { margin:1rem 0; }
+    .progress-label { display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-dim); font-family:var(--font-display); letter-spacing:0.06em; margin-bottom:4px; }
+    .progress-track { height:8px; background:var(--bg3); border-radius:4px; border:1px solid var(--border); overflow:hidden; }
+    .progress-fill { height:100%; border-radius:4px; background:var(--gold-dim); transition:width 0.4s; }
+
+    .bonus-banner { background:rgba(90,170,80,0.08); border:1px solid #3a6a30; border-radius:8px; padding:0.75rem 1rem; text-align:center; margin-bottom:1rem; display:none; }
+    .bonus-banner p { font-family:var(--font-display); font-size:0.85rem; color:#5aaa50; letter-spacing:0.06em; }
+
+    .unlocks-section { margin-top:2rem; }
+    .unlocks-title { font-family:var(--font-display); font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--gold-dim); border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:14px; }
+    .unlocks-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:10px; }
+
+    .unlock-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:6px; transition:border-color 0.2s; }
+    .unlock-card.locked { opacity:0.4; filter:grayscale(0.5); }
+    .unlock-card.active-pick { border-color:var(--gold); }
+    .swatch { width:100%; height:20px; border-radius:4px; }
+    .unlock-name { font-family:var(--font-display); font-size:0.8rem; color:var(--gold-pale); }
+    .unlock-title-text { font-size:0.75rem; color:var(--text-muted); font-style:italic; }
+    .unlock-req { font-size:0.68rem; color:var(--text-dim); }
+    .use-btn { font-size:0.62rem; padding:4px 8px; border-color:var(--border2); color:var(--text-muted); width:100%; }
+    .use-btn:hover { border-color:var(--gold-dim); color:var(--gold); }
+    .use-btn.active-btn { border-color:var(--gold); color:var(--gold); }
+
+    .preview-box { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-bottom:1rem; display:flex; align-items:center; gap:12px; }
+    .preview-label { font-family:var(--font-display); font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim); }
+    .preview-name { font-family:var(--font-display); font-size:1rem; font-weight:600; }
+    .preview-title { font-size:0.78rem; font-style:italic; color:var(--text-muted); margin-top:2px; }
+
+    .role-badge { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--panel); border:1px solid var(--border2); border-radius:20px; padding:6px 14px; font-family:var(--font-display); font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); display:flex; align-items:center; gap:8px; }
+    .role-dot { width:7px; height:7px; border-radius:50%; background:var(--gold-dim); }
+    .role-badge button { border:none; padding:0; font-size:0.65rem; color:var(--text-dim); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-logo">⚔ The Compendium</span>
+    <div class="nav-links">
+      <a href="home.html">Home</a>
+      <a href="party.html">Party</a>
+      <a href="chat.html">Chat</a>
+      <a href="game.html" class="active">Dice Game</a>
+    </div>
+  </nav>
+
+  <div class="game-wrap">
+    <div class="game-header">
+      <h2>🎲 The Colour Vault</h2>
+      <p>Roll 5d20s to earn points and unlock chat colours &amp; titles.</p>
+    </div>
+
+    <!-- Preview of current selection -->
+    <div class="preview-box">
+      <div>
+        <div class="preview-label">Your Chat Appearance</div>
+        <div class="preview-name" id="preview-name">Your Name</div>
+        <div class="preview-title" id="preview-title">No title equipped</div>
+      </div>
+    </div>
+
+    <div class="score-bar">
+      <div><div class="score-label">Total Score</div><div class="score-val" id="total-score">0</div></div>
+      <div style="text-align:center;"><div class="score-label">This Round</div><div class="score-val" id="round-score">0</div></div>
+      <div style="text-align:right;"><div class="score-label">Rolls Left</div><div class="score-val" id="rolls-left">5</div></div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label"><span id="prog-label">Next unlock at 80</span><span id="prog-pct">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="bonus-banner" id="bonus-banner">
+      <p>🏆 All base colours unlocked! Bonus round active — roll 10d20s!</p>
+    </div>
+
+    <div class="dice-area" id="dice-area"></div>
+    <div class="result-msg" id="result-msg">Roll a die to begin!</div>
+
+    <button class="roll-btn primary" id="roll-btn" onclick="rollNext()">Roll Die</button>
+    <button class="roll-btn bonus-btn" id="bonus-btn" onclick="startBonus()" style="display:none;">🏆 Start Bonus Round (10d20)</button>
+    <button class="roll-btn" id="new-round-btn" onclick="newRound()" style="display:none;">Roll Again</button>
+
+    <div class="unlocks-section">
+      <div class="unlocks-title">Unlockable Colours &amp; Titles</div>
+      <div class="unlocks-grid" id="unlocks-grid"></div>
+    </div>
+  </div>
+
+  <div class="role-badge">
+    <div class="role-dot" id="role-dot"></div>
+    <span id="role-label">...</span>
+    <button onclick="Auth.logout()">Log out</button>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    if (!Auth.require()) throw new Error('not logged in');
+    const isDM = Auth.isDM();
+    const username = sessionStorage.getItem('dnd-username') || 'Player';
+    document.getElementById('role-label').textContent = username;
+    document.getElementById('preview-name').textContent = username;
+    if (isDM) document.getElementById('role-dot').style.background = '#c8943a';
+
+    // ── Colour + title definitions ──
+    // style: 'solid' = single hex, 'gradient' = array of two hex values
+    const BASE_COLORS = [
+      { name:'Ember',      title:'Flame Touched',    style:'solid',    hex:'#e8663a',                     req:80  },
+      { name:'Arcane',     title:'Spellbound',       style:'solid',    hex:'#9b59b6',                     req:85  },
+      { name:'Frost',      title:'Winter\'s Child',  style:'solid',    hex:'#5dade2',                     req:90  },
+      { name:'Venom',      title:'Poisonblade',      style:'solid',    hex:'#27ae60',                     req:95  },
+      { name:'Crimson',    title:'Bloodsworn',       style:'solid',    hex:'#c0392b',                     req:100 },
+      { name:'Solar',      title:'Sun\'s Herald',    style:'gradient', hex:['#f39c12','#ffe066'],          req:105 },
+      { name:'Void',       title:'Shadowwalker',     style:'gradient', hex:['#6c3483','#1a252f'],          req:110 },
+      { name:'Tundra',     title:'Iceborn',          style:'gradient', hex:['#aed6f1','#5dade2'],          req:115 },
+      { name:'Inferno',    title:'Ashbringer',       style:'gradient', hex:['#e74c3c','#f39c12'],          req:120 },
+      { name:'Jade',       title:'Naturebound',      style:'solid',    hex:'#1abc9c',                     req:125 },
+      { name:'Dusk',       title:'Twilight Keeper',  style:'gradient', hex:['#d35400','#6c3483'],          req:130 },
+      { name:'Celestial',  title:'Stargazer',        style:'gradient', hex:['#f8c471','#aed6f1'],          req:135 },
+      { name:'Abyssal',    title:'Deepwalker',       style:'gradient', hex:['#1a252f','#6c3483'],          req:140 },
+      { name:'Rose',       title:'Heartsworn',       style:'solid',    hex:'#ec407a',                     req:145 },
+    ];
+    const BONUS_COLORS = [
+      { name:'Starfire',    title:'Cosmic Wanderer', style:'gradient', hex:['#fffde7','#5dade2'],          req:150, bonus:true },
+      { name:'Obsidian',    title:'Void Lord',       style:'gradient', hex:['#37474f','#1a252f'],          req:160, bonus:true },
+      { name:'Aurora',      title:'Northern Light',  style:'gradient', hex:['#80deea','#ce93d8'],          req:170, bonus:true },
+      { name:'Dragonblood', title:'Wyrm\'s Chosen',  style:'gradient', hex:['#b71c1c','#f39c12'],          req:180, bonus:true },
+      { name:'Moonsilver',  title:'Lunar Knight',    style:'gradient', hex:['#e0e0e0','#90caf9'],          req:190, bonus:true },
+      { name:'Mythril',     title:'Forgemaster',     style:'gradient', hex:['#90caf9','#e0e0e0'],          req:200, bonus:true },
+      { name:'Sunforged',   title:'Dawnbreaker',     style:'gradient', hex:['#ffca28','#e8663a'],          req:210, bonus:true },
+      { name:'Shadowmeld',  title:'Dark Sovereign',  style:'gradient', hex:['#4a148c','#1a252f'],          req:220, bonus:true },
+      { name:'Thornweald',  title:'Grove Warden',    style:'gradient', hex:['#558b2f','#1abc9c'],          req:230, bonus:true },
+      { name:'Prismatic',   title:'Colour Mage',     style:'gradient', hex:['#ff6ec7','#5dade2'],          req:240, bonus:true },
+      { name:'Godforge',    title:'Legendary Smith', style:'gradient', hex:['#ff6f00','#fffde7'],          req:250, bonus:true },
+      { name:'Eternal',     title:'Immortal',        style:'gradient', hex:['#ffd700','#e8663a'],          req:260, bonus:true },
+    ];
+    const ALL_COLORS = [...BASE_COLORS, ...BONUS_COLORS];
+
+    // ── Helper: build CSS color string ──
+    function colorCSS(col) {
+      if (col.style === 'gradient') return `linear-gradient(90deg, ${col.hex[0]}, ${col.hex[1]})`;
+      return col.hex;
+    }
+    function swatchCSS(col) {
+      if (col.style === 'gradient') return `background: linear-gradient(90deg, ${col.hex[0]}, ${col.hex[1]});`;
+      return `background: ${col.hex};`;
+    }
+    function nameCSS(col) {
+      if (col.style === 'gradient') {
+        return `background: linear-gradient(90deg, ${col.hex[0]}, ${col.hex[1]}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;`;
+      }
+      return `color: ${col.hex};`;
+    }
+
+    // ── Game state ──
+    let gameData = { totalScore:0, unlockedColors:[], bonusUnlocked:false, activeColor:null, activeTitle:null };
+    let roundScore = 0;
+    let rollsLeft = 5;
+    let isBonusRound = false;
+    let rolling = false;
+    let diceValues = [];
+
+    // ── Load / save ──
+    async function loadData() {
+      const cached = sessionStorage.getItem('dnd-game-data');
+      if (cached) { try { gameData = JSON.parse(cached); } catch {} }
+      if (!isDM) {
+        try {
+          const d = await ScoreStore.getPlayerData(username);
+          if (d && d.totalScore >= gameData.totalScore) gameData = d;
+        } catch(e) { console.warn('Score load failed:', e); }
+      }
+      sessionStorage.setItem('dnd-game-data', JSON.stringify(gameData));
+      updatePreview();
+      renderUnlocks();
+      updateUI();
+    }
+
+    async function saveData() {
+      sessionStorage.setItem('dnd-game-data', JSON.stringify(gameData));
+      sessionStorage.setItem('dnd-chat-color', JSON.stringify({ activeColor: gameData.activeColor, activeTitle: gameData.activeTitle }));
+      if (!isDM) {
+        try { await ScoreStore.savePlayerData(username, gameData); }
+        catch(e) { console.warn('Score save failed:', e); }
+      }
+    }
+
+    // ── Rolling ──
+    function rollNext() {
+      if (rolling || rollsLeft <= 0) return;
+      rolling = true;
+      const dieEl = document.getElementById('die-' + diceValues.length);
+      dieEl.classList.add('rolling');
+      dieEl.textContent = '?';
+      setTimeout(() => {
+        const val = Math.floor(Math.random() * 20) + 1;
+        diceValues.push(val);
+        dieEl.classList.remove('rolling');
+        dieEl.classList.add('rolled');
+        dieEl.textContent = val;
+        if (val === 20) dieEl.classList.add('nat20');
+        else if (val === 1) dieEl.classList.add('nat1');
+        roundScore += val;
+        rollsLeft--;
+        document.getElementById('round-score').textContent = roundScore;
+        document.getElementById('rolls-left').textContent = rollsLeft;
+        document.getElementById('result-msg').textContent = val === 20 ? '⚡ Natural 20!' : val === 1 ? '💀 Critical fail...' : `Rolled a ${val}`;
+        if (rollsLeft === 0) endRound();
+        rolling = false;
+      }, 380);
+    }
+
+    function endRound() {
+      document.getElementById('roll-btn').disabled = true;
+      const earned = roundScore;
+      roundScore = 0;
+      gameData.totalScore += earned;
+      document.getElementById('total-score').textContent = gameData.totalScore;
+
+      const newUnlocks = [];
+      ALL_COLORS.forEach(col => {
+        if (!gameData.unlockedColors.includes(col.name) && gameData.totalScore >= col.req) {
+          if (!col.bonus || gameData.bonusUnlocked) {
+            gameData.unlockedColors.push(col.name);
+            newUnlocks.push(col.name);
+          }
+        }
+      });
+
+      const allBaseUnlocked = BASE_COLORS.every(c => gameData.unlockedColors.includes(c.name));
+      if (allBaseUnlocked && !gameData.bonusUnlocked) {
+        gameData.bonusUnlocked = true;
+        document.getElementById('bonus-btn').style.display = 'block';
+        document.getElementById('bonus-banner').style.display = 'block';
+      }
+
+      if (newUnlocks.length > 0) {
+        document.getElementById('result-msg').textContent = '🎨 Unlocked: ' + newUnlocks.join(', ') + '!';
+      } else {
+        document.getElementById('result-msg').textContent = `Round over! +${earned} pts (total: ${gameData.totalScore})`;
+      }
+
+      renderUnlocks();
+      updateProgress();
+      saveData();
+      document.getElementById('new-round-btn').style.display = 'block';
+    }
+
+    function newRound() {
+      roundScore = 0;
+      rollsLeft = isBonusRound ? 10 : 5;
+      diceValues = [];
+      buildDice(rollsLeft);
+      document.getElementById('round-score').textContent = 0;
+      document.getElementById('rolls-left').textContent = rollsLeft;
+      document.getElementById('roll-btn').disabled = false;
+      document.getElementById('roll-btn').style.display = 'block';
+      document.getElementById('new-round-btn').style.display = 'none';
+      document.getElementById('result-msg').textContent = 'Roll a die to begin!';
+    }
+
+    function startBonus() {
+      isBonusRound = true;
+      document.getElementById('bonus-btn').style.display = 'none';
+      newRound();
+    }
+
+    // ── UI ──
+    function buildDice(count) {
+      const area = document.getElementById('dice-area');
+      area.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const d = document.createElement('div');
+        d.className = 'die'; d.id = 'die-' + i; d.textContent = '—';
+        area.appendChild(d);
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('total-score').textContent = gameData.totalScore;
+      if (gameData.bonusUnlocked) document.getElementById('bonus-banner').style.display = 'block';
+      updateProgress();
+      buildDice(5);
+    }
+
+    function updateProgress() {
+      const score = gameData.totalScore;
+      const next = ALL_COLORS.find(c => !gameData.unlockedColors.includes(c.name) && (!c.bonus || gameData.bonusUnlocked));
+      if (!next) {
+        document.getElementById('prog-label').textContent = 'All colours unlocked! 🎉';
+        document.getElementById('prog-pct').textContent = '100%';
+        document.getElementById('progress-fill').style.width = '100%';
+        return;
+      }
+      const idx = ALL_COLORS.indexOf(next);
+      const from = idx > 0 ? ALL_COLORS[idx-1].req : 0;
+      const pct = Math.min(100, Math.max(0, ((score - from) / (next.req - from)) * 100));
+      document.getElementById('prog-label').textContent = `Next: "${next.name}" (${next.title}) at ${next.req} pts`;
+      document.getElementById('prog-pct').textContent = Math.round(pct) + '%';
+      document.getElementById('progress-fill').style.width = pct + '%';
+    }
+
+    function updatePreview() {
+      const nameEl = document.getElementById('preview-name');
+      const titleEl = document.getElementById('preview-title');
+      nameEl.removeAttribute('style');
+      if (gameData.activeColor) {
+        const col = ALL_COLORS.find(c => c.name === gameData.activeColor);
+        if (col) nameEl.setAttribute('style', nameCSS(col) + ' font-family:var(--font-display);font-size:1rem;font-weight:600;');
+      } else {
+        nameEl.style.cssText = 'font-family:var(--font-display);font-size:1rem;font-weight:600;color:var(--gold-pale);';
+      }
+      titleEl.textContent = gameData.activeTitle || 'No title equipped';
+    }
+
+    function renderUnlocks() {
+      const grid = document.getElementById('unlocks-grid');
+      grid.innerHTML = '';
+      ALL_COLORS.forEach(col => {
+        if (col.bonus && !gameData.bonusUnlocked) return;
+        const unlocked = gameData.unlockedColors.includes(col.name);
+        const isActive = gameData.activeColor === col.name;
+        const card = document.createElement('div');
+        card.className = 'unlock-card' + (unlocked ? '' : ' locked') + (isActive ? ' active-pick' : '');
+
+        const swatchDiv = document.createElement('div');
+        swatchDiv.className = 'swatch';
+        swatchDiv.setAttribute('style', swatchCSS(col));
+
+        card.innerHTML = `
+          <div class="swatch" style="${swatchCSS(col)}"></div>
+          <div class="unlock-name">${col.name}</div>
+          <div class="unlock-title-text">"${col.title}"</div>
+          <div class="unlock-req">${unlocked ? '✓ Unlocked' : col.req + ' pts needed'}</div>
+          ${unlocked ? `<button class="use-btn${isActive?' active-btn':''}" onclick="setColor('${col.name}')">${isActive ? '✓ Active' : 'Use in chat'}</button>` : ''}
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function setColor(name) {
+      if (gameData.activeColor === name) {
+        gameData.activeColor = null;
+        gameData.activeTitle = null;
+      } else {
+        const col = ALL_COLORS.find(c => c.name === name);
+        gameData.activeColor = name;
+        gameData.activeTitle = col ? col.title : null;
+      }
+      saveData();
+      renderUnlocks();
+      updatePreview();
+      const col = ALL_COLORS.find(c => c.name === name);
+      document.getElementById('result-msg').textContent = gameData.activeColor
+        ? `Now using ${name} — "${col.title}" in chat!`
+        : 'Colour and title cleared.';
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Party — The Compendium</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    .page-header h2 { font-size: 1.6rem; }
+    .party-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+    .char-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; transition: border-color 0.2s; position: relative; }
+    .char-card:hover { border-color: var(--gold-dim); }
+    .char-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--bg3); border: 2px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 0.25rem; }
+    .char-name { font-family: var(--font-display); font-size: 1.1rem; color: var(--gold-pale); font-weight: 600; }
+    .char-meta { font-size: 0.9rem; color: var(--text-muted); font-style: italic; }
+    .hp-bar-wrap { margin-top: 4px; }
+    .hp-label { font-size: 0.7rem; font-family: var(--font-display); letter-spacing: 0.08em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 3px; display: flex; justify-content: space-between; }
+    .hp-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
+    .hp-fill { height: 100%; border-radius: 3px; transition: width 0.3s, background 0.3s; }
+    .char-stats { display: flex; gap: 12px; margin-top: 4px; }
+    .char-stat { text-align: center; flex: 1; }
+    .char-stat-val { font-size: 1.1rem; font-weight: 600; font-family: var(--font-display); }
+    .char-stat-label { font-size: 0.6rem; letter-spacing: 0.08em; color: var(--text-dim); text-transform: uppercase; font-family: var(--font-display); }
+    .char-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .char-actions button { font-size: 0.65rem; padding: 5px 10px; flex: 1; }
+    .del-char { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; border-color: transparent; color: var(--text-dim); }
+    .del-char:hover { border-color: var(--red-dim); color: var(--red); }
+    .add-card { background: transparent; border: 1px dashed var(--border2); border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: border-color 0.2s; min-height: 180px; color: var(--text-dim); }
+    .add-card:hover { border-color: var(--gold-dim); color: var(--gold-dim); }
+    .add-card span { font-size: 2rem; }
+    .add-card p { font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 1.5rem; width: min(420px, 90vw); display: flex; flex-direction: column; gap: 1rem; }
+    .modal h3 { font-size: 1.1rem; }
+    .modal-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .modal-fields .field.full { grid-column: 1 / -1; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .loading { text-align: center; padding: 3rem; color: var(--text-dim); font-style: italic; font-family: var(--font-display); font-size: 0.85rem; letter-spacing: 0.1em; }
+    .role-badge { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--panel); border: 1px solid var(--border2); border-radius: 20px; padding: 6px 14px; font-family: var(--font-display); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+    .role-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold-dim); }
+    .role-badge button { border: none; padding: 0; font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.08em; }
+    .dm-note { font-size: 0.75rem; color: var(--text-dim); font-style: italic; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-logo">⚔ The Compendium</span>
+    <div class="nav-links">
+      <a href="home.html">Home</a>
+      <a href="party.html" class="active">Party</a>
+      <a href="chat.html">Chat</a>
+      <a href="game.html">Dice Game</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <h2>The Party</h2>
+        <p class="dm-note" id="dm-note"></p>
+      </div>
+      <button class="primary" onclick="openModal()">+ New Character</button>
+    </div>
+
+    <div id="party-grid" class="party-grid">
+      <div class="loading">Loading party...</div>
+    </div>
+  </div>
+
+  <!-- New Character Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h3>New Character</h3>
+      <div class="modal-fields">
+        <div class="field full"><label>Character Name</label><input id="new-name" placeholder="Thorin Ironfist" /></div>
+        <div class="field"><label>Class</label><input id="new-class" placeholder="Fighter" /></div>
+        <div class="field"><label>Level</label><input id="new-level" type="number" placeholder="1" min="1" max="20" /></div>
+        <div class="field"><label>Race</label><input id="new-race" placeholder="Dwarf" /></div>
+        <div class="field"><label>Max HP</label><input id="new-hp" type="number" placeholder="12" /></div>
+        <div class="field"><label>Avatar Emoji</label><input id="new-emoji" placeholder="🧙 ⚔ 🏹 🛡" maxlength="2" /></div>
+      </div>
+      <div class="modal-actions">
+        <button onclick="closeModal()">Cancel</button>
+        <button class="primary" onclick="createCharacter()">Create Character</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="role-badge">
+    <div class="role-dot" id="role-dot"></div>
+    <span id="role-label">...</span>
+    <button onclick="Auth.logout()">Log out</button>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    if (!Auth.require()) throw new Error('not logged in');
+    const isDM = Auth.isDM();
+    const uname = sessionStorage.getItem('dnd-username') || (isDM ? 'Dungeon Master' : 'Player');
+    document.getElementById('role-label').textContent = uname;
+    if (isDM) document.getElementById('role-dot').style.background = '#c8943a';
+    if (isDM) document.getElementById('dm-note').textContent = 'You are the Dungeon Master — you can add and remove characters.';
+    else document.getElementById('dm-note').textContent = 'You can add characters. Only the DM can remove them.';
+
+    const EMOJIS = ['🧙','⚔','🏹','🛡','🎲','🗡','🪄','🏔','🐉','🌙'];
+    let party = [];
+
+    function hpColor(pct) {
+      if (pct > 0.5) return '#3a7030';
+      if (pct > 0.25) return '#8a6020';
+      return '#b03020';
+    }
+
+    async function renderParty() {
+      party = await Store.getParty();
+      const grid = document.getElementById('party-grid');
+      grid.innerHTML = '';
+
+      if (party.length === 0) {
+        const empty = document.createElement('p');
+        empty.style.cssText = 'color:var(--text-dim);font-style:italic;grid-column:1/-1;';
+        empty.textContent = 'No adventurers yet. Add your first character to begin.';
+        grid.appendChild(empty);
+      } else {
+        party.forEach((c, i) => {
+          const maxHP = c.maxHP || 1;
+          const curHP = c.curHP !== undefined ? c.curHP : maxHP;
+          const pct = Math.max(0, Math.min(1, curHP / maxHP));
+          const card = document.createElement('div');
+          card.className = 'char-card';
+          card.innerHTML = `
+            ${isDM ? `<button class="del-char danger" title="Remove character" onclick="removeChar(${i},event)">✕</button>` : ''}
+            <div class="char-avatar">${c.emoji || '🎲'}</div>
+            <div class="char-name">${c.name || 'Unknown Hero'}</div>
+            <div class="char-meta">${[c.race, c.cls, c.level ? 'Level ' + c.level : ''].filter(Boolean).join(' · ')}</div>
+            <div class="hp-bar-wrap">
+              <div class="hp-label"><span>HP</span><span>${curHP} / ${maxHP}</span></div>
+              <div class="hp-bar"><div class="hp-fill" style="width:${pct*100}%;background:${hpColor(pct)};"></div></div>
+            </div>
+            <div class="char-stats">
+              <div class="char-stat"><div class="char-stat-val">${c.ac || '—'}</div><div class="char-stat-label">AC</div></div>
+              <div class="char-stat"><div class="char-stat-val">${c.level || '—'}</div><div class="char-stat-label">Level</div></div>
+              <div class="char-stat"><div class="char-stat-val">${c.initiative !== undefined ? (c.initiative >= 0 ? '+' : '') + c.initiative : '—'}</div><div class="char-stat-label">Init</div></div>
+            </div>
+            <div class="char-actions">
+              <button onclick="window.location.href='sheet.html?id=${i}'">Open Sheet</button>
+            </div>`;
+          grid.appendChild(card);
+        });
+      }
+
+      // Add card — available to everyone
+      const addCard = document.createElement('div');
+      addCard.className = 'add-card';
+      addCard.onclick = openModal;
+      addCard.innerHTML = `<span>+</span><p>Add Character</p>`;
+      grid.appendChild(addCard);
+    }
+
+    function openModal() {
+      document.getElementById('modal').classList.add('open');
+      setTimeout(() => document.getElementById('new-name').focus(), 50);
+    }
+    function closeModal() {
+      document.getElementById('modal').classList.remove('open');
+      ['new-name','new-class','new-level','new-race','new-hp','new-emoji'].forEach(id => document.getElementById(id).value = '');
+    }
+
+    async function createCharacter() {
+      const name = document.getElementById('new-name').value.trim();
+      if (!name) { document.getElementById('new-name').focus(); return; }
+      const maxHP = parseInt(document.getElementById('new-hp').value) || 10;
+      const c = {
+        name,
+        cls: document.getElementById('new-class').value.trim(),
+        level: parseInt(document.getElementById('new-level').value) || 1,
+        race: document.getElementById('new-race').value.trim(),
+        maxHP, curHP: maxHP,
+        emoji: document.getElementById('new-emoji').value.trim() || EMOJIS[party.length % EMOJIS.length],
+        ac: null, initiative: null,
+        abilities: {str:10,dex:10,con:10,int:10,wis:10,cha:10},
+        saveProficiencies: [], skillProficiencies: [],
+        profBonus: 2, speed: 30, hitDice: '', tempHP: 0,
+        deathSaves: {success:0,fail:0},
+        attacks: [], inventory: [],
+        currency: {cp:0,sp:0,ep:0,gp:0,pp:0},
+        traits: '', notes: '',
+      };
+      party.push(c);
+      await Store.saveParty(party);
+      closeModal();
+      renderParty();
+    }
+
+    async function removeChar(i, e) {
+      e.stopPropagation();
+      if (!isDM) return;
+      if (confirm('Remove ' + party[i].name + ' from the party? This cannot be undone.')) {
+        party.splice(i, 1);
+        await Store.saveParty(party);
+        renderParty();
+      }
+    }
+
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    renderParty();
+  </script>
+</body>
+</html>

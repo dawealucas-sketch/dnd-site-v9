@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Compendium</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .hero { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:5rem 1.5rem 4rem; min-height:55vh; position:relative; }
+    .hero::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 40%, rgba(200,148,58,0.06) 0%, transparent 70%); pointer-events:none; }
+    .hero-rune { font-size:3rem; color:var(--gold-dim); margin-bottom:1.5rem; display:block; }
+    .hero h1 { font-size:3.5rem; font-weight:700; line-height:1.1; letter-spacing:0.08em; margin-bottom:1rem; }
+    .hero-sub { font-size:1.25rem; color:var(--text-muted); font-style:italic; max-width:480px; margin-bottom:2.5rem; }
+    .hero-actions { display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; }
+    .hero-actions a button { font-size:0.85rem; padding:12px 28px; }
+    .role-badge { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--panel); border:1px solid var(--border2); border-radius:20px; padding:6px 14px; font-family:var(--font-display); font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); display:flex; align-items:center; gap:8px; }
+    .role-dot { width:7px; height:7px; border-radius:50%; background:var(--gold-dim); }
+    .role-badge button { border:none; padding:0; font-size:0.65rem; color:var(--text-dim); letter-spacing:0.08em; }
+    .players-section { max-width:1100px; margin:0 auto; padding:0 1.5rem 3rem; }
+    .player-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; margin-top:12px; }
+    .player-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; }
+    .player-card-name { font-family:var(--font-display); font-size:0.9rem; color:var(--gold-pale); }
+    .player-card-date { font-size:0.75rem; color:var(--text-dim); margin-top:3px; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-logo">⚔ The Compendium</span>
+    <div class="nav-links">
+      <a href="home.html" class="active">Home</a>
+      <a href="party.html">Party</a>
+      <a href="chat.html">Chat</a>
+      <a href="game.html">Dice Game</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <span class="hero-rune">✦</span>
+    <h1>The Compendium</h1>
+    <p class="hero-sub">Your party's tome of records. Track heroes, manage gear, and chronicle your campaign.</p>
+    <div class="hero-actions">
+      <a href="party.html"><button class="primary">View the Party</button></a>
+      <a href="chat.html"><button>Open Chat</button></a>
+    </div>
+  </div>
+
+  <div class="players-section" id="dm-section" style="display:none;">
+    <div class="panel">
+      <div class="section-title">Registered Players</div>
+      <div id="players-list" style="color:var(--text-dim);font-style:italic;font-size:0.9rem;">Loading...</div>
+    </div>
+  </div>
+
+  <div class="role-badge">
+    <div class="role-dot" id="role-dot"></div>
+    <span id="role-label">...</span>
+    <button onclick="Auth.logout()">Log out</button>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    if (!Auth.require()) throw new Error('not logged in');
+    const role = Auth.role();
+    const uname = sessionStorage.getItem('dnd-username') || (role === 'dm' ? 'Dungeon Master' : 'Player');
+    document.getElementById('role-label').textContent = uname;
+    if (role === 'dm') document.getElementById('role-dot').style.background = '#c8943a';
+
+    if (role === 'dm') {
+      document.getElementById('dm-section').style.display = 'block';
+
+      async function loadPlayers() {
+        const el = document.getElementById('players-list');
+        el.innerHTML = '<span style="color:var(--text-dim);font-style:italic;">Loading...</span>';
+        try {
+          const raw = await fetch('https://api.jsonbin.io/v3/b/6a287205f5f4af5e29d426da/latest', {
+            headers: {
+              'X-Master-Key': '$2a$10$cGsSALCiLByGNUgdr5uhHO79MdzZhH.U9aon.E3.0ANUd6qiUUU.C',
+              'X-Bin-Versioning': 'false'
+            }
+          });
+          if (!raw.ok) throw new Error('HTTP ' + raw.status);
+          const json = await raw.json();
+          const players = (json.record && json.record.players) ? json.record.players : {};
+          const keys = Object.keys(players);
+
+          if (keys.length === 0) {
+            el.innerHTML = '<span style="color:var(--text-dim);font-style:italic;">No players have registered yet.</span>';
+            return;
+          }
+
+          const grid = document.createElement('div');
+          grid.className = 'player-grid';
+          keys.forEach(k => {
+            const p = players[k];
+            const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'}) : 'Unknown';
+            const score = p.gameData ? p.gameData.totalScore || 0 : 0;
+            const unlocks = p.gameData ? (p.gameData.unlockedColors || []).length : 0;
+            const card = document.createElement('div');
+            card.className = 'player-card';
+            card.innerHTML =
+              '<div class="player-card-name">' + p.displayName + '</div>' +
+              '<div class="player-card-date">Joined ' + date + '</div>' +
+              '<div class="player-card-date" style="margin-top:3px;color:var(--gold-dim);">Score: ' + score + ' · ' + unlocks + ' colours</div>';
+            grid.appendChild(card);
+          });
+          el.innerHTML = '';
+          el.appendChild(grid);
+        } catch(e) {
+          el.innerHTML = '<span style="color:var(--red);font-size:0.85rem;">Error loading players: ' + e.message + '</span> &nbsp; <button onclick="loadPlayers()" style="font-size:0.7rem;padding:3px 10px;">Retry</button>';
+        }
+      }
+
+      loadPlayers();
+    }
+  </script>
+</body>
+</html>
