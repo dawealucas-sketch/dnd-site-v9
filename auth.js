@@ -46,7 +46,14 @@ const ChatStore = {
 // Players
 const PlayerStore = {
   async getPlayers()         { try { return (await binGet(BIN_PLAYERS)).players || {}; } catch { return {}; } },
-  async savePlayers(players) { try { await binSet(BIN_PLAYERS, { players }); return true; } catch { return false; } }
+  async savePlayers(players) {
+    try {
+      const rec = await binGet(BIN_PLAYERS);
+      rec.players = players;
+      await binSet(BIN_PLAYERS, rec);
+      return true;
+    } catch { return false; }
+  }
 };
 
 // Online presence
