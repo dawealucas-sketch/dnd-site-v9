@@ -3,75 +3,285 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Dice Oracle — The Compendium</title>
+  <title>The Gauntlet — The Compendium</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    .oracle-wrap { max-width: 600px; margin: 0 auto; padding: 3rem 1.5rem 5rem; text-align: center; }
-
-    .oracle-header { margin-bottom: 2.5rem; }
-    .oracle-eye { font-size: 3.5rem; display: block; margin-bottom: 1rem; filter: drop-shadow(0 0 18px #7c4dff88); }
-    .oracle-header h2 { font-size: 2rem; color: var(--gold-pale); margin-bottom: 0.5rem; }
-    .oracle-header p { color: var(--text-muted); font-style: italic; font-size: 1.05rem; }
-
-    .oracle-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 2rem 2rem 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
-    .oracle-panel::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(124,77,255,0.07) 0%, transparent 65%); pointer-events: none; }
-
-    .challenge-label { font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.4rem; }
-    .challenge-text { font-family: var(--font-display); font-size: 1.1rem; color: var(--gold-pale); margin-bottom: 0.25rem; min-height: 1.5em; }
-    .challenge-sub { font-size: 0.82rem; color: var(--text-muted); font-style: italic; min-height: 1.2em; }
-
-    .rolls-left-bar { display: flex; gap: 6px; justify-content: center; margin: 1.5rem 0 1.25rem; }
-    .roll-pip { width: 12px; height: 12px; border-radius: 50%; background: var(--border2); border: 1px solid var(--border2); transition: background 0.2s; }
-    .roll-pip.used { background: var(--red-dim); border-color: var(--red); }
-    .roll-pip.avail { background: var(--gold-dim); border-color: var(--gold); }
-
-    .big-die { width: 120px; height: 120px; border-radius: 20px; background: var(--bg2); border: 2px solid var(--border2); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 3rem; font-weight: 700; color: var(--text-muted); margin: 0 auto 1.5rem; transition: border-color 0.3s, color 0.3s; user-select: none; }
-    .big-die.rolling { animation: diceRoll 0.45s ease; }
-    .big-die.hit    { border-color: #7c4dff; color: #b39ddb; box-shadow: 0 0 24px #7c4dff55; }
-    .big-die.miss   { border-color: var(--red); color: var(--red); }
-    .big-die.idle   { border-color: var(--border2); color: var(--text-dim); }
-
-    @keyframes diceRoll {
-      0%   { transform: rotate(0deg) scale(1); }
-      20%  { transform: rotate(-15deg) scale(1.15); }
-      40%  { transform: rotate(12deg) scale(1.12); }
-      60%  { transform: rotate(-8deg) scale(1.08); }
-      80%  { transform: rotate(5deg) scale(1.04); }
-      100% { transform: rotate(0deg) scale(1); }
+    /* ── Layout ── */
+    .gauntlet-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      grid-template-rows: auto 1fr;
+      gap: 1rem;
+      min-height: calc(100vh - 56px);
     }
 
-    /* Sequence display for challenge 2 */
-    .seq-display { display: flex; gap: 10px; justify-content: center; align-items: center; margin-bottom: 1rem; }
-    .seq-die { width: 52px; height: 52px; border-radius: 10px; background: var(--bg2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--text-dim); transition: all 0.3s; }
-    .seq-die.waiting { border-color: var(--gold-dim); color: var(--gold-dim); }
-    .seq-die.matched { border-color: #7c4dff; color: #b39ddb; box-shadow: 0 0 10px #7c4dff44; }
-    .seq-arrow { font-size: 1.2rem; color: var(--text-dim); }
+    /* ── Top bar ── */
+    .top-bar {
+      grid-column: 1 / -1;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+    .gp-display { display: flex; align-items: center; gap: 0.5rem; }
+    .gp-icon { font-size: 1.5rem; }
+    .gp-amount {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--gold-pale);
+      transition: transform 0.15s;
+      min-width: 2.5ch;
+    }
+    .gp-amount.bump { transform: scale(1.3); }
+    .gp-label {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      line-height: 1;
+    }
+    .streak-wrap { margin-left: auto; display: flex; align-items: center; gap: 0.6rem; }
+    .streak-label {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .streak-pips { display: flex; gap: 5px; }
+    .pip {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .pip.lit { background: #f39c12; border-color: #f39c12; }
+    .pip.fire { animation: pipfire 0.4s ease; }
+    @keyframes pipfire { 0%{transform:scale(1.6)} 100%{transform:scale(1)} }
+    .diff-badge {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border2);
+      color: var(--text-muted);
+    }
+    .diff-badge.easy   { border-color: #3a7030; color: #5aaa50; }
+    .diff-badge.medium { border-color: #7a5820; color: var(--gold); }
+    .diff-badge.hard   { border-color: var(--red-dim); color: var(--red); }
 
-    .result-msg { font-family: var(--font-display); font-size: 0.92rem; letter-spacing: 0.07em; color: var(--gold-dim); min-height: 1.4em; margin-bottom: 1.25rem; transition: color 0.2s; }
-    .result-msg.good { color: #b39ddb; }
-    .result-msg.bad  { color: var(--red); }
+    /* ── Main quiz area ── */
+    .quiz-area { display: flex; flex-direction: column; gap: 1rem; }
 
-    .phase-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 1.25rem; }
-    .phase-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--border2); background: transparent; transition: background 0.3s, border-color 0.3s; }
-    .phase-dot.done { background: #7c4dff; border-color: #7c4dff; }
-    .phase-dot.active { border-color: var(--gold); background: var(--gold-dim); }
+    .timer-track {
+      height: 6px;
+      background: var(--bg3);
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .timer-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--gold-dim);
+      transition: width 0.1s linear, background 0.3s;
+    }
+    .timer-fill.danger { background: var(--red); }
 
-    .roll-btn { width: 100%; padding: 14px; font-family: var(--font-display); font-size: 1rem; letter-spacing: 0.12em; margin-bottom: 0.75rem; }
-    .roll-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .roll-btn.oracle-btn { border-color: #4a148c; color: #b39ddb; }
-    .roll-btn.oracle-btn:hover:not(:disabled) { border-color: #7c4dff; color: #d1c4e9; }
+    .q-card {
+      background: var(--panel);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 2rem 1.75rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .q-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold-dim), transparent);
+    }
+    .q-card.correct-flash { animation: flashGreen 0.5s ease; }
+    .q-card.wrong-flash   { animation: flashRed 0.5s ease; }
+    @keyframes flashGreen { 0%,100%{background:var(--panel)} 40%{background:rgba(58,112,48,0.3)} }
+    @keyframes flashRed   { 0%,100%{background:var(--panel)} 40%{background:rgba(176,48,32,0.3)} }
 
-    .outcome-box { background: var(--bg2); border-radius: 10px; padding: 1.5rem 1.25rem; margin-bottom: 1.25rem; display: none; }
-    .outcome-box.win { border: 1px solid #7c4dff; }
-    .outcome-box.lose { border: 1px solid var(--red-dim); }
-    .outcome-icon { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; }
-    .outcome-title { font-family: var(--font-display); font-size: 1.3rem; color: var(--gold-pale); margin-bottom: 0.4rem; }
-    .outcome-desc { font-size: 0.9rem; color: var(--text-muted); font-style: italic; }
-    .outcome-reward { font-family: var(--font-display); font-size: 0.78rem; color: #b39ddb; margin-top: 0.75rem; letter-spacing: 0.08em; }
+    .q-count {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.75rem;
+    }
+    .q-text {
+      font-size: 1.2rem;
+      color: var(--text);
+      line-height: 1.55;
+      margin-bottom: 1.5rem;
+    }
+    .q-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+    .opt-btn {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      color: var(--text);
+      background: var(--bg2);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      line-height: 1.4;
+    }
+    .opt-btn:hover:not(:disabled) { border-color: var(--gold-dim); background: var(--bg3); }
+    .opt-btn:active:not(:disabled) { transform: scale(0.98); }
+    .opt-label {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gold-dim);
+      min-width: 1.2em;
+      padding-top: 2px;
+    }
+    .opt-btn.correct { border-color: #3a7030; background: rgba(58,112,48,0.18); color: #7acc70; }
+    .opt-btn.correct .opt-label { color: #7acc70; }
+    .opt-btn.wrong   { border-color: var(--red-dim); background: rgba(176,48,32,0.18); color: var(--red); }
+    .opt-btn.wrong .opt-label { color: var(--red); }
+    .opt-btn:disabled { cursor: default; }
 
-    .role-badge { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--panel); border:1px solid var(--border2); border-radius:20px; padding:6px 14px; font-family:var(--font-display); font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); display:flex; align-items:center; gap:8px; }
-    .role-dot { width:7px; height:7px; border-radius:50%; background:var(--gold-dim); }
-    .role-badge button { border:none; padding:0; font-size:0.65rem; color:var(--text-dim); }
+    .feedback-banner {
+      text-align: center;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      min-height: 1.4em;
+      color: var(--text-dim);
+      margin-top: 0.75rem;
+    }
+    .feedback-banner.correct-text { color: #5aaa50; }
+    .feedback-banner.wrong-text   { color: var(--red); }
+    .feedback-banner.timeout-text { color: var(--gold-dim); }
+
+    /* Floating GP text */
+    .float-gp {
+      position: fixed;
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      pointer-events: none;
+      z-index: 9999;
+      animation: floatUp 1.2s ease forwards;
+    }
+    .float-gp.gain { color: #f3c44a; text-shadow: 0 0 10px rgba(243,196,74,0.6); }
+    .float-gp.loss { color: var(--red); text-shadow: 0 0 10px rgba(176,48,32,0.5); }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      60%  { opacity: 1; transform: translateY(-55px) scale(1.1); }
+      100% { opacity: 0; transform: translateY(-100px) scale(0.9); }
+    }
+
+    /* ── Shop ── */
+    .shop-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      overflow-y: auto;
+      max-height: calc(100vh - 130px);
+    }
+    .shop-title {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 4px;
+    }
+    .shop-item {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .shop-item-top { display: flex; align-items: center; gap: 8px; }
+    .shop-swatch { width: 28px; height: 28px; border-radius: 5px; flex-shrink: 0; }
+    .shop-info { flex: 1; min-width: 0; }
+    .shop-name { font-family: var(--font-display); font-size: 0.8rem; color: var(--gold-pale); }
+    .shop-title-text { font-size: 0.7rem; font-style: italic; color: var(--text-muted); }
+    .shop-cost { font-family: var(--font-display); font-size: 0.7rem; color: var(--gold); white-space: nowrap; flex-shrink: 0; }
+    .buy-btn {
+      font-size: 0.62rem;
+      padding: 4px 10px;
+      border-radius: 5px;
+      width: 100%;
+      font-family: var(--font-display);
+      letter-spacing: 0.08em;
+    }
+    .buy-btn:not([disabled]):not(.owned):hover { border-color: var(--gold); color: var(--gold-pale); }
+    .buy-btn[disabled]:not(.owned) { opacity: 0.45; cursor: not-allowed; }
+    .buy-btn.owned { border-color: #3a6a30; color: #5aaa50; cursor: default; }
+
+    /* ── End screen ── */
+    .end-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 1.2rem;
+      padding: 2rem;
+    }
+    .end-screen.show { display: flex; }
+    .end-title { font-size: 2rem; color: var(--gold-pale); }
+    .end-gp { font-family: var(--font-display); font-size: 3rem; color: var(--gold-pale); }
+    .end-sub { color: var(--text-muted); font-style: italic; }
+
+    /* ── Role badge ── */
+    .role-badge {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: var(--panel); border: 1px solid var(--border2);
+      border-radius: 20px; padding: 6px 14px;
+      font-family: var(--font-display); font-size: 0.65rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-muted); display: flex; align-items: center; gap: 8px; z-index: 200;
+    }
+    .role-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold-dim); }
+    .role-badge button { border: none; padding: 0; font-size: 0.65rem; color: var(--text-dim); }
+
+    @media (max-width: 720px) {
+      .gauntlet-wrap { grid-template-columns: 1fr; }
+      .shop-panel { max-height: 260px; }
+      .q-options { grid-template-columns: 1fr; }
+      .diff-badge { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -82,285 +292,430 @@
       <a href="party.html">Party</a>
       <a href="chat.html">Chat</a>
       <a href="game.html">Dice Game</a>
+      <a href="minigame.html" class="active">The Gauntlet</a>
     </div>
   </nav>
 
-  <div class="oracle-wrap">
-    <div class="oracle-header">
-      <span class="oracle-eye">🔮</span>
-      <h2>The Dice Oracle</h2>
-      <p>Fate is written in the roll. Prove your worth to claim the Oracle's colour.</p>
+  <div class="gauntlet-wrap">
+    <!-- Top bar -->
+    <div class="top-bar">
+      <div class="gp-display">
+        <span class="gp-icon">🪙</span>
+        <div>
+          <div class="gp-amount" id="gp-amount">0</div>
+          <div class="gp-label">Gold Pieces</div>
+        </div>
+      </div>
+      <div class="streak-wrap">
+        <span class="streak-label">Streak</span>
+        <div class="streak-pips">
+          <div class="pip" id="pip-0"></div>
+          <div class="pip" id="pip-1"></div>
+          <div class="pip" id="pip-2"></div>
+          <div class="pip" id="pip-3"></div>
+          <div class="pip" id="pip-4"></div>
+        </div>
+      </div>
+      <span class="diff-badge" id="diff-badge">—</span>
     </div>
 
-    <div class="oracle-panel">
-      <div class="challenge-label">Current Challenge</div>
-      <div class="challenge-text" id="challenge-text">Awaiting the Oracle's call...</div>
-      <div class="challenge-sub" id="challenge-sub">Step forward when you are ready.</div>
-
-      <div class="phase-dots" id="phase-dots">
-        <div class="phase-dot active" id="dot-0"></div>
-        <div class="phase-dot" id="dot-1"></div>
+    <!-- Quiz area -->
+    <div class="quiz-area" id="quiz-area">
+      <div class="timer-track" id="timer-track">
+        <div class="timer-fill" id="timer-fill" style="width:100%"></div>
       </div>
-
-      <div class="seq-display" id="seq-display" style="display:none;">
-        <div class="seq-die" id="seq-0">?</div>
-        <div class="seq-arrow">→</div>
-        <div class="seq-die" id="seq-1">?</div>
+      <div class="q-card" id="q-card">
+        <div class="q-count" id="q-count">Question 1 of 23</div>
+        <div class="q-text" id="q-text">Loading…</div>
+        <div class="q-options" id="q-options"></div>
+        <div class="feedback-banner" id="feedback-banner"></div>
       </div>
-
-      <div class="big-die idle" id="big-die">—</div>
-
-      <div class="rolls-left-bar" id="pips"></div>
-
-      <div class="result-msg" id="result-msg">The Oracle watches in silence.</div>
-
-      <div class="outcome-box" id="outcome-box">
-        <span class="outcome-icon" id="outcome-icon"></span>
-        <div class="outcome-title" id="outcome-title"></div>
-        <div class="outcome-desc" id="outcome-desc"></div>
-        <div class="outcome-reward" id="outcome-reward"></div>
+      <div class="end-screen" id="end-screen">
+        <div class="end-title">⚔ Gauntlet Complete ⚔</div>
+        <div class="end-gp" id="end-gp">0 GP</div>
+        <div class="end-sub">Gold earned this session — spend it in the shop!</div>
+        <button class="primary" style="font-size:0.9rem;padding:10px 28px;" onclick="startGame()">Run Again</button>
+        <a href="home.html" style="color:var(--text-muted);font-size:0.85rem;">Back to Home</a>
       </div>
+    </div>
 
-      <button class="roll-btn oracle-btn" id="roll-btn" onclick="doRoll()">Roll the Cursed Die</button>
-      <button class="roll-btn" id="retry-btn" onclick="resetGame()" style="display:none;">Try Again</button>
+    <!-- Shop panel -->
+    <div class="shop-panel" id="shop-panel">
+      <div class="shop-title">🏪 Colour Vault Shop</div>
+      <div id="shop-items"></div>
     </div>
   </div>
 
   <div class="role-badge">
     <div class="role-dot" id="role-dot"></div>
-    <span id="role-label">...</span>
+    <span id="role-label">…</span>
     <button onclick="Auth.logout()">Log out</button>
   </div>
 
   <script src="auth.js"></script>
   <script>
     if (!Auth.require()) throw new Error('not logged in');
+
     const username = sessionStorage.getItem('dnd-username') || 'Player';
+    const isDM = Auth.isDM();
     document.getElementById('role-label').textContent = username;
-    if (Auth.isDM()) document.getElementById('role-dot').style.background = '#c8943a';
+    if (isDM) document.getElementById('role-dot').style.background = '#c8943a';
 
-    const MAX_ROLLS = 5;
+    // ═══════════════════════════════════════════════════════
+    // QUESTIONS
+    // ═══════════════════════════════════════════════════════
+    const ALL_QUESTIONS = [
+      // EASY — 5 GP, no penalty
+      { q: 'How many sides does a d20 have?',
+        options: ['12', '20', '10', '8'], answer: 1, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'Which class uses Sneak Attack as a core feature?',
+        options: ['Ranger', 'Rogue', 'Monk', 'Bard'], answer: 1, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'What ability score governs spellcasting for Wizards?',
+        options: ['Wisdom', 'Charisma', 'Intelligence', 'Strength'], answer: 2, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'What die does a Fighter roll for Hit Points each level?',
+        options: ['d6', 'd8', 'd10', 'd12'], answer: 2, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'Which class gains Rage as a class feature?',
+        options: ['Paladin', 'Fighter', 'Barbarian', 'Druid'], answer: 2, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'A character\'s Armor Class determines…',
+        options: ['How hard they are to hit', 'How far they can move', 'How much damage they deal', 'Their spell save DC'], answer: 0, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'What does rolling a natural 1 on an attack roll always result in?',
+        options: ['Critical hit', 'Automatic miss', 'Reroll', 'Double damage'], answer: 1, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'Which die type is NOT used as a damage die for weapons in 5e?',
+        options: ['d4', 'd7', 'd6', 'd12'], answer: 1, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'What does proficiency bonus apply to?',
+        options: ['All rolls', 'Only attack rolls', 'Skills, saves, and attacks you are trained in', 'Hit points'], answer: 2, difficulty: 'easy', gp: 5, penalty: 0 },
 
-    // Game state
-    let phase = 0;          // 0 = challenge 1 (single target), 1 = challenge 2 (sequence)
-    let target1 = 0;        // single target for phase 0
-    let seqTarget = [];     // [a, b] for phase 1
-    let seqProgress = 0;    // how many in the sequence matched so far
-    let rollsLeft = MAX_ROLLS;
-    let rolling = false;
-    let gameOver = false;
-    let alreadyWon = false; // track if Oracle colour already owned
+      // MEDIUM — 15 GP, −5 on wrong
+      { q: 'What school of magic does Fireball belong to?',
+        options: ['Conjuration', 'Abjuration', 'Evocation', 'Transmutation'], answer: 2, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'An Opportunity Attack costs…',
+        options: ['1 action', '1 reaction', '1 bonus action', 'Nothing'], answer: 1, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'Which monster type are vampires in 5e?',
+        options: ['Fiend', 'Celestial', 'Undead', 'Fey'], answer: 2, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'What is the range of the Sending spell?',
+        options: ['60 feet', '120 feet', 'Unlimited', '1 mile'], answer: 2, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'Which plane of existence is the home of demons (Tanar\'ri)?',
+        options: ['The Nine Hells', 'The Abyss', 'Mechanus', 'Limbo'], answer: 1, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'How long does a short rest take by default in 5e?',
+        options: ['1 hour', '8 hours', '10 minutes', '24 hours'], answer: 0, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'The Prone condition causes attacks against you to have…',
+        options: ['Disadvantage if attacker is 5 ft away', 'Advantage if attacker is within 5 ft', 'No effect on attacks', 'Advantage from any range'], answer: 1, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'What ability score modifier is added to a Paladin\'s spell save DC?',
+        options: ['Strength', 'Wisdom', 'Charisma', 'Intelligence'], answer: 2, difficulty: 'medium', gp: 15, penalty: 5 },
 
-    function pickTarget() { return Math.floor(Math.random() * 6) + 1; }
+      // HARD — 40 GP, −15 on wrong
+      { q: 'What is the Challenge Rating of an Adult Red Dragon in 5e?',
+        options: ['17', '20', '24', '15'], answer: 0, difficulty: 'hard', gp: 40, penalty: 15 },
+      { q: 'How many charges does a fully charged Wand of Magic Missiles have?',
+        options: ['5', '10', '7', '3'], answer: 2, difficulty: 'hard', gp: 40, penalty: 15 },
+      { q: 'A beholder\'s central eye projects a cone of antimagic. What is the size of that cone?',
+        options: ['60 feet', '30 feet', '120 feet', '15 feet'], answer: 0, difficulty: 'hard', gp: 40, penalty: 15 },
+      { q: 'Which legendary weapon can only be attuned by a creature of good alignment?',
+        options: ['Vorpal Sword', 'Holy Avenger', 'Defender', 'Sword of Sharpness'], answer: 1, difficulty: 'hard', gp: 40, penalty: 15 },
+      { q: 'What saving throw does the Hold Person spell require?',
+        options: ['Strength', 'Wisdom', 'Constitution', 'Charisma'], answer: 1, difficulty: 'hard', gp: 40, penalty: 15 },
+      { q: 'In the Forgotten Realms, what is the name of the Underdark city ruled by drow and home to Lolth\'s faithful?',
+        options: ['Menzoberranzan', 'Gracklstugh', 'Blingdenstone', 'Neverlight Grove'], answer: 0, difficulty: 'hard', gp: 40, penalty: 15 },
+    ];
 
-    function initPhase0() {
-      phase = 0;
-      target1 = pickTarget();
-      rollsLeft = MAX_ROLLS;
-      document.getElementById('seq-display').style.display = 'none';
-      document.getElementById('challenge-text').textContent = `Roll a ${target1}`;
-      document.getElementById('challenge-sub').textContent = `You have ${MAX_ROLLS} rolls. Hit the exact number to pass the first trial.`;
-      updatePips();
-      updatePhaseDots();
-      setDieState('idle', '—');
-      setMsg('The Oracle speaks. Roll the cursed die.', '');
+    // ═══════════════════════════════════════════════════════
+    // SHOP COLOURS — prestige / oracle / bonus from game.html
+    // ═══════════════════════════════════════════════════════
+    const SHOP_COLORS = [
+      { name: 'Oracle',      title: 'Voice of Fate',    style: 'gradient', hex: ['#f3e5f5','#7c4dff'], cost: 50  },
+      { name: 'Dragonblood', title: "Wyrm's Chosen",    style: 'gradient', hex: ['#b71c1c','#f39c12'], cost: 100 },
+      { name: 'Shadowmeld',  title: 'Dark Sovereign',   style: 'gradient', hex: ['#4a148c','#1a252f'], cost: 200 },
+      { name: 'Prismatic',   title: 'Colour Mage',      style: 'gradient', hex: ['#ff6ec7','#5dade2'], cost: 350 },
+      { name: 'Eternal',     title: 'Immortal',         style: 'gradient', hex: ['#ffd700','#e8663a'], cost: 500 },
+    ];
+
+    // ═══════════════════════════════════════════════════════
+    // STATE
+    // ═══════════════════════════════════════════════════════
+    let gp = 0;
+    let streak = 0;
+    let qIndex = 0;
+    let shuffled = [];
+    let answered = false;
+    let timerInterval = null;
+    let timerStart = 0;
+    const TIMER_MS = 10000;
+    let gameData = { totalScore: 0, unlockedColors: [], bonusUnlocked: false, activeColor: null, activeTitle: null };
+
+    // ═══════════════════════════════════════════════════════
+    // HELPERS
+    // ═══════════════════════════════════════════════════════
+    function swatchCSS(col) {
+      return col.style === 'gradient'
+        ? `background: linear-gradient(90deg, ${col.hex[0]}, ${col.hex[1]});`
+        : `background: ${col.hex};`;
     }
 
-    function initPhase1() {
-      phase = 1;
-      seqTarget = [pickTarget(), pickTarget()];
-      seqProgress = 0;
-      rollsLeft = MAX_ROLLS;
-      // Show sequence display
-      const seqEl = document.getElementById('seq-display');
-      seqEl.style.display = 'flex';
-      document.getElementById('seq-0').textContent = seqTarget[0];
-      document.getElementById('seq-1').textContent = seqTarget[1];
-      document.getElementById('seq-0').className = 'seq-die waiting';
-      document.getElementById('seq-1').className = 'seq-die';
-      document.getElementById('challenge-text').textContent = `Roll ${seqTarget[0]}, then ${seqTarget[1]}`;
-      document.getElementById('challenge-sub').textContent = `Roll the first number, then the second in sequence — within ${MAX_ROLLS} total rolls.`;
-      updatePips();
-      updatePhaseDots();
-      setDieState('idle', '—');
-      setMsg('The Oracle grows impatient. Two numbers, in order.', '');
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
     }
 
-    function updatePips() {
-      const bar = document.getElementById('pips');
-      bar.innerHTML = '';
-      for (let i = 0; i < MAX_ROLLS; i++) {
-        const pip = document.createElement('div');
-        pip.className = 'roll-pip ' + (i < (MAX_ROLLS - rollsLeft) ? 'used' : 'avail');
-        bar.appendChild(pip);
+    function animateGP(delta) {
+      gp = Math.max(0, gp + delta);
+      const el = document.getElementById('gp-amount');
+      el.textContent = gp;
+      el.classList.remove('bump');
+      void el.offsetWidth;
+      el.classList.add('bump');
+      setTimeout(() => el.classList.remove('bump'), 200);
+    }
+
+    function spawnFloat(text, isGain, anchorEl) {
+      const r = anchorEl.getBoundingClientRect();
+      const div = document.createElement('div');
+      div.className = 'float-gp ' + (isGain ? 'gain' : 'loss');
+      div.textContent = text;
+      div.style.left = Math.round(r.left + r.width / 2 - 45) + 'px';
+      div.style.top  = Math.round(r.top + window.scrollY + 10) + 'px';
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 1300);
+    }
+
+    function updateStreakPips() {
+      for (let i = 0; i < 5; i++) {
+        const pip = document.getElementById('pip-' + i);
+        if (i < streak) {
+          if (!pip.classList.contains('lit')) {
+            pip.classList.add('lit', 'fire');
+            setTimeout(() => pip.classList.remove('fire'), 500);
+          }
+        } else {
+          pip.classList.remove('lit', 'fire');
+        }
       }
     }
 
-    function updatePhaseDots() {
-      document.getElementById('dot-0').className = 'phase-dot ' + (phase === 0 ? 'active' : 'done');
-      document.getElementById('dot-1').className = 'phase-dot ' + (phase === 1 ? 'active' : '');
+    // ═══════════════════════════════════════════════════════
+    // TIMER
+    // ═══════════════════════════════════════════════════════
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerStart = Date.now();
+      const fill = document.getElementById('timer-fill');
+      fill.style.width = '100%';
+      fill.classList.remove('danger');
+      timerInterval = setInterval(() => {
+        if (answered) { clearInterval(timerInterval); return; }
+        const elapsed = Date.now() - timerStart;
+        const pct = Math.max(0, 1 - elapsed / TIMER_MS);
+        fill.style.width = (pct * 100) + '%';
+        if (pct < 0.25) fill.classList.add('danger');
+        if (pct <= 0) { clearInterval(timerInterval); onTimeout(); }
+      }, 50);
     }
 
-    function setDieState(state, val) {
-      const d = document.getElementById('big-die');
-      d.className = 'big-die ' + state;
-      d.textContent = val;
+    function stopTimer() { clearInterval(timerInterval); }
+
+    // ═══════════════════════════════════════════════════════
+    // RENDER QUESTION
+    // ═══════════════════════════════════════════════════════
+    function renderQuestion() {
+      if (qIndex >= shuffled.length) { showEndScreen(); return; }
+      answered = false;
+      const q = shuffled[qIndex];
+
+      document.getElementById('q-count').textContent = `Question ${qIndex + 1} of ${shuffled.length}`;
+      document.getElementById('q-text').textContent = q.q;
+      document.getElementById('feedback-banner').textContent = '';
+      document.getElementById('feedback-banner').className = 'feedback-banner';
+      document.getElementById('q-card').style.display = '';
+      document.getElementById('q-card').className = 'q-card';
+      document.getElementById('timer-track').style.display = '';
+      document.getElementById('end-screen').classList.remove('show');
+
+      const badge = document.getElementById('diff-badge');
+      badge.textContent = q.difficulty[0].toUpperCase() + q.difficulty.slice(1) +
+        ' · +' + q.gp + ' GP' + (q.penalty ? ' / −' + q.penalty : '');
+      badge.className = 'diff-badge ' + q.difficulty;
+
+      const opts = document.getElementById('q-options');
+      opts.innerHTML = '';
+      ['A','B','C','D'].forEach((lbl, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.innerHTML = `<span class="opt-label">${lbl}</span>${q.options[i]}`;
+        btn.onclick = () => onAnswer(i);
+        opts.appendChild(btn);
+      });
+
+      startTimer();
     }
 
-    function setMsg(text, cls) {
-      const el = document.getElementById('result-msg');
-      el.textContent = text;
-      el.className = 'result-msg' + (cls ? ' ' + cls : '');
-    }
+    // ═══════════════════════════════════════════════════════
+    // ANSWER
+    // ═══════════════════════════════════════════════════════
+    function onAnswer(chosen) {
+      if (answered) return;
+      answered = true;
+      stopTimer();
+      const q = shuffled[qIndex];
+      const correct = chosen === q.answer;
+      const card = document.getElementById('q-card');
+      const feedback = document.getElementById('feedback-banner');
+      const optBtns = document.getElementById('q-options').children;
 
-    function doRoll() {
-      if (rolling || gameOver || rollsLeft <= 0) return;
-      rolling = true;
-      document.getElementById('roll-btn').disabled = true;
-      const die = document.getElementById('big-die');
-      die.className = 'big-die rolling';
-      die.textContent = '?';
+      for (let i = 0; i < optBtns.length; i++) {
+        optBtns[i].disabled = true;
+        if (i === q.answer) optBtns[i].classList.add('correct');
+        else if (i === chosen && !correct) optBtns[i].classList.add('wrong');
+      }
 
-      setTimeout(() => {
-        const val = Math.floor(Math.random() * 6) + 1;
-        rollsLeft--;
-        updatePips();
-
-        if (phase === 0) {
-          resolvePhase0(val);
-        } else {
-          resolvePhase1(val);
-        }
-
-        rolling = false;
-        if (!gameOver) {
-          document.getElementById('roll-btn').disabled = false;
-        }
-      }, 460);
-    }
-
-    function resolvePhase0(val) {
-      if (val === target1) {
-        setDieState('hit', val);
-        setMsg(`${val} — The Oracle nods. First trial passed!`, 'good');
-        // Advance to phase 1 after short delay
-        document.getElementById('roll-btn').disabled = true;
-        document.getElementById('dot-0').className = 'phase-dot done';
-        setTimeout(() => {
-          initPhase1();
-          document.getElementById('roll-btn').disabled = false;
-        }, 1200);
-      } else if (rollsLeft === 0) {
-        setDieState('miss', val);
-        triggerLose(`You rolled ${val} — the target was ${target1}. The Oracle turns away.`);
+      if (correct) {
+        card.classList.add('correct-flash');
+        streak = Math.min(streak + 1, 5);
+        const bonus = streak >= 5 ? Math.floor(q.gp * 0.5) : 0;
+        const total = q.gp + bonus;
+        animateGP(total);
+        spawnFloat('+' + total + ' GP' + (bonus ? ' 🔥' : ''), true, card);
+        feedback.textContent = bonus
+          ? `Correct! +${q.gp} GP + ${bonus} streak bonus!`
+          : `Correct! +${q.gp} GP`;
+        feedback.className = 'feedback-banner correct-text';
       } else {
-        setDieState('miss', val);
-        setMsg(`${val} — Not a ${target1}. ${rollsLeft} roll${rollsLeft !== 1 ? 's' : ''} remain.`, 'bad');
-        setTimeout(() => setDieState('idle', val), 700);
+        card.classList.add('wrong-flash');
+        streak = 0;
+        if (q.penalty) animateGP(-q.penalty);
+        spawnFloat(q.penalty ? '−' + q.penalty + ' GP' : 'Wrong!', false, card);
+        feedback.textContent = q.penalty ? `Wrong. −${q.penalty} GP` : 'Wrong! No penalty this time.';
+        feedback.className = 'feedback-banner wrong-text';
       }
+
+      updateStreakPips();
+      renderShop();
+      setTimeout(() => { qIndex++; renderQuestion(); }, 1600);
     }
 
-    function resolvePhase1(val) {
-      const needed = seqTarget[seqProgress];
-      if (val === needed) {
-        // Matched this step in the sequence
-        document.getElementById('seq-' + seqProgress).className = 'seq-die matched';
-        seqProgress++;
-        setDieState('hit', val);
-        if (seqProgress === 2) {
-          // Both matched — win!
-          triggerWin();
-        } else {
-          setMsg(`${val} — First number matched! Now roll ${seqTarget[1]}.`, 'good');
-          // Next step: mark second die as waiting
-          document.getElementById('seq-1').className = 'seq-die waiting';
-          setTimeout(() => setDieState('idle', val), 700);
-        }
-      } else {
-        // If we had partial progress and miss, reset sequence progress
-        if (seqProgress > 0) {
-          seqProgress = 0;
-          document.getElementById('seq-0').className = 'seq-die waiting';
-          document.getElementById('seq-1').className = 'seq-die';
-          setMsg(`${val} — Sequence broken! Start again with ${seqTarget[0]}.`, 'bad');
-        } else {
-          setMsg(`${val} — Need ${seqTarget[seqProgress]}. ${rollsLeft} roll${rollsLeft !== 1 ? 's' : ''} remain.`, 'bad');
-        }
-        if (rollsLeft === 0 && seqProgress < 2) {
-          setDieState('miss', val);
-          triggerLose(`The dice went cold. The sequence was ${seqTarget[0]} → ${seqTarget[1]}.`);
-          return;
-        }
-        setDieState('miss', val);
-        setTimeout(() => setDieState('idle', val), 700);
+    function onTimeout() {
+      if (answered) return;
+      answered = true;
+      const q = shuffled[qIndex];
+      const optBtns = document.getElementById('q-options').children;
+      for (let i = 0; i < optBtns.length; i++) {
+        optBtns[i].disabled = true;
+        if (i === q.answer) optBtns[i].classList.add('correct');
       }
+      streak = 0;
+      updateStreakPips();
+      const feedback = document.getElementById('feedback-banner');
+      feedback.textContent = "Time's up! No penalty — but no GP either.";
+      feedback.className = 'feedback-banner timeout-text';
+      setTimeout(() => { qIndex++; renderQuestion(); }, 1600);
     }
 
-    function triggerWin() {
-      gameOver = true;
-      document.getElementById('roll-btn').style.display = 'none';
-      document.getElementById('retry-btn').style.display = 'none';
-      setDieState('hit', '✓');
-      setMsg('Both trials complete. The Oracle is satisfied.', 'good');
-
-      const box = document.getElementById('outcome-box');
-      box.className = 'outcome-box win';
-      document.getElementById('outcome-icon').textContent = '🔮';
-      document.getElementById('outcome-title').textContent = 'The Oracle Grants You Favour';
-      document.getElementById('outcome-desc').textContent = '"Few endure the cursed die twice. You have earned the right to wear my sight."';
-      document.getElementById('outcome-reward').textContent = '✦ Oracle colour unlocked — Voice of Fate ✦';
-      box.style.display = 'block';
-
-      // Save the Oracle colour to player data
-      grantOracleColor();
+    // ═══════════════════════════════════════════════════════
+    // END SCREEN
+    // ═══════════════════════════════════════════════════════
+    function showEndScreen() {
+      stopTimer();
+      document.getElementById('q-card').style.display = 'none';
+      document.getElementById('timer-track').style.display = 'none';
+      document.getElementById('end-gp').textContent = gp + ' GP';
+      document.getElementById('end-screen').classList.add('show');
     }
 
-    async function grantOracleColor() {
+    // ═══════════════════════════════════════════════════════
+    // SHOP
+    // ═══════════════════════════════════════════════════════
+    function renderShop() {
+      const container = document.getElementById('shop-items');
+      container.innerHTML = '';
+      SHOP_COLORS.forEach(col => {
+        const owned = gameData.unlockedColors.includes(col.name);
+        const canBuy = !owned && gp >= col.cost;
+        const item = document.createElement('div');
+        item.className = 'shop-item';
+        item.innerHTML =
+          `<div class="shop-item-top">
+            <div class="shop-swatch" style="${swatchCSS(col)}"></div>
+            <div class="shop-info">
+              <div class="shop-name">${col.name}</div>
+              <div class="shop-title-text">${col.title}</div>
+            </div>
+            <div class="shop-cost">${owned ? '—' : col.cost + ' GP'}</div>
+          </div>
+          <button class="buy-btn${owned ? ' owned' : ''}"
+            ${owned ? 'disabled' : !canBuy ? 'disabled' : ''}
+            data-name="${col.name}">
+            ${owned ? '✓ Owned' : canBuy ? 'Buy' : 'Need ' + col.cost + ' GP'}
+          </button>`;
+        if (!owned && canBuy) {
+          item.querySelector('.buy-btn').onclick = () => buyColor(col);
+        }
+        container.appendChild(item);
+      });
+    }
+
+    async function buyColor(col) {
+      if (gp < col.cost || gameData.unlockedColors.includes(col.name)) return;
+      animateGP(-col.cost);
+      gameData.unlockedColors.push(col.name);
+      spawnFloat('🎨 ' + col.name + ' unlocked!', true, document.getElementById('shop-panel'));
+      renderShop();
+      if (!isDM) {
+        try {
+          const rec = await binGet(BIN_PLAYERS);
+          const key = username.toLowerCase();
+          if (rec.players && rec.players[key]) {
+            const gd = rec.players[key].gameData ||
+              { totalScore: 0, unlockedColors: [], bonusUnlocked: false, activeColor: null, activeTitle: null };
+            if (!gd.unlockedColors.includes(col.name)) gd.unlockedColors.push(col.name);
+            rec.players[key].gameData = gd;
+            await binSet(BIN_PLAYERS, rec);
+            gameData = gd;
+          }
+        } catch(e) { console.warn('Shop save failed:', e); }
+      }
+      renderShop();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════════════════════
+    async function loadGameData() {
+      // Try remote first
+      if (!isDM) {
+        try {
+          const d = await ScoreStore.getPlayerData(username);
+          if (d) gameData = d;
+        } catch(e) { console.warn('Load failed:', e); }
+      }
+      // Merge sessionStorage unlocks in case local is newer
       try {
-        const rec = await binGet(BIN_PLAYERS);
-        const key = username.toLowerCase();
-        if (!rec.players || !rec.players[key]) return;
-        const gd = rec.players[key].gameData || { totalScore:0, unlockedColors:[], bonusUnlocked:false, activeColor:null, activeTitle:null };
-        if (!gd.unlockedColors) gd.unlockedColors = [];
-        if (!gd.unlockedColors.includes('Oracle')) {
-          gd.unlockedColors.push('Oracle');
+        const cached = sessionStorage.getItem('dnd-game-data');
+        if (cached) {
+          const c = JSON.parse(cached);
+          (c.unlockedColors || []).forEach(n => {
+            if (!gameData.unlockedColors.includes(n)) gameData.unlockedColors.push(n);
+          });
         }
-        rec.players[key].gameData = gd;
-        await binSet(BIN_PLAYERS, rec);
-        // Also update session cache
-        sessionStorage.setItem('dnd-game-data', JSON.stringify(gd));
-        document.getElementById('retry-btn').style.display = 'none';
-      } catch(e) {
-        console.warn('Oracle reward save failed:', e);
-        document.getElementById('outcome-reward').textContent += ' (save failed — try visiting the Dice Game to sync)';
-      }
+      } catch {}
     }
 
-    function triggerLose(reason) {
-      gameOver = true;
-      document.getElementById('roll-btn').style.display = 'none';
-
-      const box = document.getElementById('outcome-box');
-      box.className = 'outcome-box lose';
-      document.getElementById('outcome-icon').textContent = '💀';
-      document.getElementById('outcome-title').textContent = 'The Oracle Laughs';
-      document.getElementById('outcome-desc').textContent = reason;
-      document.getElementById('outcome-reward').textContent = '"Return when fate is kinder to you."';
-      box.style.display = 'block';
-      document.getElementById('retry-btn').style.display = 'block';
+    function startGame() {
+      gp = 0;
+      streak = 0;
+      qIndex = 0;
+      shuffled = shuffle(ALL_QUESTIONS);
+      document.getElementById('gp-amount').textContent = '0';
+      updateStreakPips();
+      document.getElementById('end-screen').classList.remove('show');
+      document.getElementById('q-card').style.display = '';
+      document.getElementById('timer-track').style.display = '';
+      renderShop();
+      renderQuestion();
     }
 
-    function resetGame() {
-      gameOver = false;
-      document.getElementById('outcome-box').style.display = 'none';
-      document.getElementById('roll-btn').style.display = 'block';
-      document.getElementById('retry-btn').style.display = 'none';
-      document.getElementById('seq-display').style.display = 'none';
-      initPhase0();
-    }
-
-    // Kick off
-    resetGame();
+    loadGameData().then(startGame);
   </script>
 </body>
 </html>
