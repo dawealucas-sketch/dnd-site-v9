@@ -140,7 +140,8 @@
         if (players[username.toLowerCase()]) { errEl.textContent = 'That username is already taken.'; return; }
         const passwordHash = await hashStr(password);
         players[username.toLowerCase()] = { displayName: username, passwordHash, createdAt: Date.now() };
-        await PlayerStore.savePlayers(players);
+        const saved = await PlayerStore.savePlayers(players);
+        if (!saved) { errEl.textContent = 'Could not save account. Please try again.'; return; }
         sessionStorage.setItem('dnd-role', 'player');
         sessionStorage.setItem('dnd-username', username);
         sessionStorage.setItem('dnd-chat-name', username);

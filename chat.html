@@ -370,7 +370,7 @@
       const titleSpan = (!isDMMsg && msg.chatTitle)
         ? '<span style="font-size:0.7rem;font-style:italic;color:var(--text-dim);margin-left:6px;">' + escHtml(msg.chatTitle) + '</span>'
         : '';
-      const delBtn = isOwn ? '<button class="msg-del danger" onclick="deleteMsg('' + msg.id + '')">Delete</button>' : '';
+      const delBtn = isOwn ? '<button class="msg-del danger" onclick="deleteMsg(\'' + msg.id + '\')">Delete</button>' : '';
       return '<div class="msg-header"><span class="msg-author' + dmClass + '"' + nameStyle + '>' + escHtml(msg.author) + '</span>' + titleSpan + '<span class="msg-time">' + formatTime(msg.ts) + '</span></div>' + delBtn;
     }
 
