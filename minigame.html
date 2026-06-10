@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Dice Oracle — The Compendium</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .oracle-wrap { max-width: 600px; margin: 0 auto; padding: 3rem 1.5rem 5rem; text-align: center; }
+
+    .oracle-header { margin-bottom: 2.5rem; }
+    .oracle-eye { font-size: 3.5rem; display: block; margin-bottom: 1rem; filter: drop-shadow(0 0 18px #7c4dff88); }
+    .oracle-header h2 { font-size: 2rem; color: var(--gold-pale); margin-bottom: 0.5rem; }
+    .oracle-header p { color: var(--text-muted); font-style: italic; font-size: 1.05rem; }
+
+    .oracle-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 2rem 2rem 1.75rem; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+    .oracle-panel::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(124,77,255,0.07) 0%, transparent 65%); pointer-events: none; }
+
+    .challenge-label { font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.4rem; }
+    .challenge-text { font-family: var(--font-display); font-size: 1.1rem; color: var(--gold-pale); margin-bottom: 0.25rem; min-height: 1.5em; }
+    .challenge-sub { font-size: 0.82rem; color: var(--text-muted); font-style: italic; min-height: 1.2em; }
+
+    .rolls-left-bar { display: flex; gap: 6px; justify-content: center; margin: 1.5rem 0 1.25rem; }
+    .roll-pip { width: 12px; height: 12px; border-radius: 50%; background: var(--border2); border: 1px solid var(--border2); transition: background 0.2s; }
+    .roll-pip.used { background: var(--red-dim); border-color: var(--red); }
+    .roll-pip.avail { background: var(--gold-dim); border-color: var(--gold); }
+
+    .big-die { width: 120px; height: 120px; border-radius: 20px; background: var(--bg2); border: 2px solid var(--border2); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 3rem; font-weight: 700; color: var(--text-muted); margin: 0 auto 1.5rem; transition: border-color 0.3s, color 0.3s; user-select: none; }
+    .big-die.rolling { animation: diceRoll 0.45s ease; }
+    .big-die.hit    { border-color: #7c4dff; color: #b39ddb; box-shadow: 0 0 24px #7c4dff55; }
+    .big-die.miss   { border-color: var(--red); color: var(--red); }
+    .big-die.idle   { border-color: var(--border2); color: var(--text-dim); }
+
+    @keyframes diceRoll {
+      0%   { transform: rotate(0deg) scale(1); }
+      20%  { transform: rotate(-15deg) scale(1.15); }
+      40%  { transform: rotate(12deg) scale(1.12); }
+      60%  { transform: rotate(-8deg) scale(1.08); }
+      80%  { transform: rotate(5deg) scale(1.04); }
+      100% { transform: rotate(0deg) scale(1); }
+    }
+
+    /* Sequence display for challenge 2 */
+    .seq-display { display: flex; gap: 10px; justify-content: center; align-items: center; margin-bottom: 1rem; }
+    .seq-die { width: 52px; height: 52px; border-radius: 10px; background: var(--bg2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--text-dim); transition: all 0.3s; }
+    .seq-die.waiting { border-color: var(--gold-dim); color: var(--gold-dim); }
+    .seq-die.matched { border-color: #7c4dff; color: #b39ddb; box-shadow: 0 0 10px #7c4dff44; }
+    .seq-arrow { font-size: 1.2rem; color: var(--text-dim); }
+
+    .result-msg { font-family: var(--font-display); font-size: 0.92rem; letter-spacing: 0.07em; color: var(--gold-dim); min-height: 1.4em; margin-bottom: 1.25rem; transition: color 0.2s; }
+    .result-msg.good { color: #b39ddb; }
+    .result-msg.bad  { color: var(--red); }
+
+    .phase-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 1.25rem; }
+    .phase-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--border2); background: transparent; transition: background 0.3s, border-color 0.3s; }
+    .phase-dot.done { background: #7c4dff; border-color: #7c4dff; }
+    .phase-dot.active { border-color: var(--gold); background: var(--gold-dim); }
+
+    .roll-btn { width: 100%; padding: 14px; font-family: var(--font-display); font-size: 1rem; letter-spacing: 0.12em; margin-bottom: 0.75rem; }
+    .roll-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .roll-btn.oracle-btn { border-color: #4a148c; color: #b39ddb; }
+    .roll-btn.oracle-btn:hover:not(:disabled) { border-color: #7c4dff; color: #d1c4e9; }
+
+    .outcome-box { background: var(--bg2); border-radius: 10px; padding: 1.5rem 1.25rem; margin-bottom: 1.25rem; display: none; }
+    .outcome-box.win { border: 1px solid #7c4dff; }
+    .outcome-box.lose { border: 1px solid var(--red-dim); }
+    .outcome-icon { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; }
+    .outcome-title { font-family: var(--font-display); font-size: 1.3rem; color: var(--gold-pale); margin-bottom: 0.4rem; }
+    .outcome-desc { font-size: 0.9rem; color: var(--text-muted); font-style: italic; }
+    .outcome-reward { font-family: var(--font-display); font-size: 0.78rem; color: #b39ddb; margin-top: 0.75rem; letter-spacing: 0.08em; }
+
+    .role-badge { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--panel); border:1px solid var(--border2); border-radius:20px; padding:6px 14px; font-family:var(--font-display); font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); display:flex; align-items:center; gap:8px; }
+    .role-dot { width:7px; height:7px; border-radius:50%; background:var(--gold-dim); }
+    .role-badge button { border:none; padding:0; font-size:0.65rem; color:var(--text-dim); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-logo">⚔ The Compendium</span>
+    <div class="nav-links">
+      <a href="home.html">Home</a>
+      <a href="party.html">Party</a>
+      <a href="chat.html">Chat</a>
+      <a href="game.html">Dice Game</a>
+    </div>
+  </nav>
+
+  <div class="oracle-wrap">
+    <div class="oracle-header">
+      <span class="oracle-eye">🔮</span>
+      <h2>The Dice Oracle</h2>
+      <p>Fate is written in the roll. Prove your worth to claim the Oracle's colour.</p>
+    </div>
+
+    <div class="oracle-panel">
+      <div class="challenge-label">Current Challenge</div>
+      <div class="challenge-text" id="challenge-text">Awaiting the Oracle's call...</div>
+      <div class="challenge-sub" id="challenge-sub">Step forward when you are ready.</div>
+
+      <div class="phase-dots" id="phase-dots">
+        <div class="phase-dot active" id="dot-0"></div>
+        <div class="phase-dot" id="dot-1"></div>
+      </div>
+
+      <div class="seq-display" id="seq-display" style="display:none;">
+        <div class="seq-die" id="seq-0">?</div>
+        <div class="seq-arrow">→</div>
+        <div class="seq-die" id="seq-1">?</div>
+      </div>
+
+      <div class="big-die idle" id="big-die">—</div>
+
+      <div class="rolls-left-bar" id="pips"></div>
+
+      <div class="result-msg" id="result-msg">The Oracle watches in silence.</div>
+
+      <div class="outcome-box" id="outcome-box">
+        <span class="outcome-icon" id="outcome-icon"></span>
+        <div class="outcome-title" id="outcome-title"></div>
+        <div class="outcome-desc" id="outcome-desc"></div>
+        <div class="outcome-reward" id="outcome-reward"></div>
+      </div>
+
+      <button class="roll-btn oracle-btn" id="roll-btn" onclick="doRoll()">Roll the Cursed Die</button>
+      <button class="roll-btn" id="retry-btn" onclick="resetGame()" style="display:none;">Try Again</button>
+    </div>
+  </div>
+
+  <div class="role-badge">
+    <div class="role-dot" id="role-dot"></div>
+    <span id="role-label">...</span>
+    <button onclick="Auth.logout()">Log out</button>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    if (!Auth.require()) throw new Error('not logged in');
+    const username = sessionStorage.getItem('dnd-username') || 'Player';
+    document.getElementById('role-label').textContent = username;
+    if (Auth.isDM()) document.getElementById('role-dot').style.background = '#c8943a';
+
+    const MAX_ROLLS = 5;
+
+    // Game state
+    let phase = 0;          // 0 = challenge 1 (single target), 1 = challenge 2 (sequence)
+    let target1 = 0;        // single target for phase 0
+    let seqTarget = [];     // [a, b] for phase 1
+    let seqProgress = 0;    // how many in the sequence matched so far
+    let rollsLeft = MAX_ROLLS;
+    let rolling = false;
+    let gameOver = false;
+    let alreadyWon = false; // track if Oracle colour already owned
+
+    function pickTarget() { return Math.floor(Math.random() * 6) + 1; }
+
+    function initPhase0() {
+      phase = 0;
+      target1 = pickTarget();
+      rollsLeft = MAX_ROLLS;
+      document.getElementById('seq-display').style.display = 'none';
+      document.getElementById('challenge-text').textContent = `Roll a ${target1}`;
+      document.getElementById('challenge-sub').textContent = `You have ${MAX_ROLLS} rolls. Hit the exact number to pass the first trial.`;
+      updatePips();
+      updatePhaseDots();
+      setDieState('idle', '—');
+      setMsg('The Oracle speaks. Roll the cursed die.', '');
+    }
+
+    function initPhase1() {
+      phase = 1;
+      seqTarget = [pickTarget(), pickTarget()];
+      seqProgress = 0;
+      rollsLeft = MAX_ROLLS;
+      // Show sequence display
+      const seqEl = document.getElementById('seq-display');
+      seqEl.style.display = 'flex';
+      document.getElementById('seq-0').textContent = seqTarget[0];
+      document.getElementById('seq-1').textContent = seqTarget[1];
+      document.getElementById('seq-0').className = 'seq-die waiting';
+      document.getElementById('seq-1').className = 'seq-die';
+      document.getElementById('challenge-text').textContent = `Roll ${seqTarget[0]}, then ${seqTarget[1]}`;
+      document.getElementById('challenge-sub').textContent = `Roll the first number, then the second in sequence — within ${MAX_ROLLS} total rolls.`;
+      updatePips();
+      updatePhaseDots();
+      setDieState('idle', '—');
+      setMsg('The Oracle grows impatient. Two numbers, in order.', '');
+    }
+
+    function updatePips() {
+      const bar = document.getElementById('pips');
+      bar.innerHTML = '';
+      for (let i = 0; i < MAX_ROLLS; i++) {
+        const pip = document.createElement('div');
+        pip.className = 'roll-pip ' + (i < (MAX_ROLLS - rollsLeft) ? 'used' : 'avail');
+        bar.appendChild(pip);
+      }
+    }
+
+    function updatePhaseDots() {
+      document.getElementById('dot-0').className = 'phase-dot ' + (phase === 0 ? 'active' : 'done');
+      document.getElementById('dot-1').className = 'phase-dot ' + (phase === 1 ? 'active' : '');
+    }
+
+    function setDieState(state, val) {
+      const d = document.getElementById('big-die');
+      d.className = 'big-die ' + state;
+      d.textContent = val;
+    }
+
+    function setMsg(text, cls) {
+      const el = document.getElementById('result-msg');
+      el.textContent = text;
+      el.className = 'result-msg' + (cls ? ' ' + cls : '');
+    }
+
+    function doRoll() {
+      if (rolling || gameOver || rollsLeft <= 0) return;
+      rolling = true;
+      document.getElementById('roll-btn').disabled = true;
+      const die = document.getElementById('big-die');
+      die.className = 'big-die rolling';
+      die.textContent = '?';
+
+      setTimeout(() => {
+        const val = Math.floor(Math.random() * 6) + 1;
+        rollsLeft--;
+        updatePips();
+
+        if (phase === 0) {
+          resolvePhase0(val);
+        } else {
+          resolvePhase1(val);
+        }
+
+        rolling = false;
+        if (!gameOver) {
+          document.getElementById('roll-btn').disabled = false;
+        }
+      }, 460);
+    }
+
+    function resolvePhase0(val) {
+      if (val === target1) {
+        setDieState('hit', val);
+        setMsg(`${val} — The Oracle nods. First trial passed!`, 'good');
+        // Advance to phase 1 after short delay
+        document.getElementById('roll-btn').disabled = true;
+        document.getElementById('dot-0').className = 'phase-dot done';
+        setTimeout(() => {
+          initPhase1();
+          document.getElementById('roll-btn').disabled = false;
+        }, 1200);
+      } else if (rollsLeft === 0) {
+        setDieState('miss', val);
+        triggerLose(`You rolled ${val} — the target was ${target1}. The Oracle turns away.`);
+      } else {
+        setDieState('miss', val);
+        setMsg(`${val} — Not a ${target1}. ${rollsLeft} roll${rollsLeft !== 1 ? 's' : ''} remain.`, 'bad');
+        setTimeout(() => setDieState('idle', val), 700);
+      }
+    }
+
+    function resolvePhase1(val) {
+      const needed = seqTarget[seqProgress];
+      if (val === needed) {
+        // Matched this step in the sequence
+        document.getElementById('seq-' + seqProgress).className = 'seq-die matched';
+        seqProgress++;
+        setDieState('hit', val);
+        if (seqProgress === 2) {
+          // Both matched — win!
+          triggerWin();
+        } else {
+          setMsg(`${val} — First number matched! Now roll ${seqTarget[1]}.`, 'good');
+          // Next step: mark second die as waiting
+          document.getElementById('seq-1').className = 'seq-die waiting';
+          setTimeout(() => setDieState('idle', val), 700);
+        }
+      } else {
+        // If we had partial progress and miss, reset sequence progress
+        if (seqProgress > 0) {
+          seqProgress = 0;
+          document.getElementById('seq-0').className = 'seq-die waiting';
+          document.getElementById('seq-1').className = 'seq-die';
+          setMsg(`${val} — Sequence broken! Start again with ${seqTarget[0]}.`, 'bad');
+        } else {
+          setMsg(`${val} — Need ${seqTarget[seqProgress]}. ${rollsLeft} roll${rollsLeft !== 1 ? 's' : ''} remain.`, 'bad');
+        }
+        if (rollsLeft === 0 && seqProgress < 2) {
+          setDieState('miss', val);
+          triggerLose(`The dice went cold. The sequence was ${seqTarget[0]} → ${seqTarget[1]}.`);
+          return;
+        }
+        setDieState('miss', val);
+        setTimeout(() => setDieState('idle', val), 700);
+      }
+    }
+
+    function triggerWin() {
+      gameOver = true;
+      document.getElementById('roll-btn').style.display = 'none';
+      document.getElementById('retry-btn').style.display = 'none';
+      setDieState('hit', '✓');
+      setMsg('Both trials complete. The Oracle is satisfied.', 'good');
+
+      const box = document.getElementById('outcome-box');
+      box.className = 'outcome-box win';
+      document.getElementById('outcome-icon').textContent = '🔮';
+      document.getElementById('outcome-title').textContent = 'The Oracle Grants You Favour';
+      document.getElementById('outcome-desc').textContent = '"Few endure the cursed die twice. You have earned the right to wear my sight."';
+      document.getElementById('outcome-reward').textContent = '✦ Oracle colour unlocked — Voice of Fate ✦';
+      box.style.display = 'block';
+
+      // Save the Oracle colour to player data
+      grantOracleColor();
+    }
+
+    async function grantOracleColor() {
+      try {
+        const rec = await binGet(BIN_PLAYERS);
+        const key = username.toLowerCase();
+        if (!rec.players || !rec.players[key]) return;
+        const gd = rec.players[key].gameData || { totalScore:0, unlockedColors:[], bonusUnlocked:false, activeColor:null, activeTitle:null };
+        if (!gd.unlockedColors) gd.unlockedColors = [];
+        if (!gd.unlockedColors.includes('Oracle')) {
+          gd.unlockedColors.push('Oracle');
+        }
+        rec.players[key].gameData = gd;
+        await binSet(BIN_PLAYERS, rec);
+        // Also update session cache
+        sessionStorage.setItem('dnd-game-data', JSON.stringify(gd));
+        document.getElementById('retry-btn').style.display = 'none';
+      } catch(e) {
+        console.warn('Oracle reward save failed:', e);
+        document.getElementById('outcome-reward').textContent += ' (save failed — try visiting the Dice Game to sync)';
+      }
+    }
+
+    function triggerLose(reason) {
+      gameOver = true;
+      document.getElementById('roll-btn').style.display = 'none';
+
+      const box = document.getElementById('outcome-box');
+      box.className = 'outcome-box lose';
+      document.getElementById('outcome-icon').textContent = '💀';
+      document.getElementById('outcome-title').textContent = 'The Oracle Laughs';
+      document.getElementById('outcome-desc').textContent = reason;
+      document.getElementById('outcome-reward').textContent = '"Return when fate is kinder to you."';
+      box.style.display = 'block';
+      document.getElementById('retry-btn').style.display = 'block';
+    }
+
+    function resetGame() {
+      gameOver = false;
+      document.getElementById('outcome-box').style.display = 'none';
+      document.getElementById('roll-btn').style.display = 'block';
+      document.getElementById('retry-btn').style.display = 'none';
+      document.getElementById('seq-display').style.display = 'none';
+      initPhase0();
+    }
+
+    // Kick off
+    resetGame();
+  </script>
+</body>
+</html>

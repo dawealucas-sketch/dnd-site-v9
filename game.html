@@ -164,7 +164,19 @@
       { name:'Godforge',    title:'Legendary Smith', style:'gradient', hex:['#ff6f00','#fffde7'],          req:250, bonus:true },
       { name:'Eternal',     title:'Immortal',        style:'gradient', hex:['#ffd700','#e8663a'],          req:260, bonus:true },
     ];
-    const ALL_COLORS = [...BASE_COLORS, ...BONUS_COLORS];
+    // Prestige colours — require massive score accumulation
+    const PRESTIGE_COLORS = [
+      { name:'Wraithveil',   title:'Ghost of the Deep',     style:'gradient', hex:['#b0bec5','#263238'],          req:5000,  prestige:true },
+      { name:'Solarbeam',    title:'Radiant Chosen',        style:'gradient', hex:['#fff176','#ff8f00'],          req:7500,  prestige:true },
+      { name:'Netherglow',   title:'Pact of Darkness',      style:'gradient', hex:['#4a0072','#7b1fa2'],          req:10000, prestige:true },
+      { name:'Tidecaller',   title:'Lord of the Deep',      style:'gradient', hex:['#006064','#00acc1'],          req:12500, prestige:true },
+      { name:'Embersteel',   title:'Oathbound Warlord',     style:'gradient', hex:['#bf360c','#90a4ae'],          req:15000, prestige:true },
+      { name:'Starcorpse',   title:'Fallen Constellation',  style:'gradient', hex:['#1a237e','#e1bee7'],          req:17500, prestige:true },
+      { name:'Soulrender',   title:'Reaper of Realms',      style:'gradient', hex:['#880e4f','#1a1a1a'],          req:20000, prestige:true },
+      // Oracle colour — minigame-only, cannot be earned through score
+      { name:'Oracle',       title:'Voice of Fate',         style:'gradient', hex:['#f3e5f5','#7c4dff'],          req:null,  oracle:true },
+    ];
+    const ALL_COLORS = [...BASE_COLORS, ...BONUS_COLORS, ...PRESTIGE_COLORS];
 
     // ── Helper: build CSS color string ──
     function colorCSS(col) {
@@ -249,6 +261,7 @@
 
       const newUnlocks = [];
       ALL_COLORS.forEach(col => {
+        if (col.oracle) return; // oracle colour is minigame-only
         if (!gameData.unlockedColors.includes(col.name) && gameData.totalScore >= col.req) {
           if (!col.bonus || gameData.bonusUnlocked) {
             gameData.unlockedColors.push(col.name);
@@ -315,7 +328,7 @@
 
     function updateProgress() {
       const score = gameData.totalScore;
-      const next = ALL_COLORS.find(c => !gameData.unlockedColors.includes(c.name) && (!c.bonus || gameData.bonusUnlocked));
+      const next = ALL_COLORS.find(c => !c.oracle && !gameData.unlockedColors.includes(c.name) && (!c.bonus || gameData.bonusUnlocked));
       if (!next) {
         document.getElementById('prog-label').textContent = 'All colours unlocked! 🎉';
         document.getElementById('prog-pct').textContent = '100%';
@@ -353,15 +366,16 @@
         const card = document.createElement('div');
         card.className = 'unlock-card' + (unlocked ? '' : ' locked') + (isActive ? ' active-pick' : '');
 
-        const swatchDiv = document.createElement('div');
-        swatchDiv.className = 'swatch';
-        swatchDiv.setAttribute('style', swatchCSS(col));
+        let reqText;
+        if (col.oracle) reqText = '🎲 Dice Oracle only';
+        else if (col.prestige) reqText = unlocked ? '✓ Unlocked' : col.req.toLocaleString() + ' pts needed';
+        else reqText = unlocked ? '✓ Unlocked' : col.req + ' pts needed';
 
         card.innerHTML = `
           <div class="swatch" style="${swatchCSS(col)}"></div>
           <div class="unlock-name">${col.name}</div>
           <div class="unlock-title-text">"${col.title}"</div>
-          <div class="unlock-req">${unlocked ? '✓ Unlocked' : col.req + ' pts needed'}</div>
+          <div class="unlock-req">${reqText}</div>
           ${unlocked ? `<button class="use-btn${isActive?' active-btn':''}" onclick="setColor('${col.name}')">${isActive ? '✓ Active' : 'Use in chat'}</button>` : ''}
         `;
         grid.appendChild(card);
