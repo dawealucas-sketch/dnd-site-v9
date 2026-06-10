@@ -276,6 +276,41 @@
     .role-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold-dim); }
     .role-badge button { border: none; padding: 0; font-size: 0.65rem; color: var(--text-dim); }
 
+    /* ── Start screen ── */
+    .start-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .start-overlay.hidden { display: none; }
+    .start-box {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      max-width: 480px;
+      padding: 2rem;
+    }
+    .start-rune { font-size: 3.5rem; color: var(--gold-dim); }
+    .start-title { font-size: 2.2rem; letter-spacing: 0.1em; }
+    .start-sub { color: var(--text-muted); font-style: italic; font-size: 0.95rem; line-height: 1.6; }
+    .start-gp {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 20px;
+    }
+
     @media (max-width: 720px) {
       .gauntlet-wrap { grid-template-columns: 1fr; }
       .shop-panel { max-height: 260px; }
@@ -295,6 +330,17 @@
       <a href="minigame.html" class="active">The Gauntlet</a>
     </div>
   </nav>
+
+  <div class="start-overlay" id="start-overlay">
+    <div class="start-box">
+      <div class="start-rune">⚔</div>
+      <h1 class="start-title">The Gauntlet</h1>
+      <p class="start-sub">Answer D&amp;D trivia to earn Gold Pieces. Spend them in the Colour Vault to unlock prestige chat themes.</p>
+      <div class="start-gp" id="start-gp-display">Loading your GP…</div>
+      <button class="primary" style="font-size:1rem;padding:14px 40px;letter-spacing:0.12em;" onclick="beginGauntlet()">Begin the Gauntlet</button>
+      <a href="home.html" style="color:var(--text-dim);font-size:0.82rem;">Back to Home</a>
+    </div>
+  </div>
 
   <div class="gauntlet-wrap">
     <!-- Top bar -->
@@ -422,17 +468,24 @@
     // SHOP COLOURS — prestige / oracle / bonus from game.html
     // ═══════════════════════════════════════════════════════
     const SHOP_COLORS = [
-      { name: 'Oracle',      title: 'Voice of Fate',    style: 'gradient', hex: ['#f3e5f5','#7c4dff'], cost: 50  },
-      { name: 'Dragonblood', title: "Wyrm's Chosen",    style: 'gradient', hex: ['#b71c1c','#f39c12'], cost: 100 },
-      { name: 'Shadowmeld',  title: 'Dark Sovereign',   style: 'gradient', hex: ['#4a148c','#1a252f'], cost: 200 },
-      { name: 'Prismatic',   title: 'Colour Mage',      style: 'gradient', hex: ['#ff6ec7','#5dade2'], cost: 350 },
-      { name: 'Eternal',     title: 'Immortal',         style: 'gradient', hex: ['#ffd700','#e8663a'], cost: 500 },
+      { name: 'Oracle',      title: 'Voice of Fate',      style: 'gradient', hex: ['#f3e5f5','#7c4dff'], cost: 50  },
+      { name: 'Voidweaver',  title: 'Servant of the Void',style: 'gradient', hex: ['#1a1a2e','#7c4dff'], cost: 75  },
+      { name: 'Dragonblood', title: "Wyrm's Chosen",      style: 'gradient', hex: ['#b71c1c','#f39c12'], cost: 100 },
+      { name: 'Thornweald',  title: 'Grove Warden',       style: 'gradient', hex: ['#558b2f','#1abc9c'], cost: 150 },
+      { name: 'Shadowmeld',  title: 'Dark Sovereign',     style: 'gradient', hex: ['#4a148c','#1a252f'], cost: 200 },
+      { name: 'Moonsilver',  title: 'Lunar Knight',       style: 'gradient', hex: ['#e0e0e0','#90caf9'], cost: 275 },
+      { name: 'Prismatic',   title: 'Colour Mage',        style: 'gradient', hex: ['#ff6ec7','#5dade2'], cost: 350 },
+      { name: 'Godforge',    title: 'Legendary Smith',    style: 'gradient', hex: ['#ff6f00','#fffde7'], cost: 425 },
+      { name: 'Eternal',     title: 'Immortal',           style: 'gradient', hex: ['#ffd700','#e8663a'], cost: 500 },
+      { name: 'Demonking',   title: 'Lord of Darkness',   style: 'gradient', hex: ['#880e4f','#ff6f00'], cost: 700 },
+      { name: 'Celestine',   title: 'Chosen of the Stars',style: 'gradient', hex: ['#f8c471','#aed6f1'], cost: 900 },
     ];
 
     // ═══════════════════════════════════════════════════════
     // STATE
     // ═══════════════════════════════════════════════════════
     let gp = 0;
+    let gpDirty = false;
     let streak = 0;
     let qIndex = 0;
     let shuffled = [];
@@ -460,8 +513,25 @@
       return a;
     }
 
+    async function saveGP() {
+      if (isDM) return;
+      try {
+        const rec = await binGet(BIN_PLAYERS);
+        const key = username.toLowerCase();
+        if (rec.players && rec.players[key]) {
+          const gd = rec.players[key].gameData ||
+            { totalScore: 0, unlockedColors: [], bonusUnlocked: false, activeColor: null, activeTitle: null };
+          gd.gp = gp;
+          rec.players[key].gameData = gd;
+          await binSet(BIN_PLAYERS, rec);
+          gameData = gd;
+        }
+      } catch(e) { console.warn('GP save failed:', e); }
+    }
+
     function animateGP(delta) {
       gp = Math.max(0, gp + delta);
+      gpDirty = true;
       const el = document.getElementById('gp-amount');
       el.textContent = gp;
       el.classList.remove('bump');
@@ -592,6 +662,7 @@
 
       updateStreakPips();
       renderShop();
+      if (gpDirty) { gpDirty = false; saveGP(); }
       setTimeout(() => { qIndex++; renderQuestion(); }, 1600);
     }
 
@@ -669,6 +740,7 @@
             const gd = rec.players[key].gameData ||
               { totalScore: 0, unlockedColors: [], bonusUnlocked: false, activeColor: null, activeTitle: null };
             if (!gd.unlockedColors.includes(col.name)) gd.unlockedColors.push(col.name);
+            gd.gp = gp;
             rec.players[key].gameData = gd;
             await binSet(BIN_PLAYERS, rec);
             gameData = gd;
@@ -682,14 +754,12 @@
     // INIT
     // ═══════════════════════════════════════════════════════
     async function loadGameData() {
-      // Try remote first
       if (!isDM) {
         try {
           const d = await ScoreStore.getPlayerData(username);
           if (d) gameData = d;
         } catch(e) { console.warn('Load failed:', e); }
       }
-      // Merge sessionStorage unlocks in case local is newer
       try {
         const cached = sessionStorage.getItem('dnd-game-data');
         if (cached) {
@@ -699,10 +769,18 @@
           });
         }
       } catch {}
+      gp = gameData.gp || 0;
+      document.getElementById('gp-amount').textContent = gp;
+      const gpDisplay = document.getElementById('start-gp-display');
+      if (gpDisplay) gpDisplay.textContent = gp + ' GP saved';
+    }
+
+    function beginGauntlet() {
+      document.getElementById('start-overlay').classList.add('hidden');
+      startGame();
     }
 
     function startGame() {
-      gp = 0;
       streak = 0;
       qIndex = 0;
       shuffled = shuffle(ALL_QUESTIONS);
@@ -715,7 +793,7 @@
       renderQuestion();
     }
 
-    loadGameData().then(startGame);
+    loadGameData().then(renderShop);
   </script>
 </body>
 </html>
