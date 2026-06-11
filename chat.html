@@ -210,6 +210,12 @@
       border-top: 1px solid var(--border);
       padding-top: 6px;
     }
+    .api-key-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .api-key-row { display: flex; gap: 5px; }
+    .api-key-row input { flex: 1; font-size: 0.8rem; padding: 5px 8px; font-family: monospace; min-width: 0; }
+    .api-key-status { font-size: 0.68rem; font-style: italic; color: var(--text-dim); min-height: 1em; }
+    .api-key-status.set { color: #5aaa50; }
+
     .scenario-generating {
       color: #b39ddb;
       font-style: italic;
@@ -239,6 +245,17 @@
         <div class="sidebar-title">Chatting As</div>
         <div id="current-name" style="font-family:var(--font-display);font-size:1rem;color:var(--gold-pale);letter-spacing:0.05em;"></div>
         <div id="current-role" style="font-size:0.78rem;color:var(--text-dim);margin-top:3px;font-style:italic;"></div>
+      </div>
+
+      <div class="sidebar-panel">
+        <div class="sidebar-title">AI Key</div>
+        <div class="api-key-wrap">
+          <div class="api-key-row">
+            <input type="password" id="api-key-input" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+            <button style="font-size:0.7rem;padding:5px 10px;" onclick="setApiKey()">Set</button>
+          </div>
+          <div class="api-key-status" id="api-key-status">Not set — clears on reload</div>
+        </div>
       </div>
 
       <div class="sidebar-panel">
@@ -496,8 +513,24 @@
     // SCENARIO ENGINE — /scenario [theme]
     // ═══════════════════════════════════════════════════════════════
 
-    // Set your Anthropic API key here (or leave empty to disable AI narration)
-    const CLAUDE_API_KEY = '';
+    // API key — lives only in memory, never written to storage
+    let _claudeApiKey = '';
+    function setApiKey() {
+      const input = document.getElementById('api-key-input');
+      const status = document.getElementById('api-key-status');
+      const val = input.value.trim();
+      if (!val) { _claudeApiKey = ''; status.textContent = 'Not set — clears on reload'; status.className = 'api-key-status'; return; }
+      _claudeApiKey = val;
+      input.value = '';
+      input.placeholder = '••••••••••••••••';
+      status.textContent = '✓ Key set — clears on reload';
+      status.className = 'api-key-status set';
+    }
+    // Also allow pressing Enter in the key field
+    document.addEventListener('DOMContentLoaded', () => {
+      const ki = document.getElementById('api-key-input');
+      if (ki) ki.addEventListener('keydown', e => { if (e.key === 'Enter') setApiKey(); });
+    });
 
     // ── D&D Tables (DMG + unofficial sources) ──
     const ST = {
@@ -714,12 +747,12 @@ Be specific and evocative. Avoid generic fantasy language. Every detail should b
       let model = 'none';
       let inputTokens = 0, outputTokens = 0;
 
-      if (CLAUDE_API_KEY) {
+      if (_claudeApiKey) {
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': CLAUDE_API_KEY,
+            'x-api-key': _claudeApiKey,
             'anthropic-version': '2023-06-01',
             'anthropic-dangerous-client-side-api-key-access': 'true',
           },
