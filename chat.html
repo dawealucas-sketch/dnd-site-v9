@@ -150,6 +150,74 @@
     .modal button { padding: 10px; font-size: 0.8rem; }
 
     .blocked-msg { text-align: center; padding: 1rem; color: var(--text-dim); font-style: italic; font-size: 0.9rem; }
+
+    /* ── Scenario messages ── */
+    .scenario-card {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-left: 3px solid #7c4dff;
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-width: 680px;
+    }
+    .scenario-header {
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #b39ddb;
+    }
+    .scenario-rolls summary {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      cursor: pointer;
+      user-select: none;
+      padding: 4px 0;
+    }
+    .scenario-rolls summary:hover { color: var(--gold-dim); }
+    .scenario-roll-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px 12px;
+      margin-top: 6px;
+      padding: 8px 10px;
+      background: var(--bg3);
+      border-radius: 5px;
+      border: 1px solid var(--border);
+    }
+    .scenario-roll-row { font-size: 0.72rem; color: var(--text-dim); line-height: 1.5; }
+    .scenario-roll-row strong { color: var(--gold-dim); }
+    .scenario-narrative {
+      font-size: 0.92rem;
+      color: var(--text);
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+    .scenario-narrative strong { color: var(--gold-pale); }
+    .scenario-meta {
+      font-family: var(--font-display);
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      border-top: 1px solid var(--border);
+      padding-top: 6px;
+    }
+    .scenario-generating {
+      color: #b39ddb;
+      font-style: italic;
+      font-size: 0.9rem;
+      padding: 6px 0;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
   </style>
 </head>
 <body>
@@ -174,12 +242,14 @@
       </div>
 
       <div class="sidebar-panel">
-        <div class="sidebar-title">Dice Commands</div>
+        <div class="sidebar-title">Commands</div>
         <div class="dice-help">
-          Type <code>/roll</code> followed by your dice:<br/>
           <code>/roll 1d20</code><br/>
           <code>/roll 2d6+3</code><br/>
-          <code>/roll 4d6</code>
+          <code>/roll 4d6</code><br/>
+          <br/>
+          <code>/scenario</code> — AI scene<br/>
+          <code>/scenario underdark</code>
         </div>
       </div>
 
@@ -306,7 +376,30 @@
         const isDMMsg = msg.dm;
 
 
-        if (msg.type === 'system') {
+        if (msg.type === '_loading') {
+          div.className = 'msg';
+          div.innerHTML = '<div class="scenario-generating">🗺 Rolling tables &amp; generating scenario with Claude Haiku…</div>';
+        } else if (msg.type === 'scenario') {
+          div.className = 'msg';
+          const rollRows = Object.entries(msg.rolls || {})
+            .map(([k,v]) => `<div class="scenario-roll-row"><strong>${escHtml(k)}:</strong> ${escHtml(v)}</div>`)
+            .join('');
+          const metaParts = [];
+          if (msg.model && msg.model !== 'none') metaParts.push(escHtml(msg.model));
+          if (msg.inputTokens)  metaParts.push(msg.inputTokens  + ' in');
+          if (msg.outputTokens) metaParts.push(msg.outputTokens + ' out');
+          metaParts.push(formatTime(msg.ts));
+          div.innerHTML = buildMsgHeader(msg, isOwn) +
+            `<div class="scenario-card">
+              <div class="scenario-header">🗺 Scenario${msg.theme ? ': ' + escHtml(msg.theme) : ' — Random'}</div>
+              <details class="scenario-rolls">
+                <summary>Table rolls (click to expand)</summary>
+                <div class="scenario-roll-grid">${rollRows}</div>
+              </details>
+              <div class="scenario-narrative">${renderNarrative(msg.narrative || '')}</div>
+              <div class="scenario-meta">${metaParts.join(' · ')}</div>
+            </div>`;
+        } else if (msg.type === 'system') {
           div.className = 'msg system';
           div.innerHTML = '<div class="msg-body">' + escHtml(msg.text) + '</div>';
         } else if (msg.type === 'dice') {
@@ -399,6 +492,278 @@
       return '<div class="msg-header"><span class="msg-author' + dmClass + '"' + nameStyle + '>' + escHtml(msg.author) + '</span>' + titleSpan + '<span class="msg-time">' + formatTime(msg.ts) + '</span></div>' + delBtn;
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // SCENARIO ENGINE — /scenario [theme]
+    // ═══════════════════════════════════════════════════════════════
+
+    // Set your Anthropic API key here (or leave empty to disable AI narration)
+    const CLAUDE_API_KEY = '';
+
+    // ── D&D Tables (DMG + unofficial sources) ──
+    const ST = {
+      adventureType: [
+        'Dungeon Delve','Wilderness Exploration','Urban Intrigue','Heist',
+        'Rescue Mission','Monster Hunt','Ancient Ruins Investigation',
+        'Planar Incursion','Political Conspiracy','Cult Unmasking',
+        'Haunting / Exorcism','Ship or Caravan Ambush'
+      ],
+      location: [
+        'Abandoned mine shaft collapsing from the inside',
+        'Crumbling wizard tower with rooms that rearrange nightly',
+        'Ancient temple half-swallowed by jungle roots',
+        'Haunted manor whose inhabitants don\'t know they\'re dead',
+        'Sunken warship resting on a magical air pocket',
+        'Underground city beneath a living city above',
+        'Cursed forest clearing where time moves differently',
+        'Volcanic cave system housing a sleeping fire giant',
+        'Floating island drifting toward a larger landmass',
+        'Buried necropolis sealed by a saint\'s dying breath',
+        'Corrupted fey crossing between the material and feywild',
+        'Dwarven forge-hold sealed during an ancient war',
+        'Storm-swept lighthouse that broadcasts something into the abyss',
+        'Frozen mountain pass where a battle is trapped mid-moment',
+        'Sunken sea fort colonised by something from the deep',
+        'Living dungeon — the walls breathe and the rooms hunger',
+        'Mirror-realm reflection of the nearest city, slightly wrong',
+        'A battlefield that loops — the dead fight every night at dusk',
+        'Ancient elven spire grown from a single crystal seed',
+        'Dragon graveyard where the bones still argue'
+      ],
+      dungeonPurpose: [
+        'Prison for a forgotten lesser deity',
+        'Tomb of a warlord who swore he\'d never stay dead',
+        'Magical research station abandoned mid-experiment',
+        'Smuggler\'s hub with a network no one fully mapped',
+        'Vault for a weapon deemed too dangerous to destroy',
+        'Lair of something that has been eating adventurers for centuries',
+        'Training ground for an order of assassins, long disbanded',
+        'Portal nexus connecting twelve planes — most routes corrupted',
+        'Plague quarantine zone. The cure never arrived.',
+        'The stomach of a Titan buried in the earth',
+        'Failed utopia built by idealists, ended by one betrayal',
+        'Alchemist\'s lab where the experiments escaped and built a society',
+        'Ritual sacrifice site for a god that fed on screaming',
+        'Time-locked bunker — the war inside never ended',
+        'Elemental binding chamber — something broke one of the seals',
+        'Repository of knowledge too dangerous for libraries',
+        'Sentient dungeon that believes it is a living creature and hunts',
+        'Memorial to a civilisation that erased itself from all records',
+        'Construct workshop. The constructs repaired themselves.',
+        'Collapsed city crushed into a single impossibly dense floor'
+      ],
+      npcRole: [
+        'A desperate merchant with a debt to something terrible',
+        'A disgraced noble hiding from their former name',
+        'A mad prophet who has only ever been right',
+        'A grieving parent who stopped grieving and started planning',
+        'A reformed assassin training their replacement — reluctantly',
+        'A scholar who has read too much and sleeps very little',
+        'A bitter rival who keeps saving the party by accident',
+        'A charming con artist who genuinely believes their own lies now',
+        'A dying paladin racing to finish one last oath',
+        'A child oracle no one listens to — they\'ve stopped trying',
+        'A shape-shifting spy who\'s forgotten which face is real',
+        'A battle-scarred veteran haunted by the one fight they ran from'
+      ],
+      npcTrait: [
+        'speaks only in riddles, but they\'re always answerable',
+        'tells the opposite of every truth — they can\'t help it',
+        'has no memory beyond yesterday morning',
+        'weeps at unexpected moments and can never explain why',
+        'is followed by a swarm of harmless luminescent insects',
+        'laughs after every sentence, even the terrible ones',
+        'is hunted by something invisible that the party can sometimes almost see',
+        'smells strongly of sulfur no matter how recently they bathed',
+        'predicts trivial events moments before they happen, perfectly',
+        'is physically aging — a year a day — and knows it',
+        'writes important words on their skin in ink that won\'t wash off',
+        'has eyes that glow faintly when they lie',
+        'cannot speak above a whisper, but carries very well',
+        'casts no shadow, and refuses to explain this',
+        'eats nothing but ash and claims it tastes different everywhere',
+        'is two people sharing one body — they disagree constantly',
+        'is violently allergic to active magic items',
+        'sees the world in monochrome; colour returned the day they arrived here',
+        'speaks to every object as though it might answer — occasionally they do',
+        'is completely fearless, which is more unsettling than bravery'
+      ],
+      complication: [
+        'A rival group was there first and took the easy path',
+        'The patron is lying — not about everything, which is worse',
+        'Someone in the party\'s trusted circle is being coerced',
+        'The dungeon\'s guardian cannot be killed — only redirected',
+        'The objective has been split. No one agreed on this.',
+        'The deadline is 4 hours shorter than they were told',
+        'The ally who opened the door is the one who locked it originally',
+        'The environment is aware of the party and personally offended',
+        'A natural disaster begins exactly when the mission is half done',
+        'The objective has moved. It knows it\'s being sought.',
+        'Something critical is bound to the soul of a living innocent',
+        'A faction war erupts in the middle of the dungeon\'s only exit',
+        'The party is accused of something that happened here before they arrived',
+        'A prisoner is found who absolutely must not be left but cannot be moved',
+        'The map is wrong — someone drew it wrong on purpose',
+        'Succeeding the mission requires sacrificing something the party values',
+        'Magic stops working for exactly one hour at the worst possible moment',
+        'A former enemy returns — not as an enemy, and it\'s more unsettling',
+        'The person who hired them was the villain\'s insurance policy',
+        'The reward is real. What it costs to collect it was not disclosed.'
+      ],
+      discovery: [
+        'A letter written to the dungeon\'s main villain — from a future version of themselves, begging them to stop',
+        'A room that perfectly replicates a location the party considers home, down to the smell',
+        'A prisoner who has been here for centuries, doesn\'t age, and is running out of things to say',
+        'A functioning portal to a timeline where the party\'s greatest enemy won',
+        'A legendary weapon that refuses to be wielded against living beings',
+        'A creature — clearly powerful — that has chosen to worship the party',
+        'A map to a location that geographically cannot exist yet',
+        'A mirror that shows everyone their single worst fear, accurately',
+        'A child\'s toy predating the current civilisation by four thousand years',
+        'Something vast, ancient, and sleeping. The ground here is warm.',
+        'The unmistakable, verified corpse of a god — small, somehow',
+        'A single room frozen in the final moment of joy of a family long dead',
+        'A library that is sentient and refuses to share what it knows — for good reason',
+        'Evidence — multiple sources, all consistent — that the party has been here before',
+        'A forge that can reforge a broken oath, a broken bond, or a broken person',
+        'A seed that grew a tree straight through forty feet of solid stone to reach light',
+        'A civilisation — fully intact, miniaturised — living inside a sealed bottle',
+        'A monster that is not guarding a treasure. It is protecting something it loves.',
+        'A journal written by someone with the exact same name as one party member',
+        'The one thing that should not exist, in the one place no one was meant to find it'
+      ],
+      weather: [
+        'Unnatural stillness — no wind, no birds, nothing. The silence has weight.',
+        'Blood-red fog rolling in low from the east',
+        'Lightning that strikes upward, from earth to sky',
+        'Snow falls and doesn\'t melt — but it isn\'t cold',
+        'Rain that burns faintly on bare skin. Not acid. Just wrong.',
+        'A second, darker sun visible through the cloud layer',
+        'Hail that chimes like distant bells when it hits stone',
+        'Mist that shows brief, clear glimpses of somewhere else entirely',
+        'Wind that almost forms words. Almost. You keep stopping to listen.',
+        'Overcast sky the exact colour of old iron, for a third day running',
+        'Eerie warmth on a night that should be freezing. Something is burning.',
+        'Perfect weather. Unseasonably beautiful. Something is very wrong.'
+      ],
+      monsterMotivation: [
+        'Protecting offspring hidden deeper in',
+        'Bound by ancient magic to this place — it cannot leave even if it wanted to',
+        'Driven mad by a curse that was meant for someone else',
+        'Starving — it has been waiting in here for years',
+        'Receiving orders from something the party hasn\'t found yet',
+        'Experimenting — the intruders are the next test subjects',
+        'Collecting memories from the people it kills; it\'s building something',
+        'Building something. The construction doesn\'t make sense yet.',
+        'Grieving. It doesn\'t want to fight. It won\'t stop.',
+        'Trying to communicate — it has no method the party can easily parse',
+        'Infected by something that is also interested in the party',
+        'Being hunted itself, and the party just walked between them'
+      ],
+      rumor: [
+        'The treasure was hidden here to protect the world from it — not to be found',
+        'The last group came back. They weren\'t the same people anymore.',
+        'Something inside grants wishes. It takes something in return. No one specifies what.',
+        'The original owner is still alive in there. Still in charge. Still waiting.',
+        'It\'s a test. It has always been a test. No one has learned what it\'s testing for.',
+        'It was smaller last year. It\'s growing.',
+        'There\'s a way out. There\'s always a way out. The trick is wanting to leave.',
+        'Three factions all want what\'s inside. None of them should have it.',
+        'The monsters aren\'t the guards. They\'re the prisoners.',
+        'The reward is real. The cost was in the contract — paragraph seven.',
+        'Someone already took what they came for. The question is what they left in its place.',
+        'Once a generation, someone goes in. One person per generation comes back.'
+      ]
+    };
+
+    function rollTable(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    async function generateScenario(theme) {
+      const rolls = {
+        'Adventure Type':     rollTable(ST.adventureType),
+        'Location':           rollTable(ST.location),
+        'Location\'s Purpose':rollTable(ST.dungeonPurpose),
+        'Key NPC':            rollTable(ST.npcRole),
+        'NPC Quirk':          rollTable(ST.npcTrait),
+        'Complication':       rollTable(ST.complication),
+        'Discovery':          rollTable(ST.discovery),
+        'Atmosphere':         rollTable(ST.weather),
+        'Monster Motivation': rollTable(ST.monsterMotivation),
+        'Local Rumor':        rollTable(ST.rumor),
+      };
+
+      const prompt = `You are a creative assistant for a D&D 5e Dungeon Master. I rolled on multiple random tables drawn from the Dungeon Master's Guide and unofficial D&D sourcebooks. Synthesise the results into a compelling, specific scenario.
+
+RANDOM TABLE RESULTS:
+${Object.entries(rolls).map(([k,v]) => `• ${k}: ${v}`).join('\n')}
+${theme ? `• DM's Requested Theme: ${theme}` : ''}
+
+Write the scenario in three parts:
+
+**THE SCENE** — Two vivid paragraphs the DM can read aloud or riff from. Name the NPC. Give the location a specific feel using the atmosphere. Make it feel real and immediate.
+
+**THE TWIST** — One sentence revealing how the complication changes the situation mid-mission.
+
+**THREE HOOKS**
+1. [Hook from the Discovery]
+2. [Hook from the Rumor]
+3. [Hook from the Monster's Motivation]
+
+Be specific and evocative. Avoid generic fantasy language. Every detail should be usable at the table tonight.`;
+
+      let narrative = '[AI narration disabled — set CLAUDE_API_KEY in chat.html]';
+      let model = 'none';
+      let inputTokens = 0, outputTokens = 0;
+
+      if (CLAUDE_API_KEY) {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': CLAUDE_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-client-side-api-key-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5',
+            max_tokens: 1200,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error?.message || 'API error ' + res.status);
+        }
+        const data = await res.json();
+        narrative = data.content[0].text;
+        model = data.model || 'claude-haiku-4-5';
+        inputTokens  = data.usage?.input_tokens  || 0;
+        outputTokens = data.usage?.output_tokens || 0;
+      }
+
+      // Save scenario log to JSONBin (fire and forget)
+      const logEntry = {
+        id: Date.now() + '-s-' + Math.random().toString(36).slice(2,5),
+        ts: Date.now(), triggeredBy: myName, theme: theme || null,
+        rolls, prompt, narrative, model, inputTokens, outputTokens
+      };
+      binGet(BIN_PLAYERS).then(rec => {
+        if (!rec.scenarioLog) rec.scenarioLog = [];
+        rec.scenarioLog.push(logEntry);
+        if (rec.scenarioLog.length > 100) rec.scenarioLog = rec.scenarioLog.slice(-100);
+        return binSet(BIN_PLAYERS, rec);
+      }).catch(e => console.warn('Scenario log save failed:', e));
+
+      return { rolls, narrative, model, inputTokens, outputTokens };
+    }
+
+    function renderNarrative(text) {
+      // Convert **bold** to <strong> and preserve line breaks
+      return text
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+    }
+
     // ── Dice rolling ──
     function rollDice(formula) {
       const clean = formula.trim().toLowerCase().replace(/\s+/g,'');
@@ -445,6 +810,29 @@
         } else {
           msgs.push({ ...base, type: 'text', text: '⚠ Invalid dice formula. Try /roll 2d6+3' });
         }
+      } else if (textToSend.startsWith('/scenario')) {
+        const theme = textToSend.slice(9).trim() || null;
+        // Show loading state immediately
+        const loadingId = base.id + '-loading';
+        localMessages = [...msgs, { id: loadingId, type: '_loading', ts: Date.now(), author: myName }];
+        renderMessages(localMessages);
+        try {
+          const { rolls, narrative, model, inputTokens, outputTokens } = await generateScenario(theme);
+          const scenMsg = { ...base, type: 'scenario', theme, rolls, narrative, model, inputTokens, outputTokens };
+          const finalMsgs = [...msgs, scenMsg];
+          localMessages = finalMsgs;
+          lastSavedId = id;
+          renderMessages(finalMsgs);
+          await saveMessages(finalMsgs);
+        } catch(e) {
+          const errMsg = { ...base, type: 'text', text: '⚠ Scenario failed: ' + e.message };
+          const finalMsgs = [...msgs, errMsg];
+          localMessages = finalMsgs;
+          lastSavedId = id;
+          renderMessages(finalMsgs);
+          await saveMessages(finalMsgs);
+        }
+        return; // already saved above
       } else {
         msgs.push({ ...base, type: 'text', text: textToSend });
       }
