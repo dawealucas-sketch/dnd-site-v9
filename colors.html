@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Colour Vault — The Compendium</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .page-header { margin-bottom: 2rem; }
+    .page-header h2 { font-size: 1.8rem; margin-bottom: 0.3rem; }
+    .page-header p { color: var(--text-muted); font-style: italic; }
+
+    .preview-box {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1rem 1.5rem;
+      display: flex; align-items: center; gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .preview-swatch { width: 36px; height: 36px; border-radius: 7px; flex-shrink: 0; border: 1px solid var(--border2); }
+    .preview-label { font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 3px; }
+    .preview-name { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; }
+    .preview-title-text { font-size: 0.8rem; font-style: italic; color: var(--text-muted); margin-top: 2px; }
+
+    .section-header {
+      font-family: var(--font-display); font-size: 0.68rem;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--gold-dim); border-bottom: 1px solid var(--border);
+      padding-bottom: 6px; margin: 1.5rem 0 1rem;
+    }
+
+    .colors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 10px;
+    }
+    .color-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px;
+      display: flex; flex-direction: column; gap: 7px;
+      transition: border-color 0.18s;
+    }
+    .color-card.active-card { border-color: var(--gold); }
+    .color-card.locked-card { opacity: 0.4; filter: grayscale(0.4); }
+    .swatch { width: 100%; height: 22px; border-radius: 5px; }
+    .color-name { font-family: var(--font-display); font-size: 0.82rem; color: var(--gold-pale); }
+    .color-title { font-size: 0.72rem; font-style: italic; color: var(--text-muted); }
+    .color-how { font-size: 0.66rem; color: var(--text-dim); }
+    .equip-btn {
+      font-size: 0.62rem; padding: 5px 8px; width: 100%;
+      font-family: var(--font-display); letter-spacing: 0.07em;
+    }
+    .equip-btn.active-btn { border-color: var(--gold); color: var(--gold); }
+    .equip-btn:hover:not(.active-btn) { border-color: var(--gold-dim); color: var(--gold-pale); }
+
+    .role-badge {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: var(--panel); border: 1px solid var(--border2);
+      border-radius: 20px; padding: 6px 14px;
+      font-family: var(--font-display); font-size: 0.65rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-muted); display: flex; align-items: center; gap: 8px;
+    }
+    .role-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold-dim); }
+    .role-badge button { border: none; padding: 0; font-size: 0.65rem; color: var(--text-dim); }
+
+    .loading-msg { color: var(--text-dim); font-style: italic; padding: 1rem 0; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-logo">⚔ The Compendium</span>
+    <div class="nav-links">
+      <a href="home.html">Home</a>
+      <a href="party.html">Party</a>
+      <a href="chat.html">Chat</a>
+      <a href="minigame.html">Dice Oracle</a>
+      <a href="colors.html" class="active">Colours</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div class="page-header">
+      <h2>🎨 Colour Vault</h2>
+      <p>Equip a colour and title for your chat name. Earn more by playing the Dice Game or The Gauntlet.</p>
+    </div>
+
+    <div class="preview-box">
+      <div class="preview-swatch" id="preview-swatch"></div>
+      <div>
+        <div class="preview-label">Your Chat Appearance</div>
+        <div class="preview-name" id="preview-name">Your Name</div>
+        <div class="preview-title-text" id="preview-title">No title equipped</div>
+      </div>
+      <div style="margin-left:auto;">
+        <button style="font-size:0.75rem;padding:6px 14px;color:var(--text-dim);" onclick="clearColor()">Clear</button>
+      </div>
+    </div>
+
+    <div id="content">
+      <div class="loading-msg">Loading your colours…</div>
+    </div>
+  </div>
+
+  <div class="role-badge">
+    <div class="role-dot" id="role-dot"></div>
+    <span id="role-label">…</span>
+    <button onclick="Auth.logout()">Log out</button>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    if (!Auth.require()) throw new Error('not logged in');
+    const isDM = Auth.isDM();
+    const username = sessionStorage.getItem('dnd-username') || 'Player';
+    document.getElementById('role-label').textContent = username;
+    document.getElementById('preview-name').textContent = username;
+    if (isDM) document.getElementById('role-dot').style.background = '#c8943a';
+
+    // ── All colour definitions (combined from Dice Game + Gauntlet shop) ──
+    const ALL_COLORS = [
+      // Base colours — Dice Game
+      { name:'Ember',       title:'Flame Touched',         style:'solid',    hex:'#e8663a',              how:'Dice Game (80 pts)' },
+      { name:'Arcane',      title:'Spellbound',            style:'solid',    hex:'#9b59b6',              how:'Dice Game (85 pts)' },
+      { name:'Frost',       title:"Winter's Child",        style:'solid',    hex:'#5dade2',              how:'Dice Game (90 pts)' },
+      { name:'Venom',       title:'Poisonblade',           style:'solid',    hex:'#27ae60',              how:'Dice Game (95 pts)' },
+      { name:'Crimson',     title:'Bloodsworn',            style:'solid',    hex:'#c0392b',              how:'Dice Game (100 pts)' },
+      { name:'Solar',       title:"Sun's Herald",          style:'gradient', hex:['#f39c12','#ffe066'],  how:'Dice Game (105 pts)' },
+      { name:'Void',        title:'Shadowwalker',          style:'gradient', hex:['#6c3483','#1a252f'],  how:'Dice Game (110 pts)' },
+      { name:'Tundra',      title:'Iceborn',               style:'gradient', hex:['#aed6f1','#5dade2'],  how:'Dice Game (115 pts)' },
+      { name:'Inferno',     title:'Ashbringer',            style:'gradient', hex:['#e74c3c','#f39c12'],  how:'Dice Game (120 pts)' },
+      { name:'Jade',        title:'Naturebound',           style:'solid',    hex:'#1abc9c',              how:'Dice Game (125 pts)' },
+      { name:'Dusk',        title:'Twilight Keeper',       style:'gradient', hex:['#d35400','#6c3483'],  how:'Dice Game (130 pts)' },
+      { name:'Celestial',   title:'Stargazer',             style:'gradient', hex:['#f8c471','#aed6f1'],  how:'Dice Game (135 pts)' },
+      { name:'Abyssal',     title:'Deepwalker',            style:'gradient', hex:['#1a252f','#6c3483'],  how:'Dice Game (140 pts)' },
+      { name:'Rose',        title:'Heartsworn',            style:'solid',    hex:'#ec407a',              how:'Dice Game (145 pts)' },
+      // Bonus colours — Dice Game
+      { name:'Starfire',    title:'Cosmic Wanderer',       style:'gradient', hex:['#fffde7','#5dade2'],  how:'Dice Game bonus (150 pts)' },
+      { name:'Obsidian',    title:'Void Lord',             style:'gradient', hex:['#37474f','#1a252f'],  how:'Dice Game bonus (160 pts)' },
+      { name:'Aurora',      title:'Northern Light',        style:'gradient', hex:['#80deea','#ce93d8'],  how:'Dice Game bonus (170 pts)' },
+      { name:'Moonsilver',  title:'Lunar Knight',          style:'gradient', hex:['#e0e0e0','#90caf9'],  how:'Dice Game (190 pts) or Gauntlet (275 GP)' },
+      { name:'Mythril',     title:'Forgemaster',           style:'gradient', hex:['#90caf9','#e0e0e0'],  how:'Dice Game bonus (200 pts)' },
+      { name:'Sunforged',   title:'Dawnbreaker',           style:'gradient', hex:['#ffca28','#e8663a'],  how:'Dice Game bonus (210 pts)' },
+      { name:'Thornweald',  title:'Grove Warden',          style:'gradient', hex:['#558b2f','#1abc9c'],  how:'Dice Game bonus (230 pts) or Gauntlet (150 GP)' },
+      { name:'Godforge',    title:'Legendary Smith',       style:'gradient', hex:['#ff6f00','#fffde7'],  how:'Dice Game bonus (250 pts) or Gauntlet (425 GP)' },
+      // Gauntlet shop colours
+      { name:'Oracle',      title:'Voice of Fate',         style:'gradient', hex:['#f3e5f5','#7c4dff'],  how:'Gauntlet (50 GP)' },
+      { name:'Voidweaver',  title:'Servant of the Void',   style:'gradient', hex:['#1a1a2e','#7c4dff'],  how:'Gauntlet (75 GP)' },
+      { name:'Dragonblood', title:"Wyrm's Chosen",         style:'gradient', hex:['#b71c1c','#f39c12'],  how:'Gauntlet (100 GP)' },
+      { name:'Shadowmeld',  title:'Dark Sovereign',        style:'gradient', hex:['#4a148c','#1a252f'],  how:'Gauntlet (200 GP)' },
+      { name:'Prismatic',   title:'Colour Mage',           style:'gradient', hex:['#ff6ec7','#5dade2'],  how:'Gauntlet (350 GP)' },
+      { name:'Eternal',     title:'Immortal',              style:'gradient', hex:['#ffd700','#e8663a'],  how:'Gauntlet (500 GP)' },
+      { name:'Demonking',   title:'Lord of Darkness',      style:'gradient', hex:['#880e4f','#ff6f00'],  how:'Gauntlet (700 GP)' },
+      { name:'Celestine',   title:'Chosen of the Stars',   style:'gradient', hex:['#f8c471','#aed6f1'],  how:'Gauntlet (900 GP)' },
+      // Prestige colours
+      { name:'Wraithveil',  title:'Ghost of the Deep',     style:'gradient', hex:['#b0bec5','#263238'],  how:'Dice Game (5,000 pts)' },
+      { name:'Solarbeam',   title:'Radiant Chosen',        style:'gradient', hex:['#fff176','#ff8f00'],  how:'Dice Game (7,500 pts)' },
+      { name:'Netherglow',  title:'Pact of Darkness',      style:'gradient', hex:['#4a0072','#7b1fa2'],  how:'Dice Game (10,000 pts)' },
+      { name:'Tidecaller',  title:'Lord of the Deep',      style:'gradient', hex:['#006064','#00acc1'],  how:'Dice Game (12,500 pts)' },
+      { name:'Embersteel',  title:'Oathbound Warlord',     style:'gradient', hex:['#bf360c','#90a4ae'],  how:'Dice Game (15,000 pts)' },
+      { name:'Starcorpse',  title:'Fallen Constellation',  style:'gradient', hex:['#1a237e','#e1bee7'],  how:'Dice Game (17,500 pts)' },
+      { name:'Soulrender',  title:'Reaper of Realms',      style:'gradient', hex:['#880e4f','#1a1a1a'],  how:'Dice Game (20,000 pts)' },
+    ];
+
+    let gameData = { totalScore:0, unlockedColors:[], bonusUnlocked:false, activeColor:null, activeTitle:null };
+
+    function swatchStyle(col) {
+      if (col.style === 'gradient') return `background:linear-gradient(90deg,${col.hex[0]},${col.hex[1]});`;
+      return `background:${col.hex};`;
+    }
+    function nameStyle(col) {
+      if (col.style === 'gradient')
+        return `background:linear-gradient(90deg,${col.hex[0]},${col.hex[1]});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;`;
+      return `color:${col.hex};`;
+    }
+
+    function updatePreview() {
+      const nameEl = document.getElementById('preview-name');
+      const titleEl = document.getElementById('preview-title');
+      const swatchEl = document.getElementById('preview-swatch');
+      nameEl.textContent = username;
+      if (gameData.activeColor) {
+        const col = ALL_COLORS.find(c => c.name === gameData.activeColor);
+        if (col) {
+          nameEl.setAttribute('style', nameStyle(col) + 'font-family:var(--font-display);font-size:1.1rem;font-weight:600;');
+          swatchEl.setAttribute('style', swatchStyle(col));
+          titleEl.textContent = '"' + col.title + '"';
+        }
+      } else {
+        nameEl.setAttribute('style', 'font-family:var(--font-display);font-size:1.1rem;font-weight:600;color:var(--gold-pale);');
+        swatchEl.setAttribute('style', 'background:var(--bg3);');
+        titleEl.textContent = 'No title equipped';
+      }
+    }
+
+    function renderColors() {
+      const content = document.getElementById('content');
+      const unlocked = ALL_COLORS.filter(c => gameData.unlockedColors.includes(c.name));
+      const locked   = ALL_COLORS.filter(c => !gameData.unlockedColors.includes(c.name));
+
+      let html = '';
+
+      if (unlocked.length === 0) {
+        html += '<p style="color:var(--text-dim);font-style:italic;padding:1rem 0;">No colours unlocked yet — play the Dice Game or The Gauntlet to earn some!</p>';
+      } else {
+        html += '<div class="section-header">Your Colours (' + unlocked.length + ')</div>';
+        html += '<div class="colors-grid">';
+        unlocked.forEach(col => {
+          const isActive = gameData.activeColor === col.name;
+          html += `<div class="color-card${isActive ? ' active-card' : ''}">
+            <div class="swatch" style="${swatchStyle(col)}"></div>
+            <div class="color-name">${col.name}</div>
+            <div class="color-title">"${col.title}"</div>
+            <button class="equip-btn${isActive ? ' active-btn' : ''}" onclick="equipColor('${col.name}')">
+              ${isActive ? '✓ Equipped' : 'Equip'}
+            </button>
+          </div>`;
+        });
+        html += '</div>';
+      }
+
+      html += '<div class="section-header">Locked (' + locked.length + ')</div>';
+      html += '<div class="colors-grid">';
+      locked.forEach(col => {
+        html += `<div class="color-card locked-card">
+          <div class="swatch" style="${swatchStyle(col)}"></div>
+          <div class="color-name">${col.name}</div>
+          <div class="color-title">"${col.title}"</div>
+          <div class="color-how">${col.how}</div>
+        </div>`;
+      });
+      html += '</div>';
+
+      content.innerHTML = html;
+      updatePreview();
+    }
+
+    async function equipColor(name) {
+      if (gameData.activeColor === name) {
+        gameData.activeColor = null;
+        gameData.activeTitle = null;
+      } else {
+        const col = ALL_COLORS.find(c => c.name === name);
+        gameData.activeColor = name;
+        gameData.activeTitle = col ? col.title : null;
+      }
+      syncSession();
+      renderColors();
+      if (!isDM) {
+        try { await ScoreStore.savePlayerData(username, gameData); }
+        catch(e) { console.warn('Save failed:', e); }
+      }
+    }
+
+    async function clearColor() {
+      gameData.activeColor = null;
+      gameData.activeTitle = null;
+      syncSession();
+      renderColors();
+      if (!isDM) {
+        try { await ScoreStore.savePlayerData(username, gameData); }
+        catch(e) { console.warn('Save failed:', e); }
+      }
+    }
+
+    function syncSession() {
+      sessionStorage.setItem('dnd-chat-color', JSON.stringify({ activeColor: gameData.activeColor, activeTitle: gameData.activeTitle }));
+      sessionStorage.setItem('dnd-game-data', JSON.stringify(gameData));
+    }
+
+    async function init() {
+      if (!isDM) {
+        try {
+          const d = await ScoreStore.getPlayerData(username);
+          if (d) gameData = d;
+        } catch(e) { console.warn('Load failed:', e); }
+      }
+      syncSession();
+      renderColors();
+    }
+
+    init();
+  </script>
+</body>
+</html>

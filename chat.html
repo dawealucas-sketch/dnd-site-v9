@@ -159,8 +159,8 @@
       <a href="home.html">Home</a>
       <a href="party.html">Party</a>
       <a href="chat.html" class="active">Chat</a>
-      <a href="game.html">Dice Game</a>
       <a href="minigame.html">Dice Oracle</a>
+      <a href="colors.html">Colours</a>
     </div>
   </nav>
 
@@ -238,6 +238,16 @@
     // ── Name display (locked to login username) ──
     document.getElementById('current-name').textContent = myName || 'Unknown';
     document.getElementById('current-role').textContent = isDM ? '⚔ Dungeon Master' : 'Player';
+
+    // ── Sync active colour from JSONBin on load ──
+    if (!isDM && myName) {
+      ScoreStore.getPlayerData(myName).then(d => {
+        if (d) {
+          sessionStorage.setItem('dnd-chat-color', JSON.stringify({ activeColor: d.activeColor || null, activeTitle: d.activeTitle || null }));
+          sessionStorage.setItem('dnd-game-data', JSON.stringify(d));
+        }
+      }).catch(() => {});
+    }
 
     // ── Online presence ──
     async function markOnline() { /* handled via chat activity */ }
@@ -353,6 +363,20 @@
       'Prismatic':   {style:'gradient', hex:['#ff6ec7','#5dade2']},
       'Godforge':    {style:'gradient', hex:['#ff6f00','#fffde7']},
       'Eternal':     {style:'gradient', hex:['#ffd700','#e8663a']},
+      // Gauntlet shop colours
+      'Oracle':      {style:'gradient', hex:['#f3e5f5','#7c4dff']},
+      'Voidweaver':  {style:'gradient', hex:['#1a1a2e','#7c4dff']},
+      'Dragonblood': {style:'gradient', hex:['#b71c1c','#f39c12']},
+      'Demonking':   {style:'gradient', hex:['#880e4f','#ff6f00']},
+      'Celestine':   {style:'gradient', hex:['#f8c471','#aed6f1']},
+      // Prestige colours
+      'Wraithveil':  {style:'gradient', hex:['#b0bec5','#263238']},
+      'Solarbeam':   {style:'gradient', hex:['#fff176','#ff8f00']},
+      'Netherglow':  {style:'gradient', hex:['#4a0072','#7b1fa2']},
+      'Tidecaller':  {style:'gradient', hex:['#006064','#00acc1']},
+      'Embersteel':  {style:'gradient', hex:['#bf360c','#90a4ae']},
+      'Starcorpse':  {style:'gradient', hex:['#1a237e','#e1bee7']},
+      'Soulrender':  {style:'gradient', hex:['#880e4f','#1a1a1a']},
     };
 
     function getNameStyle(colorName) {

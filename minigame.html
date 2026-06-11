@@ -326,8 +326,8 @@
       <a href="home.html">Home</a>
       <a href="party.html">Party</a>
       <a href="chat.html">Chat</a>
-      <a href="game.html">Dice Game</a>
-      <a href="minigame.html" class="active">The Gauntlet</a>
+      <a href="minigame.html" class="active">Dice Oracle</a>
+      <a href="colors.html">Colours</a>
     </div>
   </nav>
 
@@ -431,6 +431,17 @@
       { q: 'What does proficiency bonus apply to?',
         options: ['All rolls', 'Only attack rolls', 'Skills, saves, and attacks you are trained in', 'Hit points'], answer: 2, difficulty: 'easy', gp: 5, penalty: 0 },
 
+      { q: 'What condition makes a creature unable to take actions or reactions?',
+        options: ['Incapacitated', 'Stunned', 'Paralyzed', 'Restrained'], answer: 0, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'Which ability score governs stealth checks?',
+        options: ['Strength', 'Intelligence', 'Charisma', 'Dexterity'], answer: 3, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'How many spell slots does a level 1 Wizard have?',
+        options: ['1', '2', '3', '4'], answer: 1, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'What is a Paladin\'s channel divinity equivalent called?',
+        options: ['Sacred Flame', 'Divine Smite', 'Channel Divinity', 'Holy Strike'], answer: 2, difficulty: 'easy', gp: 5, penalty: 0 },
+      { q: 'What does a natural 20 on an attack roll always result in?',
+        options: ['Maximum damage', 'Critical hit', 'Instant kill', 'Double attacks'], answer: 1, difficulty: 'easy', gp: 5, penalty: 0 },
+
       // MEDIUM — 15 GP, −5 on wrong
       { q: 'What school of magic does Fireball belong to?',
         options: ['Conjuration', 'Abjuration', 'Evocation', 'Transmutation'], answer: 2, difficulty: 'medium', gp: 15, penalty: 5 },
@@ -449,6 +460,19 @@
       { q: 'What ability score modifier is added to a Paladin\'s spell save DC?',
         options: ['Strength', 'Wisdom', 'Charisma', 'Intelligence'], answer: 2, difficulty: 'medium', gp: 15, penalty: 5 },
 
+      { q: 'Which spell requires concentration and creates a 20-foot radius sphere of magical darkness?',
+        options: ['Darkness', 'Blackout', 'Shadow Sphere', 'Void Zone'], answer: 0, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'What is the casting time of Counterspell?',
+        options: ['1 action', 'Bonus action', '1 reaction', 'Free action'], answer: 2, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'A Druid\'s Wild Shape at level 2 allows them to transform into creatures with a CR of at most…',
+        options: ['1/4', '1/2', '1', '2'], answer: 0, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'Which class has the Bardic Inspiration feature?',
+        options: ['Bard', 'Sorcerer', 'Warlock', 'Cleric'], answer: 0, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'What is the range of a Warlock\'s Eldritch Blast cantrip?',
+        options: ['30 feet', '60 feet', '90 feet', '120 feet'], answer: 3, difficulty: 'medium', gp: 15, penalty: 5 },
+      { q: 'Monks use their unarmed strikes with which ability score for attack and damage (via Martial Arts)?',
+        options: ['Strength', 'Dexterity', 'Either Strength or Dexterity', 'Wisdom'], answer: 2, difficulty: 'medium', gp: 15, penalty: 5 },
+
       // HARD — 40 GP, −15 on wrong
       { q: 'What is the Challenge Rating of an Adult Red Dragon in 5e?',
         options: ['17', '20', '24', '15'], answer: 0, difficulty: 'hard', gp: 40, penalty: 15 },
@@ -462,6 +486,14 @@
         options: ['Strength', 'Wisdom', 'Constitution', 'Charisma'], answer: 1, difficulty: 'hard', gp: 40, penalty: 15 },
       { q: 'In the Forgotten Realms, what is the name of the Underdark city ruled by drow and home to Lolth\'s faithful?',
         options: ['Menzoberranzan', 'Gracklstugh', 'Blingdenstone', 'Neverlight Grove'], answer: 0, difficulty: 'hard', gp: 40, penalty: 15 },
+      { q: 'What is the maximum number of attunement slots a character can have by default?',
+        options: ['2', '3', '4', '5'], answer: 1, difficulty: 'hard', gp: 40, penalty: 15 },
+      { q: 'What level must a Wizard be to cast a 9th-level spell slot for the first time?',
+        options: ['15', '17', '18', '20'], answer: 1, difficulty: 'hard', gp: 40, penalty: 15 },
+      { q: 'Which creature type are mind flayers (Illithids)?',
+        options: ['Aberration', 'Monstrosity', 'Fiend', 'Construct'], answer: 0, difficulty: 'hard', gp: 40, penalty: 15 },
+      { q: 'What saving throw does the Disintegrate spell force the target to make?',
+        options: ['Dexterity', 'Constitution', 'Wisdom', 'Strength'], answer: 0, difficulty: 'hard', gp: 40, penalty: 15 },
     ];
 
     // ═══════════════════════════════════════════════════════
@@ -705,6 +737,7 @@
         const canBuy = !owned && gp >= col.cost;
         const item = document.createElement('div');
         item.className = 'shop-item';
+        const isActive = gameData.activeColor === col.name;
         item.innerHTML =
           `<div class="shop-item-top">
             <div class="shop-swatch" style="${swatchCSS(col)}"></div>
@@ -714,16 +747,38 @@
             </div>
             <div class="shop-cost">${owned ? '—' : col.cost + ' GP'}</div>
           </div>
-          <button class="buy-btn${owned ? ' owned' : ''}"
-            ${owned ? 'disabled' : !canBuy ? 'disabled' : ''}
-            data-name="${col.name}">
-            ${owned ? '✓ Owned' : canBuy ? 'Buy' : 'Need ' + col.cost + ' GP'}
-          </button>`;
-        if (!owned && canBuy) {
+          ${owned
+            ? `<button class="buy-btn${isActive ? ' owned' : ''}" data-name="${col.name}">${isActive ? '✓ Equipped' : 'Equip'}</button>`
+            : `<button class="buy-btn" ${canBuy ? '' : 'disabled'} data-name="${col.name}">${canBuy ? 'Buy' : 'Need ' + col.cost + ' GP'}</button>`
+          }`;
+        if (owned) {
+          item.querySelector('.buy-btn').onclick = () => equipColor(col);
+        } else if (canBuy) {
           item.querySelector('.buy-btn').onclick = () => buyColor(col);
         }
         container.appendChild(item);
       });
+    }
+
+    function syncSession() {
+      sessionStorage.setItem('dnd-chat-color', JSON.stringify({ activeColor: gameData.activeColor, activeTitle: gameData.activeTitle }));
+      sessionStorage.setItem('dnd-game-data', JSON.stringify(gameData));
+    }
+
+    async function equipColor(col) {
+      if (gameData.activeColor === col.name) {
+        gameData.activeColor = null;
+        gameData.activeTitle = null;
+      } else {
+        gameData.activeColor = col.name;
+        gameData.activeTitle = col.title;
+      }
+      syncSession();
+      renderShop();
+      if (!isDM) {
+        try { await ScoreStore.savePlayerData(username, gameData); }
+        catch(e) { console.warn('Equip save failed:', e); }
+      }
     }
 
     async function buyColor(col) {
@@ -744,6 +799,7 @@
             rec.players[key].gameData = gd;
             await binSet(BIN_PLAYERS, rec);
             gameData = gd;
+            syncSession();
           }
         } catch(e) { console.warn('Shop save failed:', e); }
       }
