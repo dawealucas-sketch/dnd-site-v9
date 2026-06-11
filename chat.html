@@ -410,13 +410,21 @@
           if (msg.inputTokens)  metaParts.push(msg.inputTokens  + ' in');
           if (msg.outputTokens) metaParts.push(msg.outputTokens + ' out');
           metaParts.push(formatTime(msg.ts));
-          div.innerHTML = buildMsgHeader(msg, isOwn) +
-            `<div class="scenario-card">
-              <div class="scenario-header">🗺 Scenario${msg.theme ? ': ' + escHtml(msg.theme) : ' — Random'}</div>
-              <details class="scenario-rolls">
+          const headerLabel = msg.detailed
+            ? '🗺 Scenario — Custom Details'
+            : msg.input
+              ? '🗺 Scenario: ' + escHtml(msg.input)
+              : '🗺 Scenario — Random Tables';
+          const rollSection = msg.detailed
+            ? `<div style="font-size:0.72rem;color:var(--text-dim);font-style:italic;padding:2px 0;">Generated from DM-provided details</div>`
+            : `<details class="scenario-rolls">
                 <summary>Table rolls (click to expand)</summary>
                 <div class="scenario-roll-grid">${rollRows}</div>
-              </details>
+              </details>`;
+          div.innerHTML = buildMsgHeader(msg, isOwn) +
+            `<div class="scenario-card">
+              <div class="scenario-header">${headerLabel}</div>
+              ${rollSection}
               <div class="scenario-narrative">${renderNarrative(msg.narrative || '')}</div>
               <div class="scenario-meta">${metaParts.join(' · ')}</div>
             </div>`;
@@ -739,25 +747,55 @@
 
     function rollTable(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-    async function generateScenario(theme) {
-      const rolls = {
-        'Adventure Type':     rollTable(ST.adventureType),
-        'Location':           rollTable(ST.location),
-        'Location\'s Purpose':rollTable(ST.dungeonPurpose),
-        'Key NPC':            rollTable(ST.npcRole),
-        'NPC Quirk':          rollTable(ST.npcTrait),
-        'Complication':       rollTable(ST.complication),
-        'Discovery':          rollTable(ST.discovery),
-        'Atmosphere':         rollTable(ST.weather),
-        'Monster Motivation': rollTable(ST.monsterMotivation),
-        'Local Rumor':        rollTable(ST.rumor),
-      };
+    // > 4 words = treat as explicit details rather than a theme hint
+    function isDetailedInput(text) {
+      return text && text.trim().split(/\s+/).length > 4;
+    }
 
-      const prompt = `You are a creative assistant for a D&D 5e Dungeon Master. I rolled on multiple random tables drawn from the Dungeon Master's Guide and unofficial D&D sourcebooks. Synthesise the results into a compelling, specific scenario.
+    async function generateScenario(input) {
+      const detailed = isDetailedInput(input);
+      let rolls = null;
+      let prompt;
+
+      if (detailed) {
+        // User supplied their own details — use them directly, skip table rolls
+        prompt = `You are a creative assistant for a D&D 5e Dungeon Master. The DM has provided specific scenario details. Build on them to produce a vivid, ready-to-run scenario.
+
+DM'S DETAILS:
+${input}
+
+Write the scenario in three parts:
+
+**THE SCENE** — Two vivid paragraphs expanding on the details, written so the DM can read aloud or riff from. Add specific sensory details, NPC names if none given, and atmosphere.
+
+**THE TWIST** — One sentence introducing an unexpected complication that raises the stakes.
+
+**THREE HOOKS**
+1. [An immediate hook emerging from the location or situation]
+2. [A hook tied to an NPC's hidden motive]
+3. [A longer-term hook with campaign implications]
+
+Be specific. Every detail should be usable at the table tonight.`;
+      } else {
+        // No input, or short theme — roll all tables
+        rolls = {
+          'Adventure Type':      rollTable(ST.adventureType),
+          'Location':            rollTable(ST.location),
+          'Location\'s Purpose': rollTable(ST.dungeonPurpose),
+          'Key NPC':             rollTable(ST.npcRole),
+          'NPC Quirk':           rollTable(ST.npcTrait),
+          'Complication':        rollTable(ST.complication),
+          'Discovery':           rollTable(ST.discovery),
+          'Atmosphere':          rollTable(ST.weather),
+          'Monster Motivation':  rollTable(ST.monsterMotivation),
+          'Local Rumor':         rollTable(ST.rumor),
+        };
+
+        prompt = `You are a creative assistant for a D&D 5e Dungeon Master. I rolled on multiple random tables drawn from the Dungeon Master's Guide and unofficial D&D sourcebooks. Synthesise the results into a compelling, specific scenario.
 
 RANDOM TABLE RESULTS:
 ${Object.entries(rolls).map(([k,v]) => `• ${k}: ${v}`).join('\n')}
-${theme ? `• DM's Requested Theme: ${theme}` : ''}
+${input ? `• DM's Requested Theme: ${input}` : ''}
 
 Write the scenario in three parts:
 
@@ -771,6 +809,7 @@ Write the scenario in three parts:
 3. [Hook from the Monster's Motivation]
 
 Be specific and evocative. Avoid generic fantasy language. Every detail should be usable at the table tonight.`;
+      }
 
       let narrative = '[AI narration disabled — set CLAUDE_API_KEY in chat.html]';
       let model = 'none';
@@ -829,7 +868,9 @@ Be specific and evocative. Avoid generic fantasy language. Every detail should b
       // Save scenario log to JSONBin (fire and forget)
       const logEntry = {
         id: Date.now() + '-s-' + Math.random().toString(36).slice(2,5),
-        ts: Date.now(), triggeredBy: myName, theme: theme || null,
+        ts: Date.now(), triggeredBy: myName,
+        mode: detailed ? 'details' : 'tables',
+        input: input || null,
         rolls, prompt, narrative, model, inputTokens, outputTokens
       };
       binGet(BIN_PLAYERS).then(rec => {
@@ -839,7 +880,7 @@ Be specific and evocative. Avoid generic fantasy language. Every detail should b
         return binSet(BIN_PLAYERS, rec);
       }).catch(e => console.warn('Scenario log save failed:', e));
 
-      return { rolls, narrative, model, inputTokens, outputTokens };
+      return { rolls, narrative, model, inputTokens, outputTokens, detailed };
     }
 
     function renderNarrative(text) {
@@ -897,14 +938,14 @@ Be specific and evocative. Avoid generic fantasy language. Every detail should b
           msgs.push({ ...base, type: 'text', text: '⚠ Invalid dice formula. Try /roll 2d6+3' });
         }
       } else if (textToSend.startsWith('/scenario')) {
-        const theme = textToSend.slice(9).trim() || null;
+        const input = textToSend.slice(9).trim() || null;
         // Show loading state immediately
         const loadingId = base.id + '-loading';
         localMessages = [...msgs, { id: loadingId, type: '_loading', ts: Date.now(), author: myName }];
         renderMessages(localMessages);
         try {
-          const { rolls, narrative, model, inputTokens, outputTokens } = await generateScenario(theme);
-          const scenMsg = { ...base, type: 'scenario', theme, rolls, narrative, model, inputTokens, outputTokens };
+          const { rolls, narrative, model, inputTokens, outputTokens, detailed } = await generateScenario(input);
+          const scenMsg = { ...base, type: 'scenario', input, detailed, rolls, narrative, model, inputTokens, outputTokens };
           const finalMsgs = [...msgs, scenMsg];
           localMessages = finalMsgs;
           lastSavedId = id;
