@@ -250,6 +250,10 @@
       <div class="sidebar-panel">
         <div class="sidebar-title">AI Key</div>
         <div class="api-key-wrap">
+          <select id="ai-provider" style="font-size:0.75rem;padding:4px 6px;width:100%;margin-bottom:2px;">
+            <option value="anthropic">Claude Haiku (Anthropic)</option>
+            <option value="openai">GPT-4o mini (OpenAI)</option>
+          </select>
           <div class="api-key-row">
             <input type="password" id="api-key-input" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
             <button style="font-size:0.7rem;padding:5px 10px;" onclick="setApiKey()">Set</button>
@@ -514,23 +518,48 @@
     // ═══════════════════════════════════════════════════════════════
 
     // API key — lives only in memory, never written to storage
-    let _claudeApiKey = '';
-    function setApiKey() {
-      const input = document.getElementById('api-key-input');
-      const status = document.getElementById('api-key-status');
-      const val = input.value.trim();
-      if (!val) { _claudeApiKey = ''; status.textContent = 'Not set — clears on reload'; status.className = 'api-key-status'; return; }
-      _claudeApiKey = val;
-      input.value = '';
-      input.placeholder = '••••••••••••••••';
-      status.textContent = '✓ Key set — clears on reload';
-      status.className = 'api-key-status set';
-    }
-    // Also allow pressing Enter in the key field
+    let _apiKey = '';
+    let _apiProvider = 'anthropic'; // 'anthropic' | 'openai'
+
+    const PROVIDER_PLACEHOLDERS = {
+      anthropic: 'sk-ant-…',
+      openai:    'sk-…',
+    };
+    const PROVIDER_MODELS = {
+      anthropic: 'claude-haiku-4-5',
+      openai:    'gpt-4o-mini',
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
-      const ki = document.getElementById('api-key-input');
+      const sel = document.getElementById('ai-provider');
+      const ki  = document.getElementById('api-key-input');
+      if (sel) sel.addEventListener('change', () => {
+        _apiProvider = sel.value;
+        ki.placeholder = PROVIDER_PLACEHOLDERS[_apiProvider];
+        if (!_apiKey) document.getElementById('api-key-status').textContent = 'Not set — clears on reload';
+      });
       if (ki) ki.addEventListener('keydown', e => { if (e.key === 'Enter') setApiKey(); });
     });
+
+    function setApiKey() {
+      const input    = document.getElementById('api-key-input');
+      const status   = document.getElementById('api-key-status');
+      const provider = document.getElementById('ai-provider').value;
+      const val = input.value.trim();
+      if (!val) {
+        _apiKey = '';
+        status.textContent = 'Not set — clears on reload';
+        status.className = 'api-key-status';
+        return;
+      }
+      _apiKey = val;
+      _apiProvider = provider;
+      input.value = '';
+      input.placeholder = '••••••••••••••••';
+      const label = provider === 'openai' ? 'GPT-4o mini' : 'Claude Haiku';
+      status.textContent = '✓ ' + label + ' key set — clears on reload';
+      status.className = 'api-key-status set';
+    }
 
     // ── D&D Tables (DMG + unofficial sources) ──
     const ST = {
@@ -747,30 +776,54 @@ Be specific and evocative. Avoid generic fantasy language. Every detail should b
       let model = 'none';
       let inputTokens = 0, outputTokens = 0;
 
-      if (_claudeApiKey) {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': _claudeApiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-client-side-api-key-access': 'true',
-          },
-          body: JSON.stringify({
-            model: 'claude-haiku-4-5',
-            max_tokens: 1200,
-            messages: [{ role: 'user', content: prompt }]
-          })
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error?.message || 'API error ' + res.status);
+      if (_apiKey) {
+        const provider = _apiProvider;
+        const modelId  = PROVIDER_MODELS[provider];
+        let res;
+        if (provider === 'openai') {
+          res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _apiKey },
+            body: JSON.stringify({
+              model: modelId,
+              max_tokens: 1200,
+              messages: [{ role: 'user', content: prompt }]
+            })
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error?.message || 'OpenAI error ' + res.status);
+          }
+          const data = await res.json();
+          narrative    = data.choices[0].message.content;
+          model        = data.model || modelId;
+          inputTokens  = data.usage?.prompt_tokens     || 0;
+          outputTokens = data.usage?.completion_tokens || 0;
+        } else {
+          res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': _apiKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-client-side-api-key-access': 'true',
+            },
+            body: JSON.stringify({
+              model: modelId,
+              max_tokens: 1200,
+              messages: [{ role: 'user', content: prompt }]
+            })
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error?.message || 'Anthropic error ' + res.status);
+          }
+          const data = await res.json();
+          narrative    = data.content[0].text;
+          model        = data.model || modelId;
+          inputTokens  = data.usage?.input_tokens  || 0;
+          outputTokens = data.usage?.output_tokens || 0;
         }
-        const data = await res.json();
-        narrative = data.content[0].text;
-        model = data.model || 'claude-haiku-4-5';
-        inputTokens  = data.usage?.input_tokens  || 0;
-        outputTokens = data.usage?.output_tokens || 0;
       }
 
       // Save scenario log to JSONBin (fire and forget)
