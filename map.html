@@ -674,7 +674,7 @@
     let currentPalette = 'nature', currentTool = 'paint';
     let tileSize = 28, isPainting = false, sessionActive = false;
     let offsetX = 0, offsetY = 0, isDragging = false, dragSX = 0, dragSY = 0;
-    let saveTimer = null, pollTimer = null, lastSavedJSON = null;
+    let saveTimer = null, pollTimer = null, lastSavedJSON = null, lastLocalWriteAt = 0;
 
     // ── Migration: old single-floor maps -> floors[] + logic{} ──
     function migrateMap(m) {
@@ -704,12 +704,21 @@
       startPolling();
     }
 
+    // How long after a local save to distrust an incoming poll result. A poll
+    // that was already in flight when we saved (or that raced a backend with
+    // brief eventual-consistency lag) can return data from just before our
+    // save — applying it would wipe out what we just created/changed. The
+    // next poll tick after this window will pick up the actual up-to-date state.
+    const POLL_STALE_GRACE_MS = 3500;
+
     function startPolling() {
       if (pollTimer) return;
       pollTimer = setInterval(async () => {
         if (isPainting || isDragging) return;
+        const pollStartedAt = Date.now();
         try {
           const remote = await MapStore.getMaps();
+          if (pollStartedAt < lastLocalWriteAt + POLL_STALE_GRACE_MS) return; // could be stale relative to our own save
           Object.values(remote).forEach(migrateMap);
           const remoteStr = JSON.stringify(remote);
           if (remoteStr === lastSavedJSON) return; // nothing new
@@ -739,6 +748,7 @@
       setSyncLine(false);
       const ok = await MapStore.saveMaps(maps);
       lastSavedJSON = JSON.stringify(maps);
+      lastLocalWriteAt = Date.now();
       setSyncLine(true);
       if (manual) flash(ok ? 'Saved!' : 'Save failed');
     }
@@ -793,6 +803,7 @@
       delete maps[id];
       await MapStore.saveMaps(maps);
       lastSavedJSON = JSON.stringify(maps);
+      lastLocalWriteAt = Date.now();
       if(currentMapId===id){currentMapId=null;hideCanvas();}
       renderMapsList();
     }

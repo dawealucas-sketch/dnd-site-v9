@@ -117,6 +117,15 @@
 
     async function renderParty() {
       party = await Store.getParty();
+      renderPartyGrid();
+    }
+
+    // Pure DOM render from whatever `party` currently holds — no fetch. Used
+    // after a local create/delete so we trust the state we just built rather
+    // than immediately re-fetching (a save that's still in flight, silently
+    // failed, or hit a backend with brief read-after-write lag would return
+    // stale data and erase what was just added).
+    function renderPartyGrid() {
       const grid = document.getElementById('party-grid');
       grid.innerHTML = '';
 
@@ -191,9 +200,9 @@
         traits: '', notes: '',
       };
       party.push(c);
-      await Store.saveParty(party);
       closeModal();
-      renderParty();
+      renderPartyGrid();
+      await Store.saveParty(party);
     }
 
     async function removeChar(i, e) {
@@ -201,8 +210,8 @@
       if (!isDM) return;
       if (confirm('Remove ' + party[i].name + ' from the party? This cannot be undone.')) {
         party.splice(i, 1);
+        renderPartyGrid();
         await Store.saveParty(party);
-        renderParty();
       }
     }
 

@@ -326,6 +326,7 @@
     let localMessages = []; // authoritative local cache — never goes backwards
     let lastSavedId = '';   // id of last message we successfully saved
     let pollTimer = null;
+    let lastLocalWriteAt = 0; // last time we wrote (sent or deleted) locally
 
     // ── Name display (locked to login username) ──
     document.getElementById('current-name').textContent = myName || 'Unknown';
@@ -356,6 +357,7 @@
     }
     async function saveMessages(msgs) {
       await ChatStore.saveMessages(msgs);
+      lastLocalWriteAt = Date.now();
     }
 
     function formatTime(ts) {
@@ -376,6 +378,7 @@
       const wasAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
 
       if (msgs.length === 0) {
+        localMessages = msgs; // keep the cache in sync even on the empty-list path
         el.innerHTML = '<div class="blocked-msg">No messages yet. Say hello!</div>';
         return;
       }
@@ -978,8 +981,12 @@ Be specific and evocative. Avoid generic fantasy language. Every detail should b
       if (idx === -1) return;
       if (msgs[idx].author !== myName) return; // extra guard
       msgs.splice(idx, 1);
-      await saveMessages(msgs);
+      // Keep the local cache in sync with what's on screen — otherwise the
+      // next poll compares against a stale (pre-delete) localMessages and can
+      // treat the real, shorter remote list as if it were missing messages.
+      localMessages = msgs;
       renderMessages(msgs);
+      await saveMessages(msgs);
     }
 
     // ── Image handling ──
@@ -1018,15 +1025,17 @@ Be specific and evocative. Avoid generic fantasy language. Every detail should b
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
 
+    // How long after a local write (send OR delete) to distrust an incoming
+    // poll result that isn't covered by the lastSavedId confirmation below —
+    // e.g. a poll whose fetch was already in flight when we deleted a
+    // message would still reflect the pre-delete list, resurrecting it.
+    const POLL_STALE_GRACE_MS = 3500;
+
     // ── Polling (refresh every 3s) ──
     async function poll() {
+      const pollStartedAt = Date.now();
       const remote = await loadMessages();
-
-      // Always accept remote if it has MORE messages than local
-      // Only protect against remote being shorter during an active send
-      const remoteIsNewer = remote.length > localMessages.length;
-      const remoteHasNewMsg = remote.length > 0 && localMessages.length > 0 &&
-        remote[remote.length - 1].id !== localMessages[localMessages.length - 1].id;
+      const possiblyStale = pollStartedAt < lastLocalWriteAt + POLL_STALE_GRACE_MS;
 
       // If we just sent a message, wait until remote confirms it before syncing
       // This prevents a brief stale read from wiping our just-sent message
@@ -1037,8 +1046,14 @@ Be specific and evocative. Avoid generic fantasy language. Every detail should b
           renderMessages(remote);
         }
         // If not confirmed yet, don't overwrite — wait for next poll
-      } else if (remoteIsNewer || remoteHasNewMsg) {
-        renderMessages(remote);
+      } else if (!possiblyStale) {
+        // No pending send of our own, and this fetch is safely after any of
+        // our recent local writes — trust it outright, whatever it says:
+        // longer (someone sent), shorter (someone deleted / chat cleared),
+        // or just different content. A pure length/last-id check can only
+        // ever detect growth, so a legitimate deletion by someone else would
+        // otherwise never reach anyone but the person who deleted it.
+        if (JSON.stringify(remote) !== JSON.stringify(localMessages)) renderMessages(remote);
       }
 
       await markOnline();
