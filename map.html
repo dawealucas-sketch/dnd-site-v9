@@ -197,32 +197,406 @@
     const ALL_TILES = [...TILES.nature, ...TILES.dungeon];
     function getTile(id) { return ALL_TILES.find(t => t.id === id) || null; }
 
-    function drawTile(ctx, tile, x, y, s) {
+    // ── Deterministic pseudo-random noise (stable per grid cell, so texture
+    // doesn't jitter every time the canvas redraws) ──
+    function tileRand(gx, gy, salt) {
+      let h = (gx * 374761393 + gy * 668265263 + salt * 2246822519) | 0;
+      h = Math.imul(h ^ (h >>> 15), 2246822519);
+      h = Math.imul(h ^ (h >>> 13), 3266489917);
+      h = (h ^ (h >>> 16)) >>> 0;
+      return h / 4294967296;
+    }
+    function shade(hex, amt) {
+      const n = parseInt(hex.slice(1), 16);
+      let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      if (amt >= 0) { r += (255-r)*amt; g += (255-g)*amt; b += (255-b)*amt; }
+      else { r *= (1+amt); g *= (1+amt); b *= (1+amt); }
+      return 'rgb('+Math.max(0,Math.min(255,r|0))+','+Math.max(0,Math.min(255,g|0))+','+Math.max(0,Math.min(255,b|0))+')';
+    }
+
+    const FAMILY = {
+      grass:'grass', dark_grass:'grass',
+      water:'water', deep_water:'water', water_d:'water',
+      sand:'sand', desert:'sand',
+      dirt:'dirt',
+      snow:'snow',
+      ice:'ice',
+      lava:'lava', volcanic:'lava', lava_d:'lava',
+      forest:'tree', dense_forest:'tree',
+      mountain:'peak', snow_peak:'peak',
+      swamp:'swamp',
+      stone_floor:'stone', dark_floor:'stone',
+      wood_floor:'wood',
+      wall:'wall', pillar:'pillar',
+      brick_wall:'brick',
+      door:'door', locked_door:'door',
+      stairs_up:'stair', stairs_down:'stair',
+      chest:'chest',
+      trap:'trap',
+      pit:'pit',
+      altar:'altar',
+    };
+
+    function drawGrass(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
+      if (!detailed) return;
+      for (let i=0;i<3;i++) {
+        const r1=tileRand(gx,gy,i*7+1), r2=tileRand(gx,gy,i*7+2), r3=tileRand(gx,gy,i*7+3);
+        ctx.fillStyle = shade(tile.color, r3>0.5?0.12:-0.12);
+        ctx.globalAlpha = 0.35;
+        ctx.beginPath(); ctx.ellipse(x+r1*s,y+r2*s,s*0.22,s*0.14,r3*Math.PI,0,Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      const bladeCount = Math.max(4, Math.round(s/4));
+      ctx.strokeStyle = shade(tile.color, 0.3);
+      ctx.lineWidth = Math.max(0.6, s*0.02);
+      for (let i=0;i<bladeCount;i++) {
+        const bx = x + tileRand(gx,gy,100+i)*s, by = y + tileRand(gx,gy,200+i)*s;
+        const len = s*(0.12+tileRand(gx,gy,300+i)*0.1);
+        const ang = -Math.PI/2 + (tileRand(gx,gy,400+i)-0.5)*0.9;
+        ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+Math.cos(ang)*len, by+Math.sin(ang)*len); ctx.stroke();
+      }
+    }
+
+    function drawWater(ctx,tile,x,y,s,gx,gy,detailed) {
+      const grad = ctx.createLinearGradient(x,y,x,y+s);
+      grad.addColorStop(0, shade(tile.color,0.15)); grad.addColorStop(1, shade(tile.color,-0.2));
+      ctx.fillStyle = grad; ctx.fillRect(x,y,s,s);
+      if (!detailed) return;
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = Math.max(0.6, s*0.03);
+      for (let i=0;i<2;i++) {
+        const wy = y + s*(0.3+i*0.35) + (tileRand(gx,gy,50+i)-0.5)*s*0.15;
+        ctx.beginPath(); ctx.moveTo(x,wy); ctx.quadraticCurveTo(x+s*0.5,wy-s*0.08,x+s,wy); ctx.stroke();
+      }
+    }
+
+    function drawSand(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
+      if (!detailed) return;
+      ctx.globalAlpha=0.7;
+      const grainSize = Math.max(1, s*0.025);
+      for (let i=0;i<16;i++) {
+        const px=x+tileRand(gx,gy,60+i)*s, py=y+tileRand(gx,gy,70+i)*s;
+        ctx.fillStyle = shade(tile.color, tileRand(gx,gy,80+i)>0.5?0.25:-0.22);
+        ctx.fillRect(px,py,grainSize,grainSize);
+      }
+      ctx.globalAlpha=0.4;
+      ctx.strokeStyle = shade(tile.color,0.2);
+      ctx.lineWidth=Math.max(0.6,s*0.02);
+      for (let i=0;i<2;i++) {
+        const wy=y+s*(0.35+i*0.4);
+        ctx.beginPath(); ctx.moveTo(x,wy); ctx.quadraticCurveTo(x+s*0.5,wy+s*0.06,x+s,wy); ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+    }
+
+    function drawDirt(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
+      if (!detailed) return;
+      ctx.globalAlpha=0.4;
+      for (let i=0;i<4;i++) {
+        const r1=tileRand(gx,gy,90+i), r2=tileRand(gx,gy,91+i);
+        ctx.fillStyle = shade(tile.color, r1>0.5?-0.15:0.1);
+        ctx.beginPath(); ctx.ellipse(x+r1*s,y+r2*s,s*0.15,s*0.1,0,0,Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha=1;
+      for (let i=0;i<5;i++) {
+        const px=x+tileRand(gx,gy,120+i)*s, py=y+tileRand(gx,gy,130+i)*s;
+        ctx.fillStyle='rgba(140,140,140,0.4)';
+        ctx.beginPath(); ctx.arc(px,py,Math.max(0.6,s*0.03),0,Math.PI*2); ctx.fill();
+      }
+    }
+
+    function drawSnow(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
+      if (!detailed) return;
+      for (let i=0;i<4;i++) {
+        const r1=tileRand(gx,gy,140+i), r2=tileRand(gx,gy,141+i);
+        ctx.fillStyle='rgba(130,165,200,0.35)';
+        ctx.beginPath(); ctx.ellipse(x+r1*s,y+r2*s,s*0.22,s*0.13,0,0,Math.PI*2); ctx.fill();
+      }
+      for (let i=0;i<12;i++) {
+        const px=x+tileRand(gx,gy,150+i)*s, py=y+tileRand(gx,gy,160+i)*s;
+        ctx.fillStyle='rgba(255,255,255,0.95)';
+        ctx.beginPath(); ctx.arc(px,py,Math.max(0.8,s*0.035),0,Math.PI*2); ctx.fill();
+      }
+    }
+
+    function drawIce(ctx,tile,x,y,s,gx,gy,detailed) {
+      const grad=ctx.createLinearGradient(x,y,x+s,y+s);
+      grad.addColorStop(0, shade(tile.color,0.2)); grad.addColorStop(1, shade(tile.color,-0.1));
+      ctx.fillStyle=grad; ctx.fillRect(x,y,s,s);
+      if (!detailed) return;
+      ctx.strokeStyle='rgba(255,255,255,0.5)';
+      ctx.lineWidth=Math.max(0.6,s*0.02);
+      for (let i=0;i<3;i++) {
+        const r1=tileRand(gx,gy,170+i);
+        ctx.beginPath(); ctx.moveTo(x+r1*s*0.3,y+s); ctx.lineTo(x+r1*s*0.3+s*0.3,y); ctx.stroke();
+      }
+      ctx.strokeStyle='rgba(120,160,200,0.4)';
+      ctx.beginPath(); ctx.moveTo(x+s*0.2,y+s*0.6); ctx.lineTo(x+s*0.5,y+s*0.4); ctx.lineTo(x+s*0.8,y+s*0.65); ctx.stroke();
+    }
+
+    function drawLava(ctx,tile,x,y,s,gx,gy,detailed) {
+      const grad=ctx.createRadialGradient(x+s*0.5,y+s*0.5,s*0.05,x+s*0.5,y+s*0.5,s*0.7);
+      grad.addColorStop(0, shade(tile.color,0.35)); grad.addColorStop(0.6, tile.color); grad.addColorStop(1, shade(tile.color,-0.35));
+      ctx.fillStyle=grad; ctx.fillRect(x,y,s,s);
+      if (!detailed) return;
+      ctx.strokeStyle='rgba(0,0,0,0.5)';
+      ctx.lineWidth=Math.max(0.6,s*0.025);
+      for (let i=0;i<3;i++) {
+        const r1=tileRand(gx,gy,180+i), r2=tileRand(gx,gy,181+i);
+        ctx.beginPath(); ctx.moveTo(x+r1*s,y+r2*s);
+        ctx.lineTo(x+r1*s+(tileRand(gx,gy,182+i)-0.5)*s*0.4, y+r2*s+(tileRand(gx,gy,183+i)-0.5)*s*0.4);
+        ctx.stroke();
+      }
+      ctx.fillStyle='rgba(255,200,80,0.5)';
+      ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.12,0,Math.PI*2); ctx.fill();
+    }
+
+    function drawTrees(ctx,tile,x,y,s,gx,gy,detailed) {
+      const count = tile.id==='dense_forest' ? 3 : 2;
+      for (let i=0;i<count;i++) {
+        const r1=tileRand(gx,gy,200+i*3), r2=tileRand(gx,gy,201+i*3), r3=tileRand(gx,gy,202+i*3);
+        const cx=x+s*(0.25+r1*0.5), cy=y+s*(0.35+r2*0.4), rad=s*(0.16+r3*0.08);
+        ctx.fillStyle='#4a2f18';
+        ctx.fillRect(cx-s*0.02, cy+rad*0.4, s*0.05, rad*0.6);
+        const grad=ctx.createRadialGradient(cx-rad*0.3,cy-rad*0.3,rad*0.1,cx,cy,rad);
+        grad.addColorStop(0, '#3a7a2a'); grad.addColorStop(1, '#0f3a10');
+        ctx.fillStyle=grad;
+        ctx.beginPath(); ctx.arc(cx,cy,rad,0,Math.PI*2); ctx.fill();
+      }
+    }
+
+    function drawPeak(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle = shade(tile.color,-0.25); ctx.fillRect(x,y,s,s);
+      if (detailed) {
+        for (let i=0;i<4;i++) {
+          const px=x+tileRand(gx,gy,210+i)*s, py=y+s*0.75+tileRand(gx,gy,211+i)*s*0.25;
+          ctx.fillStyle='rgba(0,0,0,0.15)';
+          ctx.beginPath(); ctx.arc(px,py,Math.max(0.6,s*0.03),0,Math.PI*2); ctx.fill();
+        }
+      }
+      const grad=ctx.createLinearGradient(x,y,x,y+s*0.8);
+      grad.addColorStop(0, shade(tile.color,0.3)); grad.addColorStop(1, shade(tile.color,-0.1));
+      ctx.fillStyle=grad;
+      ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.08); ctx.lineTo(x+s*0.85,y+s*0.85); ctx.lineTo(x+s*0.15,y+s*0.85); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=Math.max(0.6,s*0.02);
+      ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.08); ctx.lineTo(x+s*0.35,y+s*0.5); ctx.stroke();
+      if (tile.id==='snow_peak') {
+        ctx.fillStyle='#f0f4f8';
+        ctx.beginPath();
+        ctx.moveTo(x+s*0.5,y+s*0.08); ctx.lineTo(x+s*0.62,y+s*0.32); ctx.lineTo(x+s*0.5,y+s*0.28); ctx.lineTo(x+s*0.4,y+s*0.36);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+
+    function drawSwamp(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
+      if (!detailed) return;
+      for (let i=0;i<3;i++) {
+        const r1=tileRand(gx,gy,220+i), r2=tileRand(gx,gy,221+i);
+        ctx.fillStyle='rgba(20,20,10,0.35)';
+        ctx.beginPath(); ctx.ellipse(x+r1*s,y+r2*s,s*0.2,s*0.12,0,0,Math.PI*2); ctx.fill();
+      }
+      ctx.strokeStyle='#3a5a2a'; ctx.lineWidth=Math.max(0.6,s*0.025);
+      for (let i=0;i<2;i++) {
+        const r1=tileRand(gx,gy,230+i), r2=tileRand(gx,gy,231+i);
+        ctx.beginPath(); ctx.moveTo(x+r1*s,y+r2*s); ctx.lineTo(x+r1*s-s*0.05,y+r2*s-s*0.15); ctx.stroke();
+      }
+    }
+
+    function drawStone(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
+      if (!detailed) return;
+      const rows=2, cols=2;
+      for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) {
+        const rv=tileRand(gx,gy,240+r*3+c);
+        ctx.fillStyle = shade(tile.color, (rv-0.5)*0.15);
+        ctx.globalAlpha=0.5;
+        ctx.fillRect(x+s*c/cols+1,y+s*r/rows+1,s/cols-2,s/rows-2);
+      }
+      ctx.globalAlpha=1;
+      ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=Math.max(0.6,s*0.03);
+      for (let r=0;r<=rows;r++) { ctx.beginPath(); ctx.moveTo(x,y+s*r/rows); ctx.lineTo(x+s,y+s*r/rows); ctx.stroke(); }
+      for (let c=0;c<=cols;c++) { ctx.beginPath(); ctx.moveTo(x+s*c/cols,y); ctx.lineTo(x+s*c/cols,y+s); ctx.stroke(); }
+    }
+
+    function drawWood(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
+      if (!detailed) return;
+      const planks=3;
+      ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=Math.max(0.5,s*0.012);
+      for (let i=0;i<planks;i++) {
+        const midY=y+s*(i+0.5)/planks;
+        ctx.beginPath(); ctx.moveTo(x,midY); ctx.quadraticCurveTo(x+s*0.5,midY+s*0.03,x+s,midY); ctx.stroke();
+      }
+      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=Math.max(0.6,s*0.02);
+      for (let i=1;i<planks;i++) { ctx.beginPath(); ctx.moveTo(x,y+s*i/planks); ctx.lineTo(x+s,y+s*i/planks); ctx.stroke(); }
+      const r1=tileRand(gx,gy,250), r2=tileRand(gx,gy,251);
+      ctx.fillStyle='rgba(0,0,0,0.25)';
+      ctx.beginPath(); ctx.ellipse(x+r1*s,y+r2*s,s*0.05,s*0.03,0,0,Math.PI*2); ctx.fill();
+    }
+
+    function drawWall(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
+      const grad=ctx.createLinearGradient(x,y,x,y+s*0.3);
+      grad.addColorStop(0,'rgba(255,255,255,0.12)'); grad.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=grad; ctx.fillRect(x,y,s,s*0.3);
+      if (!detailed) return;
+      for (let i=0;i<3;i++) {
+        const rv=tileRand(gx,gy,260+i);
+        ctx.fillStyle = 'rgba(0,0,0,'+(0.15+rv*0.1)+')';
+        ctx.fillRect(x+2,y+2+i*(s/3-1),s-4,s/3-2);
+      }
+      ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=Math.max(0.6,s*0.025);
+      for (let i=0;i<3;i++) ctx.strokeRect(x+2,y+2+i*(s/3-1),s-4,s/3-2);
+    }
+
+    function drawBrick(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=shade(tile.color,-0.15); ctx.fillRect(x,y,s,s);
+      if (!detailed) { ctx.fillStyle=tile.color; ctx.fillRect(x+1,y+1,s-2,s-2); return; }
+      const rows=3, brickH=s/rows;
+      for (let r=0;r<rows;r++) {
+        const offset = (r%2===0) ? 0 : brickH*0.6;
+        for (let bx=-brickH*0.6; bx<s; bx+=brickH*1.2) {
+          const rv=tileRand(gx,gy,270+r*10+Math.round(bx));
+          ctx.fillStyle = shade(tile.color, (rv-0.5)*0.2);
+          ctx.fillRect(x+bx+offset+1, y+r*brickH+1, brickH*1.2-2, brickH-2);
+        }
+      }
+    }
+
+    function drawPillar(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=shade(tile.color,-0.2); ctx.fillRect(x,y,s,s);
+      const grad=ctx.createLinearGradient(x,y,x+s,y);
+      grad.addColorStop(0, shade(tile.color,0.3)); grad.addColorStop(0.5, tile.color); grad.addColorStop(1, shade(tile.color,-0.3));
+      ctx.fillStyle=grad;
+      ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.5,s*0.32,s*0.46,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(0,0,0,0.3)';
+      ctx.fillRect(x+s*0.18,y+s*0.05,s*0.64,s*0.1);
+      ctx.fillRect(x+s*0.18,y+s*0.85,s*0.64,s*0.1);
+    }
+
+    function drawDoor(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=shade(tile.color,-0.3); ctx.fillRect(x,y,s,s);
+      const dx=x+s*0.15, dy=y+s*0.08, dw=s*0.7, dh=s*0.84;
+      const grad=ctx.createLinearGradient(dx,dy,dx+dw,dy);
+      grad.addColorStop(0, shade(tile.color,0.15)); grad.addColorStop(1, shade(tile.color,-0.15));
+      ctx.fillStyle=grad; ctx.fillRect(dx,dy,dw,dh);
+      if (detailed) {
+        ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=Math.max(0.6,s*0.02);
+        for (let i=1;i<3;i++) { ctx.beginPath(); ctx.moveTo(dx+dw*i/3,dy); ctx.lineTo(dx+dw*i/3,dy+dh); ctx.stroke(); }
+      }
+      ctx.fillStyle='#ffcc00';
+      ctx.beginPath(); ctx.arc(dx+dw*0.82,dy+dh*0.52,Math.max(0.8,s*0.05),0,Math.PI*2); ctx.fill();
+      if (tile.id==='locked_door') {
+        ctx.fillStyle='#333';
+        ctx.fillRect(dx+dw*0.4,dy+dh*0.42,dw*0.2,dh*0.16);
+        ctx.strokeStyle='#999'; ctx.lineWidth=Math.max(0.6,s*0.02);
+        ctx.beginPath(); ctx.arc(dx+dw*0.5,dy+dh*0.4,dw*0.1,Math.PI,0); ctx.stroke();
+      }
+    }
+
+    function drawStair(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
+      const steps=4;
+      for (let i=0;i<steps;i++) {
+        const stepH=(i+1)*(s/steps);
+        const grad=ctx.createLinearGradient(0,y+s-stepH,0,y+s);
+        const up = tile.id==='stairs_up';
+        grad.addColorStop(0, up ? 'rgba(255,255,255,0.28)':'rgba(255,255,255,0.14)');
+        grad.addColorStop(1, 'rgba(0,0,0,0.15)');
+        ctx.fillStyle=grad;
+        ctx.fillRect(x+i*(s/steps), y+s-stepH, s/steps, stepH);
+        if (detailed) { ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=Math.max(0.5,s*0.015); ctx.strokeRect(x+i*(s/steps), y+s-stepH, s/steps, stepH); }
+      }
+    }
+
+    function drawChest(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle='#2a1a0a'; ctx.fillRect(x,y,s,s);
+      const bx=x+s*0.18, by=y+s*0.3, bw=s*0.64, bh=s*0.48;
+      const grad=ctx.createLinearGradient(bx,by,bx,by+bh);
+      grad.addColorStop(0,'#6a4318'); grad.addColorStop(1,'#3a2408');
+      ctx.fillStyle=grad; ctx.fillRect(bx,by,bw,bh);
+      if (detailed) {
+        ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=Math.max(0.6,s*0.015);
+        for (let i=1;i<4;i++) { ctx.beginPath(); ctx.moveTo(bx,by+bh*i/4); ctx.lineTo(bx+bw,by+bh*i/4); ctx.stroke(); }
+      }
+      ctx.fillStyle='#c8943a'; ctx.fillRect(bx,by,bw,bh*0.12);
+      ctx.fillStyle='#8a6020'; ctx.fillRect(bx,by+bh*0.42,bw,bh*0.1);
+      ctx.fillStyle='#ffcc00';
+      ctx.beginPath(); ctx.arc(bx+bw*0.5,by+bh*0.46,Math.max(0.8,s*0.06),0,Math.PI*2); ctx.fill();
+    }
+
+    function drawTrap(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=shade('#5a5a5a',-0.1); ctx.fillRect(x,y,s,s);
+      ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=Math.max(0.6,s*0.02);
+      ctx.strokeRect(x+s*0.1,y+s*0.1,s*0.8,s*0.8);
+      const grad=ctx.createRadialGradient(x+s*0.5,y+s*0.5,0,x+s*0.5,y+s*0.5,s*0.5);
+      grad.addColorStop(0,'rgba(180,20,20,0.35)'); grad.addColorStop(1,'rgba(180,20,20,0)');
+      ctx.fillStyle=grad; ctx.fillRect(x,y,s,s);
+      ctx.strokeStyle='#ff2020'; ctx.lineWidth=Math.max(0.8,s*0.035);
+      ctx.beginPath(); ctx.moveTo(x+s*0.25,y+s*0.25); ctx.lineTo(x+s*0.75,y+s*0.75); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x+s*0.75,y+s*0.25); ctx.lineTo(x+s*0.25,y+s*0.75); ctx.stroke();
+    }
+
+    function drawPit(ctx,tile,x,y,s,gx,gy,detailed) {
+      const grad=ctx.createRadialGradient(x+s*0.5,y+s*0.5,0,x+s*0.5,y+s*0.5,s*0.7);
+      grad.addColorStop(0,'#000000'); grad.addColorStop(0.7,'#0a0a0a'); grad.addColorStop(1,'#1a0f08');
+      ctx.fillStyle=grad; ctx.fillRect(x,y,s,s);
+      ctx.strokeStyle='rgba(255,100,20,0.15)'; ctx.lineWidth=Math.max(0.6,s*0.02);
+      ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.4,0,Math.PI*2); ctx.stroke();
+    }
+
+    function drawAltar(ctx,tile,x,y,s,gx,gy,detailed) {
+      ctx.fillStyle=shade(tile.color,-0.3); ctx.fillRect(x,y,s,s);
+      const grad=ctx.createLinearGradient(x,y,x,y+s);
+      grad.addColorStop(0,shade(tile.color,0.25)); grad.addColorStop(1,shade(tile.color,-0.15));
+      ctx.fillStyle=grad; ctx.fillRect(x+s*0.12,y+s*0.15,s*0.76,s*0.7);
+      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=Math.max(0.6,s*0.02);
+      ctx.strokeRect(x+s*0.12,y+s*0.15,s*0.76,s*0.7);
+      const glow=ctx.createRadialGradient(x+s*0.5,y+s*0.45,0,x+s*0.5,y+s*0.45,s*0.35);
+      glow.addColorStop(0,'rgba(200,140,255,0.55)'); glow.addColorStop(1,'rgba(200,140,255,0)');
+      ctx.fillStyle=glow; ctx.fillRect(x,y,s,s);
+      ctx.strokeStyle='#d8a8ff'; ctx.lineWidth=Math.max(0.8,s*0.035);
+      ctx.beginPath();
+      ctx.moveTo(x+s*0.5,y+s*0.28); ctx.lineTo(x+s*0.5,y+s*0.6);
+      ctx.moveTo(x+s*0.38,y+s*0.4); ctx.lineTo(x+s*0.62,y+s*0.4);
+      ctx.stroke();
+    }
+
+    function drawTile(ctx, tile, x, y, s, gx, gy) {
+      gx = gx||0; gy = gy||0;
       if (!tile) { ctx.fillStyle='#0a0a0a'; ctx.fillRect(x,y,s,s); ctx.strokeStyle='rgba(255,255,255,0.03)'; ctx.lineWidth=0.5; ctx.strokeRect(x,y,s,s); return; }
-      ctx.fillStyle = tile.color; ctx.fillRect(x,y,s,s);
+      const fam = FAMILY[tile.id] || 'plain';
+      const detailed = s >= 14;
       ctx.save();
-      if (tile.pat==='tree') {
-        ctx.fillStyle='rgba(0,80,0,0.5)'; ctx.beginPath(); ctx.arc(x+s/2,y+s/2,s*0.35,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle='rgba(0,120,0,0.4)'; ctx.beginPath(); ctx.arc(x+s*0.35,y+s*0.35,s*0.2,0,Math.PI*2); ctx.fill();
-      } else if (tile.pat==='peak') {
-        ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.moveTo(x+s/2,y+s*0.1); ctx.lineTo(x+s*0.8,y+s*0.8); ctx.lineTo(x+s*0.2,y+s*0.8); ctx.closePath(); ctx.fill();
-      } else if (tile.pat==='wall') {
-        ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1;
-        for(let i=0;i<3;i++) ctx.strokeRect(x+2,y+2+i*(s/3-1),s-4,s/3-2);
-      } else if (tile.pat==='door') {
-        ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(x+s*0.3,y+s*0.2,s*0.4,s*0.6);
-        ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.arc(x+s*0.62,y+s*0.5,s*0.06,0,Math.PI*2); ctx.fill();
-      } else if (tile.pat==='stair') {
-        ctx.fillStyle='rgba(255,255,255,0.2)';
-        for(let i=0;i<4;i++) ctx.fillRect(x+i*(s/4),y+s-(i+1)*(s/4),s/4,(i+1)*(s/4));
-      } else if (tile.pat==='chest') {
-        ctx.fillStyle='#4a3000'; ctx.fillRect(x+s*0.2,y+s*0.3,s*0.6,s*0.45);
-        ctx.fillStyle='#ffcc00'; ctx.fillRect(x+s*0.2,y+s*0.3,s*0.6,s*0.1);
-        ctx.fillStyle='#ff8800'; ctx.beginPath(); ctx.arc(x+s/2,y+s*0.35,s*0.07,0,Math.PI*2); ctx.fill();
-      } else if (tile.pat==='trap') {
-        ctx.strokeStyle='#ff0000'; ctx.lineWidth=1.5;
-        ctx.beginPath(); ctx.moveTo(x+s*0.2,y+s*0.2); ctx.lineTo(x+s*0.8,y+s*0.8); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x+s*0.8,y+s*0.2); ctx.lineTo(x+s*0.2,y+s*0.8); ctx.stroke();
+      ctx.beginPath(); ctx.rect(x,y,s,s); ctx.clip();
+      switch (fam) {
+        case 'grass': drawGrass(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'water': drawWater(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'sand': drawSand(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'dirt': drawDirt(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'snow': drawSnow(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'ice': drawIce(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'lava': drawLava(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'tree': drawGrass(ctx,{...tile,color:shade(tile.color,0.15)},x,y,s,gx,gy,detailed); drawTrees(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'peak': drawPeak(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'swamp': drawSwamp(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'stone': drawStone(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'wood': drawWood(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'wall': drawWall(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'brick': drawBrick(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'pillar': drawPillar(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'door': drawDoor(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'stair': drawStair(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'chest': drawChest(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'trap': drawTrap(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'pit': drawPit(ctx,tile,x,y,s,gx,gy,detailed); break;
+        case 'altar': drawAltar(ctx,tile,x,y,s,gx,gy,detailed); break;
+        default: ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
       }
       ctx.restore();
       ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=0.5; ctx.strokeRect(x,y,s,s);
@@ -318,9 +692,11 @@
       canvas.width=wrap.clientWidth; canvas.height=wrap.clientHeight;
       const ctx=canvas.getContext('2d');
       ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,canvas.width,canvas.height);
-      for(let y=0;y<map.height;y++)
-        for(let x=0;x<map.width;x++)
-          drawTile(ctx,getTile(map.tiles[y][x]),offsetX+x*tileSize,offsetY+y*tileSize,tileSize);
+      const x0=Math.max(0,Math.floor(-offsetX/tileSize)), y0=Math.max(0,Math.floor(-offsetY/tileSize));
+      const x1=Math.min(map.width,Math.ceil((canvas.width-offsetX)/tileSize)), y1=Math.min(map.height,Math.ceil((canvas.height-offsetY)/tileSize));
+      for(let y=y0;y<y1;y++)
+        for(let x=x0;x<x1;x++)
+          drawTile(ctx,getTile(map.tiles[y][x]),offsetX+x*tileSize,offsetY+y*tileSize,tileSize,x,y);
       updateInfo();
     }
 
