@@ -1334,6 +1334,14 @@
       document.getElementById('play-crosshair').style.display = playState.locked ? 'block' : 'none';
     });
 
+    // Walls fill their whole cell right up to the boundary, and collision was
+    // checking the bare camera point — so the camera could rest closer to a
+    // wall's face than the camera's near clip plane (0.05), putting the near
+    // plane inside the wall's (single-sided) box and letting you see through
+    // to whatever's behind it. Keeping this much clearance from solid cells
+    // keeps the camera comfortably outside that range.
+    const PLAYER_RADIUS = 0.3;
+
     function stepPlayer() {
       const ps = playState, cam = ps.camera, map = ps.map;
       const floor = ps.map.floors.find(f=>f.id===ps.playFloorId);
@@ -1348,8 +1356,12 @@
 
       const nx = cam.position.x + dx, nz = cam.position.z + dz;
       const cellX = Math.floor(cam.position.x / TILE_U), cellZ = Math.floor(cam.position.z / TILE_U);
-      const tryX = Math.floor(nx / TILE_U), tryZ = Math.floor(cam.position.z / TILE_U);
-      const tryZ2 = Math.floor(nz / TILE_U), tryX2 = Math.floor(cam.position.x / TILE_U);
+      // Check a point PLAYER_RADIUS ahead of the destination, in the direction
+      // of travel, instead of the bare destination point.
+      const edgeX = nx + Math.sign(dx) * PLAYER_RADIUS;
+      const edgeZ = nz + Math.sign(dz) * PLAYER_RADIUS;
+      const tryX = Math.floor(edgeX / TILE_U), tryZ = Math.floor(cam.position.z / TILE_U);
+      const tryZ2 = Math.floor(edgeZ / TILE_U), tryX2 = Math.floor(cam.position.x / TILE_U);
       if (!isSolidAt(map, floor, tryX, tryZ)) cam.position.x = nx;
       if (!isSolidAt(map, floor, tryX2, tryZ2)) cam.position.z = nz;
 
@@ -1428,7 +1440,11 @@
       const floor = ps.map.floors.find(f=>f.id===floorId);
       for (let yy=0;yy<ps.map.height;yy++) for (let xx=0;xx<ps.map.width;xx++) buildCell(ps.map, floor, xx, yy, ps.group, ps.meshByCell);
       ps.camera.position.set((x+0.5)*TILE_U, 1.6, (y+0.5)*TILE_U);
-      ps.lastCell = null;
+      // Mark the landing cell as already "entered" — otherwise the very next
+      // frame's stepPlayer() sees it as newly entered and re-fires onEnterCell,
+      // which immediately bounces you back through a stair tile placed at the
+      // same (x,y) on the destination floor (the natural way to align stairs).
+      ps.lastCell = x+','+y;
     }
 
     function showPlayMessage(text) {
