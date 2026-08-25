@@ -1428,7 +1428,11 @@
       const floor = ps.map.floors.find(f=>f.id===floorId);
       for (let yy=0;yy<ps.map.height;yy++) for (let xx=0;xx<ps.map.width;xx++) buildCell(ps.map, floor, xx, yy, ps.group, ps.meshByCell);
       ps.camera.position.set((x+0.5)*TILE_U, 1.6, (y+0.5)*TILE_U);
-      ps.lastCell = null;
+      // Mark the landing cell as already "entered" — otherwise the very next
+      // frame's stepPlayer() sees it as newly entered and re-fires onEnterCell,
+      // which immediately bounces you back through a stair tile placed at the
+      // same (x,y) on the destination floor (the natural way to align stairs).
+      ps.lastCell = x+','+y;
     }
 
     function showPlayMessage(text) {
