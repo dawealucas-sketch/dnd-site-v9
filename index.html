@@ -132,7 +132,7 @@
       if (password.length < 4)  { errEl.textContent = 'Password must be at least 4 characters.'; return; }
       if (username.length < 2)  { errEl.textContent = 'Username must be at least 2 characters.'; return; }
       const codeHash  = await hashStr(code);
-      const validHash = await hashStr('Hi1234');
+      const validHash = '07647b37dfd91dece52c530b2270cbbf913f788e52f7ff3435e3d094eea5300c';
       if (codeHash !== validHash) { errEl.textContent = 'Incorrect access code.'; return; }
       setLoading('reg-spinner', true);
       try {
@@ -157,7 +157,7 @@
       if (!password) { errEl.textContent = 'Please enter the DM password.'; return; }
       setLoading('dm-spinner', true);
       const h     = await hashStr(password);
-      const valid = await hashStr('Bobster the 2nd');
+      const valid = '5706cdf8b3886f59310990e122665f288d1f83ecd6325192a934c20e24c31e80';
       setLoading('dm-spinner', false);
       if (h !== valid) { errEl.textContent = 'Incorrect DM password.'; return; }
       sessionStorage.setItem('dnd-role', 'dm');
