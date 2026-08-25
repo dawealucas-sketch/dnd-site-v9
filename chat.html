@@ -281,6 +281,14 @@
           <div style="font-size:0.8rem;color:var(--text-dim);font-style:italic;">No one yet</div>
         </div>
       </div>
+
+      <div class="sidebar-panel">
+        <div class="sidebar-title">Backup</div>
+        <div style="display:flex;gap:6px;">
+          <button style="flex:1;font-size:0.7rem;" onclick="exportChat()">⬇ Backup</button>
+          <button style="flex:1;font-size:0.7rem;position:relative;overflow:hidden;">⬆ Restore<input type="file" accept="application/json" onchange="importChat(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;" /></button>
+        </div>
+      </div>
     </div>
 
     <!-- Chat main -->
@@ -973,6 +981,27 @@ Be specific and evocative. Avoid generic fantasy language. Every detail should b
       lastSavedId = id;
       renderMessages(msgs);
       await saveMessages(msgs);
+    }
+
+    function exportChat() {
+      BackupUtils.download('dnd-chat-backup-' + BackupUtils.stamp() + '.json', localMessages);
+    }
+
+    async function importChat(input) {
+      const file = input.files[0];
+      input.value = '';
+      if (!file) return;
+      let imported;
+      try { imported = await BackupUtils.readFile(file); }
+      catch (e) { alert(e.message); return; }
+      if (!Array.isArray(imported)) { alert('That file doesn\'t look like a chat backup.'); return; }
+      const byId = new Map(localMessages.map(m => [m.id, m]));
+      imported.forEach(m => { if (m && m.id) byId.set(m.id, m); }); // backup wins on id collision
+      const merged = [...byId.values()].sort((a,b) => (a.ts||0) - (b.ts||0));
+      if (!confirm('Merge ' + imported.length + ' message(s) from this backup into the current ' + localMessages.length + '? Result will have ' + merged.length + ' total.')) return;
+      localMessages = merged;
+      renderMessages(merged);
+      await saveMessages(merged);
     }
 
     async function deleteMsg(id) {
