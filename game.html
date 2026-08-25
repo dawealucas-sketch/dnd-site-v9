@@ -228,26 +228,45 @@
       }
     }
 
+    // ── Die scaling ──
+    // Dice grow one prestige tier ahead of their unlock, so by the actual
+    // milestone (5000/7500/...) you're already rolling the bigger die.
+    const DIE_TIERS = [
+      { min:17500, sides:200 },
+      { min:15000, sides:175 },
+      { min:12500, sides:150 },
+      { min:10000, sides:125 },
+      { min:7500,  sides:100 },
+      { min:5000,  sides:75  },
+      { min:260,   sides:50  },
+      { min:0,     sides:20  },
+    ];
+    function getDieSides() {
+      const score = gameData.totalScore;
+      return DIE_TIERS.find(t => score >= t.min).sides;
+    }
+
     // ── Rolling ──
     function rollNext() {
       if (rolling || rollsLeft <= 0) return;
       rolling = true;
+      const sides = getDieSides();
       const dieEl = document.getElementById('die-' + diceValues.length);
       dieEl.classList.add('rolling');
       dieEl.textContent = '?';
       setTimeout(() => {
-        const val = Math.floor(Math.random() * 20) + 1;
+        const val = Math.floor(Math.random() * sides) + 1;
         diceValues.push(val);
         dieEl.classList.remove('rolling');
         dieEl.classList.add('rolled');
         dieEl.textContent = val;
-        if (val === 20) dieEl.classList.add('nat20');
+        if (val === sides) dieEl.classList.add('nat20');
         else if (val === 1) dieEl.classList.add('nat1');
         roundScore += val;
         rollsLeft--;
         document.getElementById('round-score').textContent = roundScore;
         document.getElementById('rolls-left').textContent = rollsLeft;
-        document.getElementById('result-msg').textContent = val === 20 ? '⚡ Natural 20!' : val === 1 ? '💀 Critical fail...' : `Rolled a ${val}`;
+        document.getElementById('result-msg').textContent = val === sides ? `⚡ Max roll (d${sides})!` : val === 1 ? '💀 Critical fail...' : `Rolled a ${val} (d${sides})`;
         if (rollsLeft === 0) endRound();
         rolling = false;
       }, 380);
