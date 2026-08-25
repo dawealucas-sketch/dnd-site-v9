@@ -1366,7 +1366,7 @@
       if (x<0||y<0||x>=ps.map.width||y>=ps.map.height) return;
       const tile = getTile(floor.tiles[y][x]);
       const logic = floor.logic[x+','+y];
-      if (logic && logic.trigger==='enter') fireLogic(logic);
+      if (logic && logic.trigger==='enter') fireLogic(logic, x, y);
       if (tile && tile.stair) {
         const idx = ps.map.floors.findIndex(f=>f.id===floor.id);
         const targetIdx = tile.stair==='up' ? idx-1 : idx+1;
@@ -1383,16 +1383,16 @@
         const px = cam.position.x + dirx*d, pz = cam.position.z + dirz*d;
         const x = Math.floor(px/TILE_U), y = Math.floor(pz/TILE_U);
         const logic = floor.logic[x+','+y];
-        if (logic && logic.trigger==='manual') { fireLogic(logic); return; }
+        if (logic && logic.trigger==='manual') { fireLogic(logic, x, y); return; }
       }
     }
 
-    function fireLogic(logic) {
+    function fireLogic(logic, srcX, srcY) {
       if (logic.requiresFlag && !playState.flags[logic.requiresFlag]) return;
-      (logic.outputs||[]).forEach(runOutput);
+      (logic.outputs||[]).forEach(out => runOutput(out, srcX, srcY));
     }
 
-    function runOutput(out) {
+    function runOutput(out, srcX, srcY) {
       const ps = playState, map = ps.map;
       const floor = () => map.floors.find(f=>f.id===ps.playFloorId);
       if (out.type === 'message') showPlayMessage(out.text||'');
@@ -1406,8 +1406,8 @@
         }
       } else if (out.type === 'settile') {
         const f = floor();
-        const x = out.x!=null ? out.x : logicEditTarget?.x;
-        const y = out.y!=null ? out.y : logicEditTarget?.y;
+        const x = out.x!=null ? out.x : srcX;
+        const y = out.y!=null ? out.y : srcY;
         if (x==null||y==null||x<0||y<0||x>=map.width||y>=map.height) return;
         f.tiles[y][x] = out.tileId || null;
         buildCell(map, f, x, y, ps.group, ps.meshByCell);
