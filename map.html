@@ -22,13 +22,15 @@
     .map-item-del:hover { color: var(--red); }
     .new-map-btn { margin: 0.5rem; flex-shrink: 0; }
 
-    .canvas-wrap { position: relative; overflow: hidden; background: #0a0a0a; cursor: crosshair; }
-    #map-canvas { display: block; image-rendering: pixelated; }
+    .canvas-wrap { position: relative; overflow: hidden; background: #171d29; cursor: crosshair; }
+    #three-container { position: absolute; inset: 0; }
+    #three-container canvas { display: block; }
     .canvas-toolbar { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; z-index: 10; flex-wrap: wrap; }
     .tool-btn { background: var(--panel); border: 1px solid var(--border2); border-radius: 6px; color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 5px 10px; font-family: var(--font-display); letter-spacing: 0.06em; transition: all 0.15s; }
     .tool-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
     .tool-btn.active { border-color: var(--gold); color: var(--gold); background: var(--bg3); }
     .canvas-info { position: absolute; bottom: 10px; left: 10px; font-size: 0.7rem; color: var(--text-dim); font-family: var(--font-display); background: rgba(0,0,0,0.7); padding: 3px 8px; border-radius: 4px; }
+    .canvas-hint { position: absolute; top: 10px; right: 10px; font-size: 0.65rem; color: var(--text-dim); font-family: var(--font-display); background: rgba(0,0,0,0.6); padding: 5px 9px; border-radius: 4px; line-height: 1.6; text-align: right; z-index: 10; }
     .zoom-btns { position: absolute; bottom: 10px; right: 10px; display: flex; gap: 4px; }
     .zoom-btn { background: var(--panel); border: 1px solid var(--border2); border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
     .zoom-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
@@ -45,6 +47,7 @@
     .tile-btn { border-radius: 6px; border: 2px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px; transition: border-color 0.15s; background: var(--panel); }
     .tile-btn:hover { border-color: var(--border2); }
     .tile-btn.selected { border-color: var(--gold); }
+    .tile-swatch { width: 100%; height: 36px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
     .tile-label { font-size: 0.6rem; font-family: var(--font-display); letter-spacing: 0.05em; color: var(--text-dim); text-align: center; }
     .eraser-btn { grid-column: 1 / -1; }
     .eraser-btn.selected { border-color: var(--red); }
@@ -89,7 +92,7 @@
         <p>Create or select a map to begin building.</p>
         <button class="primary" onclick="openNewMapModal()">+ New Map</button>
       </div>
-      <canvas id="map-canvas" style="display:none;"></canvas>
+      <div id="three-container" style="display:none;"></div>
       <div class="canvas-toolbar" id="canvas-toolbar" style="display:none;">
         <button class="tool-btn active" id="tool-paint" onclick="setTool('paint')">🖌 Paint</button>
         <button class="tool-btn" id="tool-fill" onclick="setTool('fill')">🪣 Fill</button>
@@ -97,11 +100,12 @@
         <button class="tool-btn" onclick="clearMap()" style="border-color:var(--red-dim);color:var(--red-dim);">🗑 Clear</button>
         <button class="tool-btn" onclick="saveCurrentMap()" style="border-color:var(--gold-dim);color:var(--gold);">💾 Save</button>
       </div>
+      <div class="canvas-hint" id="canvas-hint" style="display:none;">Left-click: paint &middot; Right-drag: rotate<br/>Middle-drag: pan &middot; Scroll: zoom</div>
       <div class="canvas-info" id="canvas-info" style="display:none;"></div>
       <div class="zoom-btns" id="zoom-btns" style="display:none;">
-        <button class="zoom-btn" onclick="zoom(1.2)">+</button>
-        <button class="zoom-btn" onclick="zoom(0.8)">−</button>
-        <button class="zoom-btn" onclick="resetZoom()" title="Reset">⊙</button>
+        <button class="zoom-btn" onclick="zoomCamera(0.8)">+</button>
+        <button class="zoom-btn" onclick="zoomCamera(1.25)">−</button>
+        <button class="zoom-btn" onclick="resetCamera()" title="Reset view">⊙</button>
       </div>
     </div>
 
@@ -146,89 +150,81 @@
   </div>
 
   <script src="auth.js"></script>
-  <script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.min.js",
+      "three/addons/controls/OrbitControls.js": "./vendor/three/OrbitControls.js"
+    }
+  }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const { Auth, MapStore, MapSessionStore } = window;
     if (!Auth.require()) throw new Error('not logged in');
     const isDM = Auth.isDM();
 
     if (!isDM) {
       document.getElementById('map-layout').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:1rem;color:var(--text-dim);grid-column:1/-1;"><span style="font-size:2.5rem;">🔒</span><p style="font-style:italic;">Only the Dungeon Master can access the map editor.</p><a href="home.html"><button>Go Home</button></a></div>';
+      throw new Error('not DM');
     }
 
-    // ── Tile definitions ──
+    // ── Tile definitions (ids/colors kept identical to the previous 2D version,
+    // so maps saved before this rewrite still load correctly) ──
     const TILES = {
       nature: [
-        {id:'grass',        label:'Grass',        color:'#2d6a2d', pat:'solid'},
-        {id:'dark_grass',   label:'Dark Grass',   color:'#1a4a1a', pat:'solid'},
-        {id:'water',        label:'Water',        color:'#1a5a8a', pat:'solid'},
-        {id:'deep_water',   label:'Deep Water',   color:'#0a2a5a', pat:'solid'},
-        {id:'sand',         label:'Sand',         color:'#c8a84a', pat:'solid'},
-        {id:'dirt',         label:'Dirt',         color:'#8a5a2a', pat:'solid'},
-        {id:'snow',         label:'Snow',         color:'#d8e8f0', pat:'solid'},
-        {id:'ice',          label:'Ice',          color:'#a0c8e0', pat:'solid'},
-        {id:'lava',         label:'Lava',         color:'#c84a00', pat:'solid'},
-        {id:'volcanic',     label:'Volcanic',     color:'#4a1a00', pat:'solid'},
-        {id:'forest',       label:'Forest',       color:'#1a5a1a', pat:'tree'},
-        {id:'dense_forest', label:'Dense Forest', color:'#0a3a0a', pat:'tree'},
-        {id:'mountain',     label:'Mountain',     color:'#8a8a8a', pat:'peak'},
-        {id:'snow_peak',    label:'Snow Peak',    color:'#c0c0c0', pat:'peak'},
-        {id:'swamp',        label:'Swamp',        color:'#3a5a2a', pat:'solid'},
-        {id:'desert',       label:'Desert',       color:'#d4a84a', pat:'solid'},
+        {id:'grass',        label:'Grass',        color:'#2d6a2d'},
+        {id:'dark_grass',   label:'Dark Grass',   color:'#1a4a1a'},
+        {id:'water',        label:'Water',        color:'#1a5a8a'},
+        {id:'deep_water',   label:'Deep Water',   color:'#0a2a5a'},
+        {id:'sand',         label:'Sand',         color:'#c8a84a'},
+        {id:'dirt',         label:'Dirt',         color:'#8a5a2a'},
+        {id:'snow',         label:'Snow',         color:'#d8e8f0'},
+        {id:'ice',          label:'Ice',          color:'#a0c8e0'},
+        {id:'lava',         label:'Lava',         color:'#c84a00'},
+        {id:'volcanic',     label:'Volcanic',     color:'#4a1a00'},
+        {id:'forest',       label:'Forest',       color:'#1a5a1a'},
+        {id:'dense_forest', label:'Dense Forest', color:'#0a3a0a'},
+        {id:'mountain',     label:'Mountain',     color:'#8a8a8a'},
+        {id:'snow_peak',    label:'Snow Peak',    color:'#c0c0c0'},
+        {id:'swamp',        label:'Swamp',        color:'#3a5a2a'},
+        {id:'desert',       label:'Desert',       color:'#d4a84a'},
       ],
       dungeon: [
-        {id:'stone_floor',  label:'Stone Floor',  color:'#5a5a5a', pat:'solid'},
-        {id:'dark_floor',   label:'Dark Floor',   color:'#3a3a3a', pat:'solid'},
-        {id:'wood_floor',   label:'Wood Floor',   color:'#6a4a2a', pat:'solid'},
-        {id:'wall',         label:'Wall',         color:'#2a2a2a', pat:'wall'},
-        {id:'brick_wall',   label:'Brick Wall',   color:'#5a3a2a', pat:'wall'},
-        {id:'door',         label:'Door',         color:'#8a5a1a', pat:'door'},
-        {id:'locked_door',  label:'Locked Door',  color:'#6a2a1a', pat:'door'},
-        {id:'stairs_up',    label:'Stairs Up',    color:'#7a7a7a', pat:'stair'},
-        {id:'stairs_down',  label:'Stairs Down',  color:'#4a4a4a', pat:'stair'},
-        {id:'chest',        label:'Chest',        color:'#a07820', pat:'chest'},
-        {id:'trap',         label:'Trap',         color:'#8a2020', pat:'trap'},
-        {id:'water_d',      label:'Water',        color:'#1a3a5a', pat:'solid'},
-        {id:'lava_d',       label:'Lava',         color:'#aa3a00', pat:'solid'},
-        {id:'pit',          label:'Pit',          color:'#0a0a0a', pat:'solid'},
-        {id:'altar',        label:'Altar',        color:'#6a4a8a', pat:'solid'},
-        {id:'pillar',       label:'Pillar',       color:'#3a3a5a', pat:'wall'},
+        {id:'stone_floor',  label:'Stone Floor',  color:'#5a5a5a'},
+        {id:'dark_floor',   label:'Dark Floor',   color:'#3a3a3a'},
+        {id:'wood_floor',   label:'Wood Floor',   color:'#6a4a2a'},
+        {id:'wall',         label:'Wall',         color:'#2a2a2a'},
+        {id:'brick_wall',   label:'Brick Wall',   color:'#5a3a2a'},
+        {id:'door',         label:'Door',         color:'#8a5a1a'},
+        {id:'locked_door',  label:'Locked Door',  color:'#6a2a1a'},
+        {id:'stairs_up',    label:'Stairs Up',    color:'#7a7a7a'},
+        {id:'stairs_down',  label:'Stairs Down',  color:'#4a4a4a'},
+        {id:'chest',        label:'Chest',        color:'#a07820'},
+        {id:'trap',         label:'Trap',         color:'#8a2020'},
+        {id:'water_d',      label:'Water',        color:'#1a3a5a'},
+        {id:'lava_d',       label:'Lava',         color:'#aa3a00'},
+        {id:'pit',          label:'Pit',          color:'#0a0a0a'},
+        {id:'altar',        label:'Altar',        color:'#6a4a8a'},
+        {id:'pillar',       label:'Pillar',       color:'#3a3a5a'},
       ]
     };
-
     const ALL_TILES = [...TILES.nature, ...TILES.dungeon];
     function getTile(id) { return ALL_TILES.find(t => t.id === id) || null; }
-
-    // ── Deterministic pseudo-random noise (stable per grid cell, so texture
-    // doesn't jitter every time the canvas redraws) ──
-    function tileRand(gx, gy, salt) {
-      let h = (gx * 374761393 + gy * 668265263 + salt * 2246822519) | 0;
-      h = Math.imul(h ^ (h >>> 15), 2246822519);
-      h = Math.imul(h ^ (h >>> 13), 3266489917);
-      h = (h ^ (h >>> 16)) >>> 0;
-      return h / 4294967296;
-    }
-    function shade(hex, amt) {
-      const n = parseInt(hex.slice(1), 16);
-      let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-      if (amt >= 0) { r += (255-r)*amt; g += (255-g)*amt; b += (255-b)*amt; }
-      else { r *= (1+amt); g *= (1+amt); b *= (1+amt); }
-      return 'rgb('+Math.max(0,Math.min(255,r|0))+','+Math.max(0,Math.min(255,g|0))+','+Math.max(0,Math.min(255,b|0))+')';
-    }
 
     const FAMILY = {
       grass:'grass', dark_grass:'grass',
       water:'water', deep_water:'water', water_d:'water',
-      sand:'sand', desert:'sand',
-      dirt:'dirt',
-      snow:'snow',
-      ice:'ice',
+      sand:'flat', desert:'flat', dirt:'flat', snow:'flat', ice:'flat',
+      stone_floor:'flat', dark_floor:'flat', wood_floor:'flat',
       lava:'lava', volcanic:'lava', lava_d:'lava',
       forest:'tree', dense_forest:'tree',
       mountain:'peak', snow_peak:'peak',
-      swamp:'swamp',
-      stone_floor:'stone', dark_floor:'stone',
-      wood_floor:'wood',
-      wall:'wall', pillar:'pillar',
-      brick_wall:'brick',
+      swamp:'flat',
+      wall:'wall', brick_wall:'wall',
+      pillar:'pillar',
       door:'door', locked_door:'door',
       stairs_up:'stair', stairs_down:'stair',
       chest:'chest',
@@ -237,394 +233,346 @@
       altar:'altar',
     };
 
-    function drawGrass(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
-      if (!detailed) return;
-      for (let i=0;i<3;i++) {
-        const r1=tileRand(gx,gy,i*7+1), r2=tileRand(gx,gy,i*7+2), r3=tileRand(gx,gy,i*7+3);
-        ctx.fillStyle = shade(tile.color, r3>0.5?0.12:-0.12);
-        ctx.globalAlpha = 0.35;
-        ctx.beginPath(); ctx.ellipse(x+r1*s,y+r2*s,s*0.22,s*0.14,r3*Math.PI,0,Math.PI*2); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      const bladeCount = Math.max(4, Math.round(s/4));
-      ctx.strokeStyle = shade(tile.color, 0.3);
-      ctx.lineWidth = Math.max(0.6, s*0.02);
-      for (let i=0;i<bladeCount;i++) {
-        const bx = x + tileRand(gx,gy,100+i)*s, by = y + tileRand(gx,gy,200+i)*s;
-        const len = s*(0.12+tileRand(gx,gy,300+i)*0.1);
-        const ang = -Math.PI/2 + (tileRand(gx,gy,400+i)-0.5)*0.9;
-        ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+Math.cos(ang)*len, by+Math.sin(ang)*len); ctx.stroke();
-      }
+    function tileRand(gx, gy, salt) {
+      let h = (gx * 374761393 + gy * 668265263 + salt * 2246822519) | 0;
+      h = Math.imul(h ^ (h >>> 15), 2246822519);
+      h = Math.imul(h ^ (h >>> 13), 3266489917);
+      h = (h ^ (h >>> 16)) >>> 0;
+      return h / 4294967296;
+    }
+    function shadeHex(hex, amt) {
+      const n = parseInt(hex.slice(1), 16);
+      let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      if (amt >= 0) { r += (255-r)*amt; g += (255-g)*amt; b += (255-b)*amt; }
+      else { r *= (1+amt); g *= (1+amt); b *= (1+amt); }
+      return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,v|0)).toString(16).padStart(2,'0')).join('');
     }
 
-    function drawWater(ctx,tile,x,y,s,gx,gy,detailed) {
-      const grad = ctx.createLinearGradient(x,y,x,y+s);
-      grad.addColorStop(0, shade(tile.color,0.15)); grad.addColorStop(1, shade(tile.color,-0.2));
-      ctx.fillStyle = grad; ctx.fillRect(x,y,s,s);
-      if (!detailed) return;
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-      ctx.lineWidth = Math.max(0.6, s*0.03);
-      for (let i=0;i<2;i++) {
-        const wy = y + s*(0.3+i*0.35) + (tileRand(gx,gy,50+i)-0.5)*s*0.15;
-        ctx.beginPath(); ctx.moveTo(x,wy); ctx.quadraticCurveTo(x+s*0.5,wy-s*0.08,x+s,wy); ctx.stroke();
-      }
+    // ── Three.js scene ──
+    let scene, camera, renderer, controls, raycaster;
+    let groundMesh = null, gridLines = null;
+    let tileGroups = {};
+
+    function buildToonGradient() {
+      const c = document.createElement('canvas'); c.width = 4; c.height = 1;
+      const ctx = c.getContext('2d');
+      const shades = [70, 130, 190, 255];
+      shades.forEach((v,i) => { ctx.fillStyle = 'rgb('+v+','+v+','+v+')'; ctx.fillRect(i,0,1,1); });
+      const tex = new THREE.CanvasTexture(c);
+      tex.minFilter = THREE.NearestFilter; tex.magFilter = THREE.NearestFilter;
+      return tex;
+    }
+    let toonGradientTex;
+
+    const geometryCache = {};
+    function geo(key, factory) { if (!geometryCache[key]) geometryCache[key] = factory(); return geometryCache[key]; }
+
+    const materialCache = {};
+    function toonMat(hex, opts) {
+      opts = opts || {};
+      const key = hex + '|' + JSON.stringify(opts);
+      if (materialCache[key]) return materialCache[key];
+      const params = { color: new THREE.Color(hex), gradientMap: toonGradientTex };
+      if (opts.transparent) { params.transparent = true; params.opacity = opts.opacity != null ? opts.opacity : 1; }
+      if (opts.emissive) { params.emissive = new THREE.Color(opts.emissive); params.emissiveIntensity = opts.emissiveIntensity != null ? opts.emissiveIntensity : 1; }
+      const m = new THREE.MeshToonMaterial(params);
+      materialCache[key] = m;
+      return m;
     }
 
-    function drawSand(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
-      if (!detailed) return;
-      ctx.globalAlpha=0.7;
-      const grainSize = Math.max(1, s*0.025);
-      for (let i=0;i<16;i++) {
-        const px=x+tileRand(gx,gy,60+i)*s, py=y+tileRand(gx,gy,70+i)*s;
-        ctx.fillStyle = shade(tile.color, tileRand(gx,gy,80+i)>0.5?0.25:-0.22);
-        ctx.fillRect(px,py,grainSize,grainSize);
-      }
-      ctx.globalAlpha=0.4;
-      ctx.strokeStyle = shade(tile.color,0.2);
-      ctx.lineWidth=Math.max(0.6,s*0.02);
-      for (let i=0;i<2;i++) {
-        const wy=y+s*(0.35+i*0.4);
-        ctx.beginPath(); ctx.moveTo(x,wy); ctx.quadraticCurveTo(x+s*0.5,wy+s*0.06,x+s,wy); ctx.stroke();
-      }
-      ctx.globalAlpha=1;
-    }
-
-    function drawDirt(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
-      if (!detailed) return;
-      ctx.globalAlpha=0.4;
-      for (let i=0;i<4;i++) {
-        const r1=tileRand(gx,gy,90+i), r2=tileRand(gx,gy,91+i);
-        ctx.fillStyle = shade(tile.color, r1>0.5?-0.15:0.1);
-        ctx.beginPath(); ctx.ellipse(x+r1*s,y+r2*s,s*0.15,s*0.1,0,0,Math.PI*2); ctx.fill();
-      }
-      ctx.globalAlpha=1;
-      for (let i=0;i<5;i++) {
-        const px=x+tileRand(gx,gy,120+i)*s, py=y+tileRand(gx,gy,130+i)*s;
-        ctx.fillStyle='rgba(140,140,140,0.4)';
-        ctx.beginPath(); ctx.arc(px,py,Math.max(0.6,s*0.03),0,Math.PI*2); ctx.fill();
-      }
-    }
-
-    function drawSnow(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
-      if (!detailed) return;
-      for (let i=0;i<4;i++) {
-        const r1=tileRand(gx,gy,140+i), r2=tileRand(gx,gy,141+i);
-        ctx.fillStyle='rgba(130,165,200,0.35)';
-        ctx.beginPath(); ctx.ellipse(x+r1*s,y+r2*s,s*0.22,s*0.13,0,0,Math.PI*2); ctx.fill();
-      }
-      for (let i=0;i<12;i++) {
-        const px=x+tileRand(gx,gy,150+i)*s, py=y+tileRand(gx,gy,160+i)*s;
-        ctx.fillStyle='rgba(255,255,255,0.95)';
-        ctx.beginPath(); ctx.arc(px,py,Math.max(0.8,s*0.035),0,Math.PI*2); ctx.fill();
-      }
-    }
-
-    function drawIce(ctx,tile,x,y,s,gx,gy,detailed) {
-      const grad=ctx.createLinearGradient(x,y,x+s,y+s);
-      grad.addColorStop(0, shade(tile.color,0.2)); grad.addColorStop(1, shade(tile.color,-0.1));
-      ctx.fillStyle=grad; ctx.fillRect(x,y,s,s);
-      if (!detailed) return;
-      ctx.strokeStyle='rgba(255,255,255,0.5)';
-      ctx.lineWidth=Math.max(0.6,s*0.02);
-      for (let i=0;i<3;i++) {
-        const r1=tileRand(gx,gy,170+i);
-        ctx.beginPath(); ctx.moveTo(x+r1*s*0.3,y+s); ctx.lineTo(x+r1*s*0.3+s*0.3,y); ctx.stroke();
-      }
-      ctx.strokeStyle='rgba(120,160,200,0.4)';
-      ctx.beginPath(); ctx.moveTo(x+s*0.2,y+s*0.6); ctx.lineTo(x+s*0.5,y+s*0.4); ctx.lineTo(x+s*0.8,y+s*0.65); ctx.stroke();
-    }
-
-    function drawLava(ctx,tile,x,y,s,gx,gy,detailed) {
-      const grad=ctx.createRadialGradient(x+s*0.5,y+s*0.5,s*0.05,x+s*0.5,y+s*0.5,s*0.7);
-      grad.addColorStop(0, shade(tile.color,0.35)); grad.addColorStop(0.6, tile.color); grad.addColorStop(1, shade(tile.color,-0.35));
-      ctx.fillStyle=grad; ctx.fillRect(x,y,s,s);
-      if (!detailed) return;
-      ctx.strokeStyle='rgba(0,0,0,0.5)';
-      ctx.lineWidth=Math.max(0.6,s*0.025);
-      for (let i=0;i<3;i++) {
-        const r1=tileRand(gx,gy,180+i), r2=tileRand(gx,gy,181+i);
-        ctx.beginPath(); ctx.moveTo(x+r1*s,y+r2*s);
-        ctx.lineTo(x+r1*s+(tileRand(gx,gy,182+i)-0.5)*s*0.4, y+r2*s+(tileRand(gx,gy,183+i)-0.5)*s*0.4);
-        ctx.stroke();
-      }
-      ctx.fillStyle='rgba(255,200,80,0.5)';
-      ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.12,0,Math.PI*2); ctx.fill();
-    }
-
-    function drawTrees(ctx,tile,x,y,s,gx,gy,detailed) {
-      const count = tile.id==='dense_forest' ? 3 : 2;
+    function addTrees(group, tile, gx, gy) {
+      const count = tile.id === 'dense_forest' ? 3 : 2;
       for (let i=0;i<count;i++) {
-        const r1=tileRand(gx,gy,200+i*3), r2=tileRand(gx,gy,201+i*3), r3=tileRand(gx,gy,202+i*3);
-        const cx=x+s*(0.25+r1*0.5), cy=y+s*(0.35+r2*0.4), rad=s*(0.16+r3*0.08);
-        ctx.fillStyle='#4a2f18';
-        ctx.fillRect(cx-s*0.02, cy+rad*0.4, s*0.05, rad*0.6);
-        const grad=ctx.createRadialGradient(cx-rad*0.3,cy-rad*0.3,rad*0.1,cx,cy,rad);
-        grad.addColorStop(0, '#3a7a2a'); grad.addColorStop(1, '#0f3a10');
-        ctx.fillStyle=grad;
-        ctx.beginPath(); ctx.arc(cx,cy,rad,0,Math.PI*2); ctx.fill();
+        const r1=tileRand(gx,gy,10+i*3), r2=tileRand(gx,gy,11+i*3), r3=tileRand(gx,gy,12+i*3);
+        const px=(r1-0.5)*0.55, pz=(r2-0.5)*0.55, scale=0.75+r3*0.5;
+        const trunk = new THREE.Mesh(geo('trunk',()=>new THREE.CylinderGeometry(0.05,0.07,0.35,6)), toonMat('#5a3a1a'));
+        trunk.position.set(px,0.17*scale,pz); trunk.scale.setScalar(scale); trunk.castShadow=true;
+        const canopy = new THREE.Mesh(geo('canopy',()=>new THREE.ConeGeometry(0.32,0.7,6)), toonMat(i%2===0?'#2f7a2f':'#3a8a35'));
+        canopy.position.set(px,0.55*scale,pz); canopy.scale.setScalar(scale); canopy.castShadow=true;
+        group.add(trunk,canopy);
       }
     }
-
-    function drawPeak(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle = shade(tile.color,-0.25); ctx.fillRect(x,y,s,s);
-      if (detailed) {
-        for (let i=0;i<4;i++) {
-          const px=x+tileRand(gx,gy,210+i)*s, py=y+s*0.75+tileRand(gx,gy,211+i)*s*0.25;
-          ctx.fillStyle='rgba(0,0,0,0.15)';
-          ctx.beginPath(); ctx.arc(px,py,Math.max(0.6,s*0.03),0,Math.PI*2); ctx.fill();
-        }
-      }
-      const grad=ctx.createLinearGradient(x,y,x,y+s*0.8);
-      grad.addColorStop(0, shade(tile.color,0.3)); grad.addColorStop(1, shade(tile.color,-0.1));
-      ctx.fillStyle=grad;
-      ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.08); ctx.lineTo(x+s*0.85,y+s*0.85); ctx.lineTo(x+s*0.15,y+s*0.85); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=Math.max(0.6,s*0.02);
-      ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.08); ctx.lineTo(x+s*0.35,y+s*0.5); ctx.stroke();
+    function addPeak(group, tile, gx, gy) {
+      const rot = tileRand(gx,gy,20)*Math.PI;
+      const cone = new THREE.Mesh(geo('peakCone',()=>new THREE.ConeGeometry(0.55,1.3,5)), toonMat(shadeHex(tile.color,-0.05)));
+      cone.position.y=0.55; cone.rotation.y=rot; cone.castShadow=true;
+      group.add(cone);
       if (tile.id==='snow_peak') {
-        ctx.fillStyle='#f0f4f8';
-        ctx.beginPath();
-        ctx.moveTo(x+s*0.5,y+s*0.08); ctx.lineTo(x+s*0.62,y+s*0.32); ctx.lineTo(x+s*0.5,y+s*0.28); ctx.lineTo(x+s*0.4,y+s*0.36);
-        ctx.closePath(); ctx.fill();
+        const cap = new THREE.Mesh(geo('peakCap',()=>new THREE.ConeGeometry(0.24,0.4,5)), toonMat('#f4f8fb'));
+        cap.position.y=1.15; cap.rotation.y=rot; cap.castShadow=true;
+        group.add(cap);
       }
     }
-
-    function drawSwamp(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
-      if (!detailed) return;
-      for (let i=0;i<3;i++) {
-        const r1=tileRand(gx,gy,220+i), r2=tileRand(gx,gy,221+i);
-        ctx.fillStyle='rgba(20,20,10,0.35)';
-        ctx.beginPath(); ctx.ellipse(x+r1*s,y+r2*s,s*0.2,s*0.12,0,0,Math.PI*2); ctx.fill();
-      }
-      ctx.strokeStyle='#3a5a2a'; ctx.lineWidth=Math.max(0.6,s*0.025);
-      for (let i=0;i<2;i++) {
-        const r1=tileRand(gx,gy,230+i), r2=tileRand(gx,gy,231+i);
-        ctx.beginPath(); ctx.moveTo(x+r1*s,y+r2*s); ctx.lineTo(x+r1*s-s*0.05,y+r2*s-s*0.15); ctx.stroke();
+    function addWall(group, tile) {
+      const wall = new THREE.Mesh(geo('wallBox',()=>new THREE.BoxGeometry(0.94,1.3,0.94)), toonMat(tile.color));
+      wall.position.y=0.55; wall.castShadow=true; wall.receiveShadow=true;
+      group.add(wall);
+      if (tile.id==='brick_wall') {
+        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(wall.geometry), new THREE.LineBasicMaterial({color:0x000000, transparent:true, opacity:0.3}));
+        edges.position.copy(wall.position);
+        group.add(edges);
       }
     }
-
-    function drawStone(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
-      if (!detailed) return;
-      const rows=2, cols=2;
-      for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) {
-        const rv=tileRand(gx,gy,240+r*3+c);
-        ctx.fillStyle = shade(tile.color, (rv-0.5)*0.15);
-        ctx.globalAlpha=0.5;
-        ctx.fillRect(x+s*c/cols+1,y+s*r/rows+1,s/cols-2,s/rows-2);
-      }
-      ctx.globalAlpha=1;
-      ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=Math.max(0.6,s*0.03);
-      for (let r=0;r<=rows;r++) { ctx.beginPath(); ctx.moveTo(x,y+s*r/rows); ctx.lineTo(x+s,y+s*r/rows); ctx.stroke(); }
-      for (let c=0;c<=cols;c++) { ctx.beginPath(); ctx.moveTo(x+s*c/cols,y); ctx.lineTo(x+s*c/cols,y+s); ctx.stroke(); }
+    function addPillar(group, tile) {
+      const p = new THREE.Mesh(geo('pillarCyl',()=>new THREE.CylinderGeometry(0.28,0.32,1.3,8)), toonMat(tile.color));
+      p.position.y=0.55; p.castShadow=true;
+      group.add(p);
     }
-
-    function drawWood(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
-      if (!detailed) return;
-      const planks=3;
-      ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=Math.max(0.5,s*0.012);
-      for (let i=0;i<planks;i++) {
-        const midY=y+s*(i+0.5)/planks;
-        ctx.beginPath(); ctx.moveTo(x,midY); ctx.quadraticCurveTo(x+s*0.5,midY+s*0.03,x+s,midY); ctx.stroke();
-      }
-      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=Math.max(0.6,s*0.02);
-      for (let i=1;i<planks;i++) { ctx.beginPath(); ctx.moveTo(x,y+s*i/planks); ctx.lineTo(x+s,y+s*i/planks); ctx.stroke(); }
-      const r1=tileRand(gx,gy,250), r2=tileRand(gx,gy,251);
-      ctx.fillStyle='rgba(0,0,0,0.25)';
-      ctx.beginPath(); ctx.ellipse(x+r1*s,y+r2*s,s*0.05,s*0.03,0,0,Math.PI*2); ctx.fill();
-    }
-
-    function drawWall(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
-      const grad=ctx.createLinearGradient(x,y,x,y+s*0.3);
-      grad.addColorStop(0,'rgba(255,255,255,0.12)'); grad.addColorStop(1,'rgba(255,255,255,0)');
-      ctx.fillStyle=grad; ctx.fillRect(x,y,s,s*0.3);
-      if (!detailed) return;
-      for (let i=0;i<3;i++) {
-        const rv=tileRand(gx,gy,260+i);
-        ctx.fillStyle = 'rgba(0,0,0,'+(0.15+rv*0.1)+')';
-        ctx.fillRect(x+2,y+2+i*(s/3-1),s-4,s/3-2);
-      }
-      ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=Math.max(0.6,s*0.025);
-      for (let i=0;i<3;i++) ctx.strokeRect(x+2,y+2+i*(s/3-1),s-4,s/3-2);
-    }
-
-    function drawBrick(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=shade(tile.color,-0.15); ctx.fillRect(x,y,s,s);
-      if (!detailed) { ctx.fillStyle=tile.color; ctx.fillRect(x+1,y+1,s-2,s-2); return; }
-      const rows=3, brickH=s/rows;
-      for (let r=0;r<rows;r++) {
-        const offset = (r%2===0) ? 0 : brickH*0.6;
-        for (let bx=-brickH*0.6; bx<s; bx+=brickH*1.2) {
-          const rv=tileRand(gx,gy,270+r*10+Math.round(bx));
-          ctx.fillStyle = shade(tile.color, (rv-0.5)*0.2);
-          ctx.fillRect(x+bx+offset+1, y+r*brickH+1, brickH*1.2-2, brickH-2);
-        }
-      }
-    }
-
-    function drawPillar(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=shade(tile.color,-0.2); ctx.fillRect(x,y,s,s);
-      const grad=ctx.createLinearGradient(x,y,x+s,y);
-      grad.addColorStop(0, shade(tile.color,0.3)); grad.addColorStop(0.5, tile.color); grad.addColorStop(1, shade(tile.color,-0.3));
-      ctx.fillStyle=grad;
-      ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.5,s*0.32,s*0.46,0,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='rgba(0,0,0,0.3)';
-      ctx.fillRect(x+s*0.18,y+s*0.05,s*0.64,s*0.1);
-      ctx.fillRect(x+s*0.18,y+s*0.85,s*0.64,s*0.1);
-    }
-
-    function drawDoor(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=shade(tile.color,-0.3); ctx.fillRect(x,y,s,s);
-      const dx=x+s*0.15, dy=y+s*0.08, dw=s*0.7, dh=s*0.84;
-      const grad=ctx.createLinearGradient(dx,dy,dx+dw,dy);
-      grad.addColorStop(0, shade(tile.color,0.15)); grad.addColorStop(1, shade(tile.color,-0.15));
-      ctx.fillStyle=grad; ctx.fillRect(dx,dy,dw,dh);
-      if (detailed) {
-        ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=Math.max(0.6,s*0.02);
-        for (let i=1;i<3;i++) { ctx.beginPath(); ctx.moveTo(dx+dw*i/3,dy); ctx.lineTo(dx+dw*i/3,dy+dh); ctx.stroke(); }
-      }
-      ctx.fillStyle='#ffcc00';
-      ctx.beginPath(); ctx.arc(dx+dw*0.82,dy+dh*0.52,Math.max(0.8,s*0.05),0,Math.PI*2); ctx.fill();
+    function addDoor(group, tile) {
+      const door = new THREE.Mesh(geo('doorBox',()=>new THREE.BoxGeometry(0.6,1.05,0.14)), toonMat(tile.color));
+      door.position.y=0.45; door.castShadow=true;
+      group.add(door);
+      const handle = new THREE.Mesh(geo('handleBall',()=>new THREE.SphereGeometry(0.05,8,8)), toonMat('#ffcc00'));
+      handle.position.set(0.2,0.45,0.1);
+      group.add(handle);
       if (tile.id==='locked_door') {
-        ctx.fillStyle='#333';
-        ctx.fillRect(dx+dw*0.4,dy+dh*0.42,dw*0.2,dh*0.16);
-        ctx.strokeStyle='#999'; ctx.lineWidth=Math.max(0.6,s*0.02);
-        ctx.beginPath(); ctx.arc(dx+dw*0.5,dy+dh*0.4,dw*0.1,Math.PI,0); ctx.stroke();
+        const lock = new THREE.Mesh(geo('lockBox',()=>new THREE.BoxGeometry(0.14,0.12,0.05)), toonMat('#333333'));
+        lock.position.set(0,0.45,0.11);
+        group.add(lock);
       }
     }
-
-    function drawStair(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
-      const steps=4;
+    function addStairs(group, tile) {
+      const up = tile.id === 'stairs_up';
+      const steps = 4;
       for (let i=0;i<steps;i++) {
-        const stepH=(i+1)*(s/steps);
-        const grad=ctx.createLinearGradient(0,y+s-stepH,0,y+s);
-        const up = tile.id==='stairs_up';
-        grad.addColorStop(0, up ? 'rgba(255,255,255,0.28)':'rgba(255,255,255,0.14)');
-        grad.addColorStop(1, 'rgba(0,0,0,0.15)');
-        ctx.fillStyle=grad;
-        ctx.fillRect(x+i*(s/steps), y+s-stepH, s/steps, stepH);
-        if (detailed) { ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=Math.max(0.5,s*0.015); ctx.strokeRect(x+i*(s/steps), y+s-stepH, s/steps, stepH); }
+        const h=(i+1)*0.15;
+        const step = new THREE.Mesh(geo('stairStep'+i,()=>new THREE.BoxGeometry(0.94/steps,1,0.94)), toonMat(shadeHex(tile.color, up?i*0.08:-i*0.08)));
+        step.scale.y=h; step.position.set(-0.47+(0.94/steps)*(i+0.5), h/2, 0);
+        step.castShadow=true; step.receiveShadow=true;
+        group.add(step);
       }
     }
-
-    function drawChest(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle='#2a1a0a'; ctx.fillRect(x,y,s,s);
-      const bx=x+s*0.18, by=y+s*0.3, bw=s*0.64, bh=s*0.48;
-      const grad=ctx.createLinearGradient(bx,by,bx,by+bh);
-      grad.addColorStop(0,'#6a4318'); grad.addColorStop(1,'#3a2408');
-      ctx.fillStyle=grad; ctx.fillRect(bx,by,bw,bh);
-      if (detailed) {
-        ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=Math.max(0.6,s*0.015);
-        for (let i=1;i<4;i++) { ctx.beginPath(); ctx.moveTo(bx,by+bh*i/4); ctx.lineTo(bx+bw,by+bh*i/4); ctx.stroke(); }
+    function addChest(group, tile) {
+      const body = new THREE.Mesh(geo('chestBody',()=>new THREE.BoxGeometry(0.55,0.35,0.4)), toonMat('#5a3a18'));
+      body.position.y=0.2; body.castShadow=true;
+      const lid = new THREE.Mesh(geo('chestLid',()=>new THREE.BoxGeometry(0.55,0.12,0.4)), toonMat('#7a4a20'));
+      lid.position.y=0.43; lid.castShadow=true;
+      const lock = new THREE.Mesh(geo('chestLock',()=>new THREE.SphereGeometry(0.05,8,8)), toonMat('#ffcc00'));
+      lock.position.set(0,0.35,0.21);
+      group.add(body,lid,lock);
+    }
+    function addTrapDecor(group) {
+      const plate = new THREE.Mesh(geo('trapPlate',()=>new THREE.BoxGeometry(0.7,0.05,0.7)), toonMat('#7a2020',{emissive:'#4a0000',emissiveIntensity:0.3}));
+      plate.position.y=0.02;
+      group.add(plate);
+      for (let i=0;i<3;i++) {
+        const spike = new THREE.Mesh(geo('spike',()=>new THREE.ConeGeometry(0.04,0.22,5)), toonMat('#999999'));
+        spike.position.set((i-1)*0.18,0.11,0); spike.castShadow=true;
+        group.add(spike);
       }
-      ctx.fillStyle='#c8943a'; ctx.fillRect(bx,by,bw,bh*0.12);
-      ctx.fillStyle='#8a6020'; ctx.fillRect(bx,by+bh*0.42,bw,bh*0.1);
-      ctx.fillStyle='#ffcc00';
-      ctx.beginPath(); ctx.arc(bx+bw*0.5,by+bh*0.46,Math.max(0.8,s*0.06),0,Math.PI*2); ctx.fill();
+    }
+    function addAltar(group, tile) {
+      const base = new THREE.Mesh(geo('altarBase',()=>new THREE.BoxGeometry(0.7,0.5,0.7)), toonMat(shadeHex(tile.color,-0.15)));
+      base.position.y=0.25; base.castShadow=true; base.receiveShadow=true;
+      const gem = new THREE.Mesh(geo('altarGem',()=>new THREE.OctahedronGeometry(0.14)), toonMat('#c896ff',{emissive:'#a060ff',emissiveIntensity:0.9}));
+      gem.position.y=0.6;
+      group.add(base,gem);
     }
 
-    function drawTrap(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=shade('#5a5a5a',-0.1); ctx.fillRect(x,y,s,s);
-      ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=Math.max(0.6,s*0.02);
-      ctx.strokeRect(x+s*0.1,y+s*0.1,s*0.8,s*0.8);
-      const grad=ctx.createRadialGradient(x+s*0.5,y+s*0.5,0,x+s*0.5,y+s*0.5,s*0.5);
-      grad.addColorStop(0,'rgba(180,20,20,0.35)'); grad.addColorStop(1,'rgba(180,20,20,0)');
-      ctx.fillStyle=grad; ctx.fillRect(x,y,s,s);
-      ctx.strokeStyle='#ff2020'; ctx.lineWidth=Math.max(0.8,s*0.035);
-      ctx.beginPath(); ctx.moveTo(x+s*0.25,y+s*0.25); ctx.lineTo(x+s*0.75,y+s*0.75); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x+s*0.75,y+s*0.25); ctx.lineTo(x+s*0.25,y+s*0.75); ctx.stroke();
-    }
-
-    function drawPit(ctx,tile,x,y,s,gx,gy,detailed) {
-      const grad=ctx.createRadialGradient(x+s*0.5,y+s*0.5,0,x+s*0.5,y+s*0.5,s*0.7);
-      grad.addColorStop(0,'#000000'); grad.addColorStop(0.7,'#0a0a0a'); grad.addColorStop(1,'#1a0f08');
-      ctx.fillStyle=grad; ctx.fillRect(x,y,s,s);
-      ctx.strokeStyle='rgba(255,100,20,0.15)'; ctx.lineWidth=Math.max(0.6,s*0.02);
-      ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.4,0,Math.PI*2); ctx.stroke();
-    }
-
-    function drawAltar(ctx,tile,x,y,s,gx,gy,detailed) {
-      ctx.fillStyle=shade(tile.color,-0.3); ctx.fillRect(x,y,s,s);
-      const grad=ctx.createLinearGradient(x,y,x,y+s);
-      grad.addColorStop(0,shade(tile.color,0.25)); grad.addColorStop(1,shade(tile.color,-0.15));
-      ctx.fillStyle=grad; ctx.fillRect(x+s*0.12,y+s*0.15,s*0.76,s*0.7);
-      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=Math.max(0.6,s*0.02);
-      ctx.strokeRect(x+s*0.12,y+s*0.15,s*0.76,s*0.7);
-      const glow=ctx.createRadialGradient(x+s*0.5,y+s*0.45,0,x+s*0.5,y+s*0.45,s*0.35);
-      glow.addColorStop(0,'rgba(200,140,255,0.55)'); glow.addColorStop(1,'rgba(200,140,255,0)');
-      ctx.fillStyle=glow; ctx.fillRect(x,y,s,s);
-      ctx.strokeStyle='#d8a8ff'; ctx.lineWidth=Math.max(0.8,s*0.035);
-      ctx.beginPath();
-      ctx.moveTo(x+s*0.5,y+s*0.28); ctx.lineTo(x+s*0.5,y+s*0.6);
-      ctx.moveTo(x+s*0.38,y+s*0.4); ctx.lineTo(x+s*0.62,y+s*0.4);
-      ctx.stroke();
-    }
-
-    function drawTile(ctx, tile, x, y, s, gx, gy) {
-      gx = gx||0; gy = gy||0;
-      if (!tile) { ctx.fillStyle='#0a0a0a'; ctx.fillRect(x,y,s,s); ctx.strokeStyle='rgba(255,255,255,0.03)'; ctx.lineWidth=0.5; ctx.strokeRect(x,y,s,s); return; }
-      const fam = FAMILY[tile.id] || 'plain';
-      const detailed = s >= 14;
-      ctx.save();
-      ctx.beginPath(); ctx.rect(x,y,s,s); ctx.clip();
+    function buildTileGroup(tile, gx, gy) {
+      const group = new THREE.Group();
+      if (!tile) return group;
+      const fam = FAMILY[tile.id] || 'flat';
+      const jitter = (tileRand(gx,gy,1)-0.5)*0.05;
+      const ground = new THREE.Mesh(geo('ground',()=>new THREE.BoxGeometry(0.98,0.2,0.98)), toonMat(tile.color));
+      ground.position.y = -0.1 + jitter;
+      ground.receiveShadow = true;
+      if (fam === 'water') {
+        ground.material = toonMat(tile.color, {transparent:true, opacity:0.82});
+        ground.position.y = -0.22 + jitter*0.4;
+      } else if (fam === 'lava') {
+        ground.material = toonMat(tile.color, {emissive:tile.color, emissiveIntensity:0.55});
+      } else if (fam === 'pit') {
+        ground.material = toonMat('#0a0a0a');
+        ground.position.y = -0.5;
+      }
+      group.add(ground);
       switch (fam) {
-        case 'grass': drawGrass(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'water': drawWater(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'sand': drawSand(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'dirt': drawDirt(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'snow': drawSnow(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'ice': drawIce(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'lava': drawLava(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'tree': drawGrass(ctx,{...tile,color:shade(tile.color,0.15)},x,y,s,gx,gy,detailed); drawTrees(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'peak': drawPeak(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'swamp': drawSwamp(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'stone': drawStone(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'wood': drawWood(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'wall': drawWall(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'brick': drawBrick(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'pillar': drawPillar(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'door': drawDoor(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'stair': drawStair(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'chest': drawChest(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'trap': drawTrap(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'pit': drawPit(ctx,tile,x,y,s,gx,gy,detailed); break;
-        case 'altar': drawAltar(ctx,tile,x,y,s,gx,gy,detailed); break;
-        default: ctx.fillStyle=tile.color; ctx.fillRect(x,y,s,s);
+        case 'tree': addTrees(group, tile, gx, gy); break;
+        case 'peak': addPeak(group, tile, gx, gy); break;
+        case 'wall': addWall(group, tile); break;
+        case 'pillar': addPillar(group, tile); break;
+        case 'door': addDoor(group, tile); break;
+        case 'stair': addStairs(group, tile); break;
+        case 'chest': addChest(group, tile); break;
+        case 'trap': addTrapDecor(group); break;
+        case 'altar': addAltar(group, tile); break;
+        default: break;
       }
-      ctx.restore();
-      ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=0.5; ctx.strokeRect(x,y,s,s);
+      return group;
     }
+
+    function initScene() {
+      const container = document.getElementById('three-container');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color('#1a2230');
+      scene.fog = new THREE.Fog('#1a2230', 14, 42);
+
+      camera = new THREE.PerspectiveCamera(50, 1, 0.1, 500);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      toonGradientTex = buildToonGradient();
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.maxPolarAngle = Math.PI * 0.49;
+      controls.minDistance = 3;
+      controls.maxDistance = 70;
+      controls.mouseButtons = { MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
+
+      raycaster = new THREE.Raycaster();
+
+      const hemi = new THREE.HemisphereLight('#bcd7ff', '#3a2f22', 0.95);
+      scene.add(hemi);
+      const sun = new THREE.DirectionalLight('#fff4dd', 1.4);
+      sun.position.set(9,15,7);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(1024,1024);
+      const sc = sun.shadow.camera;
+      sc.left=-30; sc.right=30; sc.top=30; sc.bottom=-30; sc.far=80;
+      scene.add(sun);
+
+      renderer.domElement.addEventListener('pointerdown', onPointerDown);
+      renderer.domElement.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+      window.addEventListener('resize', onResize);
+
+      animate();
+      onResize();
+    }
+
+    function onResize() {
+      const wrap = document.getElementById('canvas-wrap');
+      const w = wrap.clientWidth, h = wrap.clientHeight;
+      if (!w || !h || !renderer) return;
+      renderer.setSize(w,h);
+      camera.aspect = w/h;
+      camera.updateProjectionMatrix();
+    }
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function fitGround(map) {
+      if (groundMesh) { scene.remove(groundMesh); groundMesh.geometry.dispose(); }
+      const g = new THREE.PlaneGeometry(map.width, map.height);
+      g.rotateX(-Math.PI/2);
+      groundMesh = new THREE.Mesh(g, toonMat('#11151d'));
+      groundMesh.position.set(map.width/2, -0.35, map.height/2);
+      groundMesh.receiveShadow = true;
+      scene.add(groundMesh);
+
+      if (gridLines) { scene.remove(gridLines); gridLines.geometry.dispose(); }
+      const pts = [];
+      for (let i=0;i<=map.width;i++) pts.push(i,0.001,0, i,0.001,map.height);
+      for (let j=0;j<=map.height;j++) pts.push(0,0.001,j, map.width,0.001,j);
+      const lg = new THREE.BufferGeometry();
+      lg.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
+      gridLines = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({color:0x000000, transparent:true, opacity:0.15}));
+      scene.add(gridLines);
+    }
+
+    function clearTileGroups() {
+      for (const key in tileGroups) scene.remove(tileGroups[key]);
+      tileGroups = {};
+    }
+    function setCellVisual(map, x, y, tileId) {
+      const key = x+','+y;
+      if (tileGroups[key]) { scene.remove(tileGroups[key]); delete tileGroups[key]; }
+      const group = buildTileGroup(getTile(tileId), x, y);
+      group.position.set(x+0.5, 0, y+0.5);
+      scene.add(group);
+      tileGroups[key] = group;
+    }
+    function rebuildWholeMap(map) {
+      clearTileGroups();
+      fitGround(map);
+      for (let y=0;y<map.height;y++) for (let x=0;x<map.width;x++) setCellVisual(map, x, y, map.tiles[y][x]);
+    }
+
+    function frameCamera(map) {
+      // Fixed, readable default distance regardless of map size (matches how the
+      // old 2D version started zoomed-in and relied on pan/zoom for large maps,
+      // rather than shrinking tiles to fit the whole map in view).
+      const cx = map.width/2, cz = map.height/2;
+      controls.target.set(cx,0,cz);
+      camera.position.set(cx - 5, 10, cz + 11);
+      controls.update();
+    }
+    window.zoomCamera = function(factor) {
+      const offset = new THREE.Vector3().subVectors(camera.position, controls.target).multiplyScalar(factor);
+      camera.position.copy(controls.target).add(offset);
+      controls.update();
+    };
+    window.resetCamera = function() { if (currentMapId) frameCamera(maps[currentMapId]); };
+
+    // ── Raycasting / painting ──
+    const _ndc = new THREE.Vector2();
+    const _groundPlane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
+    const _hit = new THREE.Vector3();
+    function screenToGrid(clientX, clientY) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      _ndc.x = ((clientX-rect.left)/rect.width)*2-1;
+      _ndc.y = -((clientY-rect.top)/rect.height)*2+1;
+      raycaster.setFromCamera(_ndc, camera);
+      if (!raycaster.ray.intersectPlane(_groundPlane, _hit)) return null;
+      return { x: Math.floor(_hit.x), y: Math.floor(_hit.z) };
+    }
+    function paintCell(map, x, y) {
+      if (x<0||y<0||x>=map.width||y>=map.height) return;
+      if (currentTool==='erase') { map.tiles[y][x]=null; setCellVisual(map,x,y,null); }
+      else if (currentTool==='paint' && selectedTile) { map.tiles[y][x]=selectedTile.id; setCellVisual(map,x,y,selectedTile.id); }
+    }
+    function floodFill(map, tx, ty) {
+      if (!selectedTile || tx<0||ty<0||tx>=map.width||ty>=map.height) return;
+      const target = map.tiles[ty][tx], rep = selectedTile.id;
+      if (target===rep) return;
+      const stack=[[tx,ty]];
+      while (stack.length) {
+        const [x,y] = stack.pop();
+        if (x<0||y<0||x>=map.width||y>=map.height||map.tiles[y][x]!==target) continue;
+        map.tiles[y][x]=rep;
+        setCellVisual(map,x,y,rep);
+        stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+      }
+    }
+    let isPaintingDrag = false;
+    function onPointerDown(e) {
+      if (e.button!==0 || !currentMapId) return;
+      const cell = screenToGrid(e.clientX, e.clientY);
+      if (!cell) return;
+      const map = maps[currentMapId];
+      if (currentTool==='fill') floodFill(map, cell.x, cell.y);
+      else { isPaintingDrag = true; paintCell(map, cell.x, cell.y); }
+    }
+    function onPointerMove(e) {
+      if (!isPaintingDrag || !currentMapId) return;
+      const cell = screenToGrid(e.clientX, e.clientY);
+      if (cell) paintCell(maps[currentMapId], cell.x, cell.y);
+    }
+    function onPointerUp() { isPaintingDrag = false; }
 
     // ── State ──
     let maps = {}, currentMapId = null, selectedTile = null;
     let currentPalette = 'nature', currentTool = 'paint';
-    let tileSize = 28, isPainting = false, sessionActive = false;
-    let offsetX = 0, offsetY = 0, isDragging = false, dragSX = 0, dragSY = 0;
 
-    async function loadMaps() {
-      maps = await MapStore.getMaps();
-      renderMapsList();
-    }
-
+    async function loadMaps() { maps = await MapStore.getMaps(); renderMapsList(); }
     async function saveCurrentMap() {
       if (!currentMapId) return;
       const ok = await MapStore.saveMaps(maps);
       flash(ok ? 'Saved!' : 'Save failed');
     }
+    function flash(msg) { document.getElementById('canvas-info').textContent = msg; setTimeout(updateInfo, 2000); }
 
-    function flash(msg) {
-      const el=document.getElementById('canvas-info'); el.textContent=msg;
-      setTimeout(updateInfo, 2000);
-    }
-
-    // ── Maps list ──
     function renderMapsList() {
       const list=document.getElementById('maps-list');
       const ids=Object.keys(maps);
@@ -638,12 +586,11 @@
         list.appendChild(div);
       });
     }
-
-    function openNewMapModal() { document.getElementById('new-map-modal').classList.add('open'); setTimeout(()=>document.getElementById('new-map-name').focus(),50); }
-    function closeNewMapModal() { document.getElementById('new-map-modal').classList.remove('open'); }
+    window.openNewMapModal = function() { document.getElementById('new-map-modal').classList.add('open'); setTimeout(()=>document.getElementById('new-map-name').focus(),50); };
+    window.closeNewMapModal = function() { document.getElementById('new-map-modal').classList.remove('open'); };
     document.getElementById('new-map-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeNewMapModal();});
 
-    function createMap() {
+    window.createMap = function() {
       const name=document.getElementById('new-map-name').value.trim()||'Unnamed Map';
       const w=Math.min(80,Math.max(5,parseInt(document.getElementById('new-map-w').value)||30));
       const h=Math.min(80,Math.max(5,parseInt(document.getElementById('new-map-h').value)||20));
@@ -655,162 +602,94 @@
       closeNewMapModal();
       document.getElementById('new-map-name').value='';
       renderMapsList(); loadMap(id); saveCurrentMap();
-    }
-
-    async function deleteMap(id,e) {
+    };
+    window.deleteMap = async function(id,e) {
       e.stopPropagation();
       if(!confirm('Delete "'+maps[id].name+'"?')) return;
       delete maps[id];
       await MapStore.saveMaps(maps);
-      if(currentMapId===id){currentMapId=null;hideCanvas();}
+      if(currentMapId===id){currentMapId=null;hideViewport();}
       renderMapsList();
-    }
-
+    };
     function loadMap(id) {
-      currentMapId=id; offsetX=0; offsetY=0;
-      renderMapsList(); showCanvas(); redraw();
-    }
-
-    function showCanvas() {
-      document.getElementById('no-map-msg').style.display='none';
-      document.getElementById('map-canvas').style.display='block';
-      document.getElementById('canvas-toolbar').style.display='flex';
-      document.getElementById('canvas-info').style.display='block';
-      document.getElementById('zoom-btns').style.display='flex';
-    }
-    function hideCanvas() {
-      document.getElementById('no-map-msg').style.display='flex';
-      document.getElementById('map-canvas').style.display='none';
-      document.getElementById('canvas-toolbar').style.display='none';
-      document.getElementById('canvas-info').style.display='none';
-      document.getElementById('zoom-btns').style.display='none';
-    }
-
-    function redraw() {
-      if(!currentMapId) return;
-      const map=maps[currentMapId], canvas=document.getElementById('map-canvas'), wrap=document.getElementById('canvas-wrap');
-      canvas.width=wrap.clientWidth; canvas.height=wrap.clientHeight;
-      const ctx=canvas.getContext('2d');
-      ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,canvas.width,canvas.height);
-      const x0=Math.max(0,Math.floor(-offsetX/tileSize)), y0=Math.max(0,Math.floor(-offsetY/tileSize));
-      const x1=Math.min(map.width,Math.ceil((canvas.width-offsetX)/tileSize)), y1=Math.min(map.height,Math.ceil((canvas.height-offsetY)/tileSize));
-      for(let y=y0;y<y1;y++)
-        for(let x=x0;x<x1;x++)
-          drawTile(ctx,getTile(map.tiles[y][x]),offsetX+x*tileSize,offsetY+y*tileSize,tileSize,x,y);
+      currentMapId=id;
+      renderMapsList(); showViewport();
+      const map = maps[id];
+      rebuildWholeMap(map);
+      frameCamera(map);
       updateInfo();
     }
-
+    function showViewport() {
+      document.getElementById('no-map-msg').style.display='none';
+      document.getElementById('three-container').style.display='block';
+      document.getElementById('canvas-toolbar').style.display='flex';
+      document.getElementById('canvas-hint').style.display='block';
+      document.getElementById('canvas-info').style.display='block';
+      document.getElementById('zoom-btns').style.display='flex';
+      onResize();
+    }
+    function hideViewport() {
+      document.getElementById('no-map-msg').style.display='flex';
+      document.getElementById('three-container').style.display='none';
+      document.getElementById('canvas-toolbar').style.display='none';
+      document.getElementById('canvas-hint').style.display='none';
+      document.getElementById('canvas-info').style.display='none';
+      document.getElementById('zoom-btns').style.display='none';
+      clearTileGroups();
+    }
     function updateInfo() {
       if(!currentMapId) return;
       const m=maps[currentMapId];
-      document.getElementById('canvas-info').textContent=m.name+' · '+m.width+'×'+m.height+' · '+Math.round(tileSize/28*100)+'%';
+      document.getElementById('canvas-info').textContent=m.name+' · '+m.width+'×'+m.height;
     }
 
-    function setTool(t) {
+    window.setTool = function(t) {
       currentTool=t;
       ['paint','fill','erase'].forEach(n=>document.getElementById('tool-'+n).classList.toggle('active',n===t));
-    }
-
-    function zoom(f) { tileSize=Math.min(64,Math.max(6,Math.round(tileSize*f))); redraw(); }
-    function resetZoom() { tileSize=28; offsetX=0; offsetY=0; redraw(); }
-
-    function getCoords(e) {
-      const r=document.getElementById('map-canvas').getBoundingClientRect();
-      return { tx:Math.floor((e.clientX-r.left-offsetX)/tileSize), ty:Math.floor((e.clientY-r.top-offsetY)/tileSize) };
-    }
-
-    function paintAt(e) {
-      if(!currentMapId) return;
-      const map=maps[currentMapId], {tx,ty}=getCoords(e);
-      if(tx<0||ty<0||tx>=map.width||ty>=map.height) return;
-      if(currentTool==='erase') map.tiles[ty][tx]=null;
-      else if(currentTool==='paint'&&selectedTile) map.tiles[ty][tx]=selectedTile.id;
-      redraw();
-    }
-
-    function floodFill(tx,ty) {
-      if(!currentMapId||!selectedTile) return;
-      const map=maps[currentMapId];
-      if(tx<0||ty<0||tx>=map.width||ty>=map.height) return;
-      const target=map.tiles[ty][tx], rep=selectedTile.id;
-      if(target===rep) return;
-      const stack=[[tx,ty]];
-      while(stack.length){
-        const [x,y]=stack.pop();
-        if(x<0||y<0||x>=map.width||y>=map.height||map.tiles[y][x]!==target) continue;
-        map.tiles[y][x]=rep;
-        stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
-      }
-      redraw();
-    }
-
-    function clearMap() {
+    };
+    window.clearMap = function() {
       if(!currentMapId||!confirm('Clear the entire map?')) return;
       const map=maps[currentMapId];
-      for(let y=0;y<map.height;y++) for(let x=0;x<map.width;x++) map.tiles[y][x]=null;
-      redraw();
-    }
-
-    const canvas=document.getElementById('map-canvas');
-    canvas.addEventListener('mousedown',e=>{
-      if(e.button===1||e.button===2){isDragging=true;dragSX=e.clientX-offsetX;dragSY=e.clientY-offsetY;return;}
-      isPainting=true;
-      if(currentTool==='fill'){const{tx,ty}=getCoords(e);floodFill(tx,ty);}
-      else paintAt(e);
-    });
-    canvas.addEventListener('mousemove',e=>{
-      if(isDragging){offsetX=e.clientX-dragSX;offsetY=e.clientY-dragSY;redraw();return;}
-      if(isPainting) paintAt(e);
-    });
-    canvas.addEventListener('mouseup',()=>{isPainting=false;isDragging=false;});
-    canvas.addEventListener('mouseleave',()=>{isPainting=false;isDragging=false;});
-    canvas.addEventListener('contextmenu',e=>e.preventDefault());
-    canvas.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.1:0.9);},{passive:false});
-    window.addEventListener('resize',redraw);
+      for(let y=0;y<map.height;y++) for(let x=0;x<map.width;x++) { map.tiles[y][x]=null; setCellVisual(map,x,y,null); }
+    };
+    window.saveCurrentMap = saveCurrentMap;
 
     // ── Palette ──
-    function showPalette(type) {
+    window.showPalette = function(type) {
       currentPalette=type;
       document.querySelectorAll('.pal-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&type==='nature')||(i===1&&type==='dungeon')));
       renderPalette();
-    }
-
+    };
     function renderPalette() {
       const container=document.getElementById('palette-tiles');
       container.innerHTML='';
       const eraser=document.createElement('button');
       eraser.className='tile-btn eraser-btn'+(currentTool==='erase'?' selected':'');
-      const ec=document.createElement('canvas'); ec.width=36; ec.height=36; ec.style.borderRadius='4px';
-      const ectx=ec.getContext('2d'); ectx.fillStyle='#1a0a0a'; ectx.fillRect(0,0,36,36);
-      ectx.fillStyle='#cc3333'; ectx.font='20px sans-serif'; ectx.textAlign='center'; ectx.textBaseline='middle'; ectx.fillText('⌫',18,18);
-      const el=document.createElement('div'); el.className='tile-label'; el.textContent='Erase';
-      eraser.appendChild(ec); eraser.appendChild(el);
+      eraser.innerHTML='<div class="tile-swatch" style="background:#1a0a0a;color:#cc3333;">⌫</div><div class="tile-label">Erase</div>';
       eraser.onclick=()=>{setTool('erase');renderPalette();};
       container.appendChild(eraser);
-
       TILES[currentPalette].forEach(tile=>{
         const btn=document.createElement('button');
         btn.className='tile-btn'+(selectedTile&&selectedTile.id===tile.id?' selected':'');
-        const pc=document.createElement('canvas'); pc.width=36; pc.height=36; pc.style.borderRadius='4px';
-        drawTile(pc.getContext('2d'),tile,0,0,36);
-        const lbl=document.createElement('div'); lbl.className='tile-label'; lbl.textContent=tile.label;
-        btn.appendChild(pc); btn.appendChild(lbl);
+        btn.innerHTML='<div class="tile-swatch" style="background:'+tile.color+';"></div><div class="tile-label">'+tile.label+'</div>';
         btn.onclick=()=>{selectedTile=tile;setTool('paint');renderPalette();};
         container.appendChild(btn);
       });
     }
 
     // ── Session ──
-    async function toggleSession() {
+    let sessionActive = false;
+    window.toggleSession = async function() {
       sessionActive=!sessionActive;
       const btn=document.getElementById('session-btn');
       btn.textContent=sessionActive?'⬛ End Session':'▶ Start Session';
       btn.classList.toggle('live',sessionActive);
       await MapSessionStore.set({active:sessionActive,mapId:currentMapId||null,ts:Date.now()});
-    }
+    };
 
+    initScene();
     renderPalette();
-    if(isDM) loadMaps();
+    loadMaps();
   </script>
 </body>
 </html>

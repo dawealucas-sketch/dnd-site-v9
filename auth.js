@@ -122,3 +122,10 @@ const ScoreStore = {
     } catch { return false; }
   }
 };
+
+// Top-level `const` in a classic script isn't visible to a `type="module"` script
+// (e.g. map.html's 3D renderer, which needs ES module imports for Three.js) —
+// expose these explicitly so module scripts can read them off `window`.
+if (typeof window !== 'undefined') {
+  Object.assign(window, { Auth, Store, ChatStore, PlayerStore, OnlineStore, MapStore, MapSessionStore, ScoreStore });
+}
