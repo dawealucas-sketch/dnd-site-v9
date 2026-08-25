@@ -1262,6 +1262,55 @@
       return false;
     }
 
+    // Procedural textures for Play-mode walls/floors — small canvas patterns
+    // drawn in white-on-white so each tile's own MeshStandardMaterial.color
+    // still tints them correctly (a plain grey wall and a red-brick wall share
+    // the same brick pattern, just multiplied by different base colors).
+    let wallTexture = null, floorTexture = null;
+    function getWallTexture() {
+      if (wallTexture) return wallTexture;
+      const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,128,128);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 3;
+      const rows = 4, brickH = 128/rows;
+      for (let r=0;r<=rows;r++) { ctx.beginPath(); ctx.moveTo(0,r*brickH); ctx.lineTo(128,r*brickH); ctx.stroke(); }
+      for (let r=0;r<rows;r++) {
+        const offset = (r%2===0) ? 0 : brickH;
+        for (let bx=-brickH; bx<128+brickH; bx+=brickH*2) {
+          ctx.beginPath(); ctx.moveTo(bx+offset,r*brickH); ctx.lineTo(bx+offset,(r+1)*brickH); ctx.stroke();
+        }
+      }
+      for (let i=0;i<300;i++) {
+        ctx.fillStyle = 'rgba(0,0,0,'+(Math.random()*0.08)+')';
+        ctx.fillRect(Math.random()*128, Math.random()*128, 2, 2);
+      }
+      wallTexture = new THREE.CanvasTexture(c);
+      wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
+      wallTexture.repeat.set(2,3);
+      return wallTexture;
+    }
+    function getFloorTexture() {
+      if (floorTexture) return floorTexture;
+      const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,128,128);
+      ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 2.5;
+      const div = 4;
+      for (let i=0;i<=div;i++) {
+        ctx.beginPath(); ctx.moveTo(0,i*128/div); ctx.lineTo(128,i*128/div); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(i*128/div,0); ctx.lineTo(i*128/div,128); ctx.stroke();
+      }
+      for (let i=0;i<250;i++) {
+        ctx.fillStyle = 'rgba(0,0,0,'+(Math.random()*0.06)+')';
+        ctx.fillRect(Math.random()*128, Math.random()*128, 2, 2);
+      }
+      floorTexture = new THREE.CanvasTexture(c);
+      floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+      floorTexture.repeat.set(2,2);
+      return floorTexture;
+    }
+
     function buildCell(map, floor, x, y, group, meshByCell) {
       const key = x+','+y;
       const old = meshByCell[key];
@@ -1283,7 +1332,7 @@
       // floor plane (always, so you don't fall through gaps)
       const floorGeo = new THREE.BoxGeometry(TILE_U, 0.1, TILE_U);
       const floorColor = tile ? tile.color : '#0a0a0a';
-      const floorMat = new THREE.MeshStandardMaterial({ color: floorColor });
+      const floorMat = new THREE.MeshStandardMaterial({ color: floorColor, map: getFloorTexture(), roughness: 0.92 });
       const floorMesh = new THREE.Mesh(floorGeo, floorMat);
       floorMesh.position.set(cx, -0.05, cz);
       group.add(floorMesh); meshes.push(floorMesh);
@@ -1291,7 +1340,7 @@
       if (tile && tile.wall) {
         const h = tile.pat==='peak' ? WALL_H*1.6 : WALL_H;
         const geo = new THREE.BoxGeometry(TILE_U, h, TILE_U);
-        const mat = new THREE.MeshStandardMaterial({ color: tile.color });
+        const mat = new THREE.MeshStandardMaterial({ color: tile.color, map: getWallTexture(), roughness: 0.85 });
         const mesh = new THREE.Mesh(geo, mat); mesh.position.set(cx, h/2, cz);
         group.add(mesh); meshes.push(mesh);
       } else if (tile && tile.door) {
@@ -1381,7 +1430,11 @@
       if (logic && logic.trigger==='enter') fireLogic(logic);
       if (tile && tile.stair) {
         const idx = ps.map.floors.findIndex(f=>f.id===floor.id);
-        const targetIdx = tile.stair==='up' ? idx-1 : idx+1;
+        // Floors are added in order via "+ Floor", so a later floor is a
+        // higher index. "Stairs Up" should lead to the next floor up (a
+        // higher index — e.g. the floor you just added above your ground
+        // floor); "Stairs Down" leads back to the floor below (lower index).
+        const targetIdx = tile.stair==='up' ? idx+1 : idx-1;
         const targetFloor = ps.map.floors[targetIdx];
         if (targetFloor) switchPlayFloor(targetFloor.id, x, y);
       }
