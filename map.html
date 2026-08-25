@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Map — The Compendium</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { overflow: hidden; }
+    .map-layout { display: grid; grid-template-columns: 220px 1fr 180px; height: calc(100vh - 48px); overflow: hidden; }
+
+    .maps-panel { background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+    .maps-panel-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .maps-panel-header h3 { font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-dim); }
+    .maps-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
+    .map-item { padding: 8px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 4px; border: 1px solid transparent; transition: all 0.15s; }
+    .map-item:hover { background: var(--panel); border-color: var(--border); }
+    .map-item.active { background: var(--panel); border-color: var(--gold-dim); }
+    .map-item-name { font-family: var(--font-display); font-size: 0.8rem; color: var(--gold-pale); }
+    .map-item-size { font-size: 0.7rem; color: var(--text-dim); margin-top: 2px; }
+    .map-item-del { float: right; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.8rem; padding: 0; }
+    .map-item-del:hover { color: var(--red); }
+    .new-map-btn { margin: 0.5rem; flex-shrink: 0; }
+
+    .canvas-wrap { position: relative; overflow: hidden; background: #0a0a0a; cursor: crosshair; }
+    #map-canvas { display: block; image-rendering: pixelated; }
+    .canvas-toolbar { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; z-index: 10; flex-wrap: wrap; }
+    .tool-btn { background: var(--panel); border: 1px solid var(--border2); border-radius: 6px; color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 5px 10px; font-family: var(--font-display); letter-spacing: 0.06em; transition: all 0.15s; }
+    .tool-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+    .tool-btn.active { border-color: var(--gold); color: var(--gold); background: var(--bg3); }
+    .canvas-info { position: absolute; bottom: 10px; left: 10px; font-size: 0.7rem; color: var(--text-dim); font-family: var(--font-display); background: rgba(0,0,0,0.7); padding: 3px 8px; border-radius: 4px; }
+    .zoom-btns { position: absolute; bottom: 10px; right: 10px; display: flex; gap: 4px; }
+    .zoom-btn { background: var(--panel); border: 1px solid var(--border2); border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+    .zoom-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+    .no-map { display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; gap: 1rem; color: var(--text-dim); }
+    .no-map p { font-style: italic; }
+
+    .palette-panel { background: var(--bg2); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+    .palette-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .palette-header h3 { font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 6px; }
+    .palette-tabs { display: flex; gap: 4px; }
+    .pal-tab { font-size: 0.65rem; font-family: var(--font-display); padding: 3px 8px; border-radius: 4px; cursor: pointer; border: 1px solid var(--border); color: var(--text-dim); background: none; letter-spacing: 0.06em; }
+    .pal-tab.active { border-color: var(--gold-dim); color: var(--gold); background: var(--bg3); }
+    .palette-tiles { flex: 1; overflow-y: auto; padding: 0.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .tile-btn { border-radius: 6px; border: 2px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px; transition: border-color 0.15s; background: var(--panel); }
+    .tile-btn:hover { border-color: var(--border2); }
+    .tile-btn.selected { border-color: var(--gold); }
+    .tile-label { font-size: 0.6rem; font-family: var(--font-display); letter-spacing: 0.05em; color: var(--text-dim); text-align: center; }
+    .eraser-btn { grid-column: 1 / -1; }
+    .eraser-btn.selected { border-color: var(--red); }
+
+    .session-bar { padding: 0.5rem; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .session-btn { width: 100%; padding: 8px; font-size: 0.7rem; letter-spacing: 0.08em; }
+    .session-btn.live { border-color: var(--red-dim); color: var(--red-dim); }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 300; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 1.5rem; width: min(360px,90vw); display: flex; flex-direction: column; gap: 1rem; }
+    .modal h3 { font-size: 1.1rem; }
+    .modal-fields { display: flex; flex-direction: column; gap: 0.75rem; }
+    .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    select { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 1rem; width: 100%; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-logo">⚔ The Compendium</span>
+    <div class="nav-links">
+      <a href="home.html">Home</a>
+      <a href="party.html">Party</a>
+      <a href="chat.html">Chat</a>
+      <a href="minigame.html">Dice Oracle</a>
+      <a href="colors.html">Colours</a>
+      <a href="map.html" class="active">Map</a>
+    </div>
+  </nav>
+
+  <div class="map-layout" id="map-layout">
+    <div class="maps-panel">
+      <div class="maps-panel-header"><h3>Maps</h3></div>
+      <div class="maps-list" id="maps-list"><div style="color:var(--text-dim);font-size:0.8rem;font-style:italic;padding:8px;">Loading...</div></div>
+      <button class="primary new-map-btn" onclick="openNewMapModal()">+ New Map</button>
+    </div>
+
+    <div class="canvas-wrap" id="canvas-wrap">
+      <div class="no-map" id="no-map-msg">
+        <span style="font-size:2.5rem;">🗺</span>
+        <p>Create or select a map to begin building.</p>
+        <button class="primary" onclick="openNewMapModal()">+ New Map</button>
+      </div>
+      <canvas id="map-canvas" style="display:none;"></canvas>
+      <div class="canvas-toolbar" id="canvas-toolbar" style="display:none;">
+        <button class="tool-btn active" id="tool-paint" onclick="setTool('paint')">🖌 Paint</button>
+        <button class="tool-btn" id="tool-fill" onclick="setTool('fill')">🪣 Fill</button>
+        <button class="tool-btn" id="tool-erase" onclick="setTool('erase')">⌫ Erase</button>
+        <button class="tool-btn" onclick="clearMap()" style="border-color:var(--red-dim);color:var(--red-dim);">🗑 Clear</button>
+        <button class="tool-btn" onclick="saveCurrentMap()" style="border-color:var(--gold-dim);color:var(--gold);">💾 Save</button>
+      </div>
+      <div class="canvas-info" id="canvas-info" style="display:none;"></div>
+      <div class="zoom-btns" id="zoom-btns" style="display:none;">
+        <button class="zoom-btn" onclick="zoom(1.2)">+</button>
+        <button class="zoom-btn" onclick="zoom(0.8)">−</button>
+        <button class="zoom-btn" onclick="resetZoom()" title="Reset">⊙</button>
+      </div>
+    </div>
+
+    <div class="palette-panel">
+      <div class="palette-header">
+        <h3>Tiles</h3>
+        <div class="palette-tabs">
+          <button class="pal-tab active" onclick="showPalette('nature')">Nature</button>
+          <button class="pal-tab" onclick="showPalette('dungeon')">Dungeon</button>
+        </div>
+      </div>
+      <div class="palette-tiles" id="palette-tiles"></div>
+      <div class="session-bar">
+        <button class="session-btn primary" id="session-btn" onclick="toggleSession()">▶ Start Session</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="new-map-modal">
+    <div class="modal">
+      <h3>New Map</h3>
+      <div class="modal-fields">
+        <div class="field"><label>Map Name</label><input id="new-map-name" placeholder="The Dark Dungeon" /></div>
+        <div class="modal-row">
+          <div class="field"><label>Width (tiles)</label><input id="new-map-w" type="number" value="30" min="5" max="80" /></div>
+          <div class="field"><label>Height (tiles)</label><input id="new-map-h" type="number" value="20" min="5" max="80" /></div>
+        </div>
+        <div class="field"><label>Fill with</label>
+          <select id="new-map-fill">
+            <option value="empty">Empty (blank)</option>
+            <option value="grass">Grass</option>
+            <option value="stone_floor">Stone Floor</option>
+            <option value="water">Water</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button onclick="closeNewMapModal()">Cancel</button>
+        <button class="primary" onclick="createMap()">Create Map</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    if (!Auth.require()) throw new Error('not logged in');
+    const isDM = Auth.isDM();
+
+    if (!isDM) {
+      document.getElementById('map-layout').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:1rem;color:var(--text-dim);grid-column:1/-1;"><span style="font-size:2.5rem;">🔒</span><p style="font-style:italic;">Only the Dungeon Master can access the map editor.</p><a href="home.html"><button>Go Home</button></a></div>';
+    }
+
+    // ── Tile definitions ──
+    const TILES = {
+      nature: [
+        {id:'grass',        label:'Grass',        color:'#2d6a2d', pat:'solid'},
+        {id:'dark_grass',   label:'Dark Grass',   color:'#1a4a1a', pat:'solid'},
+        {id:'water',        label:'Water',        color:'#1a5a8a', pat:'solid'},
+        {id:'deep_water',   label:'Deep Water',   color:'#0a2a5a', pat:'solid'},
+        {id:'sand',         label:'Sand',         color:'#c8a84a', pat:'solid'},
+        {id:'dirt',         label:'Dirt',         color:'#8a5a2a', pat:'solid'},
+        {id:'snow',         label:'Snow',         color:'#d8e8f0', pat:'solid'},
+        {id:'ice',          label:'Ice',          color:'#a0c8e0', pat:'solid'},
+        {id:'lava',         label:'Lava',         color:'#c84a00', pat:'solid'},
+        {id:'volcanic',     label:'Volcanic',     color:'#4a1a00', pat:'solid'},
+        {id:'forest',       label:'Forest',       color:'#1a5a1a', pat:'tree'},
+        {id:'dense_forest', label:'Dense Forest', color:'#0a3a0a', pat:'tree'},
+        {id:'mountain',     label:'Mountain',     color:'#8a8a8a', pat:'peak'},
+        {id:'snow_peak',    label:'Snow Peak',    color:'#c0c0c0', pat:'peak'},
+        {id:'swamp',        label:'Swamp',        color:'#3a5a2a', pat:'solid'},
+        {id:'desert',       label:'Desert',       color:'#d4a84a', pat:'solid'},
+      ],
+      dungeon: [
+        {id:'stone_floor',  label:'Stone Floor',  color:'#5a5a5a', pat:'solid'},
+        {id:'dark_floor',   label:'Dark Floor',   color:'#3a3a3a', pat:'solid'},
+        {id:'wood_floor',   label:'Wood Floor',   color:'#6a4a2a', pat:'solid'},
+        {id:'wall',         label:'Wall',         color:'#2a2a2a', pat:'wall'},
+        {id:'brick_wall',   label:'Brick Wall',   color:'#5a3a2a', pat:'wall'},
+        {id:'door',         label:'Door',         color:'#8a5a1a', pat:'door'},
+        {id:'locked_door',  label:'Locked Door',  color:'#6a2a1a', pat:'door'},
+        {id:'stairs_up',    label:'Stairs Up',    color:'#7a7a7a', pat:'stair'},
+        {id:'stairs_down',  label:'Stairs Down',  color:'#4a4a4a', pat:'stair'},
+        {id:'chest',        label:'Chest',        color:'#a07820', pat:'chest'},
+        {id:'trap',         label:'Trap',         color:'#8a2020', pat:'trap'},
+        {id:'water_d',      label:'Water',        color:'#1a3a5a', pat:'solid'},
+        {id:'lava_d',       label:'Lava',         color:'#aa3a00', pat:'solid'},
+        {id:'pit',          label:'Pit',          color:'#0a0a0a', pat:'solid'},
+        {id:'altar',        label:'Altar',        color:'#6a4a8a', pat:'solid'},
+        {id:'pillar',       label:'Pillar',       color:'#3a3a5a', pat:'wall'},
+      ]
+    };
+
+    const ALL_TILES = [...TILES.nature, ...TILES.dungeon];
+    function getTile(id) { return ALL_TILES.find(t => t.id === id) || null; }
+
+    function drawTile(ctx, tile, x, y, s) {
+      if (!tile) { ctx.fillStyle='#0a0a0a'; ctx.fillRect(x,y,s,s); ctx.strokeStyle='rgba(255,255,255,0.03)'; ctx.lineWidth=0.5; ctx.strokeRect(x,y,s,s); return; }
+      ctx.fillStyle = tile.color; ctx.fillRect(x,y,s,s);
+      ctx.save();
+      if (tile.pat==='tree') {
+        ctx.fillStyle='rgba(0,80,0,0.5)'; ctx.beginPath(); ctx.arc(x+s/2,y+s/2,s*0.35,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='rgba(0,120,0,0.4)'; ctx.beginPath(); ctx.arc(x+s*0.35,y+s*0.35,s*0.2,0,Math.PI*2); ctx.fill();
+      } else if (tile.pat==='peak') {
+        ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.moveTo(x+s/2,y+s*0.1); ctx.lineTo(x+s*0.8,y+s*0.8); ctx.lineTo(x+s*0.2,y+s*0.8); ctx.closePath(); ctx.fill();
+      } else if (tile.pat==='wall') {
+        ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1;
+        for(let i=0;i<3;i++) ctx.strokeRect(x+2,y+2+i*(s/3-1),s-4,s/3-2);
+      } else if (tile.pat==='door') {
+        ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(x+s*0.3,y+s*0.2,s*0.4,s*0.6);
+        ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.arc(x+s*0.62,y+s*0.5,s*0.06,0,Math.PI*2); ctx.fill();
+      } else if (tile.pat==='stair') {
+        ctx.fillStyle='rgba(255,255,255,0.2)';
+        for(let i=0;i<4;i++) ctx.fillRect(x+i*(s/4),y+s-(i+1)*(s/4),s/4,(i+1)*(s/4));
+      } else if (tile.pat==='chest') {
+        ctx.fillStyle='#4a3000'; ctx.fillRect(x+s*0.2,y+s*0.3,s*0.6,s*0.45);
+        ctx.fillStyle='#ffcc00'; ctx.fillRect(x+s*0.2,y+s*0.3,s*0.6,s*0.1);
+        ctx.fillStyle='#ff8800'; ctx.beginPath(); ctx.arc(x+s/2,y+s*0.35,s*0.07,0,Math.PI*2); ctx.fill();
+      } else if (tile.pat==='trap') {
+        ctx.strokeStyle='#ff0000'; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.moveTo(x+s*0.2,y+s*0.2); ctx.lineTo(x+s*0.8,y+s*0.8); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x+s*0.8,y+s*0.2); ctx.lineTo(x+s*0.2,y+s*0.8); ctx.stroke();
+      }
+      ctx.restore();
+      ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=0.5; ctx.strokeRect(x,y,s,s);
+    }
+
+    // ── State ──
+    let maps = {}, currentMapId = null, selectedTile = null;
+    let currentPalette = 'nature', currentTool = 'paint';
+    let tileSize = 28, isPainting = false, sessionActive = false;
+    let offsetX = 0, offsetY = 0, isDragging = false, dragSX = 0, dragSY = 0;
+
+    async function loadMaps() {
+      maps = await MapStore.getMaps();
+      renderMapsList();
+    }
+
+    async function saveCurrentMap() {
+      if (!currentMapId) return;
+      const ok = await MapStore.saveMaps(maps);
+      flash(ok ? 'Saved!' : 'Save failed');
+    }
+
+    function flash(msg) {
+      const el=document.getElementById('canvas-info'); el.textContent=msg;
+      setTimeout(updateInfo, 2000);
+    }
+
+    // ── Maps list ──
+    function renderMapsList() {
+      const list=document.getElementById('maps-list');
+      const ids=Object.keys(maps);
+      if (!ids.length) { list.innerHTML='<div style="color:var(--text-dim);font-size:0.8rem;font-style:italic;padding:8px;">No maps yet.</div>'; return; }
+      list.innerHTML='';
+      ids.forEach(id => {
+        const m=maps[id], div=document.createElement('div');
+        div.className='map-item'+(id===currentMapId?' active':'');
+        div.innerHTML='<button class="map-item-del" onclick="deleteMap(\''+id+'\',event)">✕</button><div class="map-item-name">'+m.name+'</div><div class="map-item-size">'+m.width+'×'+m.height+'</div>';
+        div.onclick=()=>loadMap(id);
+        list.appendChild(div);
+      });
+    }
+
+    function openNewMapModal() { document.getElementById('new-map-modal').classList.add('open'); setTimeout(()=>document.getElementById('new-map-name').focus(),50); }
+    function closeNewMapModal() { document.getElementById('new-map-modal').classList.remove('open'); }
+    document.getElementById('new-map-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeNewMapModal();});
+
+    function createMap() {
+      const name=document.getElementById('new-map-name').value.trim()||'Unnamed Map';
+      const w=Math.min(80,Math.max(5,parseInt(document.getElementById('new-map-w').value)||30));
+      const h=Math.min(80,Math.max(5,parseInt(document.getElementById('new-map-h').value)||20));
+      const fill=document.getElementById('new-map-fill').value;
+      const id='map_'+Date.now();
+      const tiles=[];
+      for(let y=0;y<h;y++){tiles.push([]);for(let x=0;x<w;x++)tiles[y].push(fill==='empty'?null:fill);}
+      maps[id]={id,name,width:w,height:h,tiles,created:Date.now()};
+      closeNewMapModal();
+      document.getElementById('new-map-name').value='';
+      renderMapsList(); loadMap(id); saveCurrentMap();
+    }
+
+    async function deleteMap(id,e) {
+      e.stopPropagation();
+      if(!confirm('Delete "'+maps[id].name+'"?')) return;
+      delete maps[id];
+      await MapStore.saveMaps(maps);
+      if(currentMapId===id){currentMapId=null;hideCanvas();}
+      renderMapsList();
+    }
+
+    function loadMap(id) {
+      currentMapId=id; offsetX=0; offsetY=0;
+      renderMapsList(); showCanvas(); redraw();
+    }
+
+    function showCanvas() {
+      document.getElementById('no-map-msg').style.display='none';
+      document.getElementById('map-canvas').style.display='block';
+      document.getElementById('canvas-toolbar').style.display='flex';
+      document.getElementById('canvas-info').style.display='block';
+      document.getElementById('zoom-btns').style.display='flex';
+    }
+    function hideCanvas() {
+      document.getElementById('no-map-msg').style.display='flex';
+      document.getElementById('map-canvas').style.display='none';
+      document.getElementById('canvas-toolbar').style.display='none';
+      document.getElementById('canvas-info').style.display='none';
+      document.getElementById('zoom-btns').style.display='none';
+    }
+
+    function redraw() {
+      if(!currentMapId) return;
+      const map=maps[currentMapId], canvas=document.getElementById('map-canvas'), wrap=document.getElementById('canvas-wrap');
+      canvas.width=wrap.clientWidth; canvas.height=wrap.clientHeight;
+      const ctx=canvas.getContext('2d');
+      ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(let y=0;y<map.height;y++)
+        for(let x=0;x<map.width;x++)
+          drawTile(ctx,getTile(map.tiles[y][x]),offsetX+x*tileSize,offsetY+y*tileSize,tileSize);
+      updateInfo();
+    }
+
+    function updateInfo() {
+      if(!currentMapId) return;
+      const m=maps[currentMapId];
+      document.getElementById('canvas-info').textContent=m.name+' · '+m.width+'×'+m.height+' · '+Math.round(tileSize/28*100)+'%';
+    }
+
+    function setTool(t) {
+      currentTool=t;
+      ['paint','fill','erase'].forEach(n=>document.getElementById('tool-'+n).classList.toggle('active',n===t));
+    }
+
+    function zoom(f) { tileSize=Math.min(64,Math.max(6,Math.round(tileSize*f))); redraw(); }
+    function resetZoom() { tileSize=28; offsetX=0; offsetY=0; redraw(); }
+
+    function getCoords(e) {
+      const r=document.getElementById('map-canvas').getBoundingClientRect();
+      return { tx:Math.floor((e.clientX-r.left-offsetX)/tileSize), ty:Math.floor((e.clientY-r.top-offsetY)/tileSize) };
+    }
+
+    function paintAt(e) {
+      if(!currentMapId) return;
+      const map=maps[currentMapId], {tx,ty}=getCoords(e);
+      if(tx<0||ty<0||tx>=map.width||ty>=map.height) return;
+      if(currentTool==='erase') map.tiles[ty][tx]=null;
+      else if(currentTool==='paint'&&selectedTile) map.tiles[ty][tx]=selectedTile.id;
+      redraw();
+    }
+
+    function floodFill(tx,ty) {
+      if(!currentMapId||!selectedTile) return;
+      const map=maps[currentMapId];
+      if(tx<0||ty<0||tx>=map.width||ty>=map.height) return;
+      const target=map.tiles[ty][tx], rep=selectedTile.id;
+      if(target===rep) return;
+      const stack=[[tx,ty]];
+      while(stack.length){
+        const [x,y]=stack.pop();
+        if(x<0||y<0||x>=map.width||y>=map.height||map.tiles[y][x]!==target) continue;
+        map.tiles[y][x]=rep;
+        stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+      }
+      redraw();
+    }
+
+    function clearMap() {
+      if(!currentMapId||!confirm('Clear the entire map?')) return;
+      const map=maps[currentMapId];
+      for(let y=0;y<map.height;y++) for(let x=0;x<map.width;x++) map.tiles[y][x]=null;
+      redraw();
+    }
+
+    const canvas=document.getElementById('map-canvas');
+    canvas.addEventListener('mousedown',e=>{
+      if(e.button===1||e.button===2){isDragging=true;dragSX=e.clientX-offsetX;dragSY=e.clientY-offsetY;return;}
+      isPainting=true;
+      if(currentTool==='fill'){const{tx,ty}=getCoords(e);floodFill(tx,ty);}
+      else paintAt(e);
+    });
+    canvas.addEventListener('mousemove',e=>{
+      if(isDragging){offsetX=e.clientX-dragSX;offsetY=e.clientY-dragSY;redraw();return;}
+      if(isPainting) paintAt(e);
+    });
+    canvas.addEventListener('mouseup',()=>{isPainting=false;isDragging=false;});
+    canvas.addEventListener('mouseleave',()=>{isPainting=false;isDragging=false;});
+    canvas.addEventListener('contextmenu',e=>e.preventDefault());
+    canvas.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.1:0.9);},{passive:false});
+    window.addEventListener('resize',redraw);
+
+    // ── Palette ──
+    function showPalette(type) {
+      currentPalette=type;
+      document.querySelectorAll('.pal-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&type==='nature')||(i===1&&type==='dungeon')));
+      renderPalette();
+    }
+
+    function renderPalette() {
+      const container=document.getElementById('palette-tiles');
+      container.innerHTML='';
+      const eraser=document.createElement('button');
+      eraser.className='tile-btn eraser-btn'+(currentTool==='erase'?' selected':'');
+      const ec=document.createElement('canvas'); ec.width=36; ec.height=36; ec.style.borderRadius='4px';
+      const ectx=ec.getContext('2d'); ectx.fillStyle='#1a0a0a'; ectx.fillRect(0,0,36,36);
+      ectx.fillStyle='#cc3333'; ectx.font='20px sans-serif'; ectx.textAlign='center'; ectx.textBaseline='middle'; ectx.fillText('⌫',18,18);
+      const el=document.createElement('div'); el.className='tile-label'; el.textContent='Erase';
+      eraser.appendChild(ec); eraser.appendChild(el);
+      eraser.onclick=()=>{setTool('erase');renderPalette();};
+      container.appendChild(eraser);
+
+      TILES[currentPalette].forEach(tile=>{
+        const btn=document.createElement('button');
+        btn.className='tile-btn'+(selectedTile&&selectedTile.id===tile.id?' selected':'');
+        const pc=document.createElement('canvas'); pc.width=36; pc.height=36; pc.style.borderRadius='4px';
+        drawTile(pc.getContext('2d'),tile,0,0,36);
+        const lbl=document.createElement('div'); lbl.className='tile-label'; lbl.textContent=tile.label;
+        btn.appendChild(pc); btn.appendChild(lbl);
+        btn.onclick=()=>{selectedTile=tile;setTool('paint');renderPalette();};
+        container.appendChild(btn);
+      });
+    }
+
+    // ── Session ──
+    async function toggleSession() {
+      sessionActive=!sessionActive;
+      const btn=document.getElementById('session-btn');
+      btn.textContent=sessionActive?'⬛ End Session':'▶ Start Session';
+      btn.classList.toggle('live',sessionActive);
+      await MapSessionStore.set({active:sessionActive,mapId:currentMapId||null,ts:Date.now()});
+    }
+
+    renderPalette();
+    if(isDM) loadMaps();
+  </script>
+</body>
+</html>

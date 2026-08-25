@@ -77,6 +77,32 @@ const OnlineStore = {
   }
 };
 
+// Maps (DM map editor)
+const MapStore = {
+  async getMaps()      { try { const rec = await binGet(BIN_PLAYERS); return rec.maps || {}; } catch { return {}; } },
+  async saveMaps(maps) {
+    try {
+      const rec = await binGet(BIN_PLAYERS);
+      rec.maps = maps;
+      await binSet(BIN_PLAYERS, rec);
+      return true;
+    } catch { return false; }
+  }
+};
+
+// Map session (DM "start session" broadcast)
+const MapSessionStore = {
+  async get() { try { const rec = await binGet(BIN_PLAYERS); return rec.mapSession || null; } catch { return null; } },
+  async set(session) {
+    try {
+      const rec = await binGet(BIN_PLAYERS);
+      rec.mapSession = session;
+      await binSet(BIN_PLAYERS, rec);
+      return true;
+    } catch { return false; }
+  }
+};
+
 // Scores
 const ScoreStore = {
   async getPlayerData(username) {
