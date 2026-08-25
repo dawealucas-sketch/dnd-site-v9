@@ -226,8 +226,8 @@
       nature: [
         {id:'grass',        label:'Grass',        color:'#2d6a2d', pat:'solid'},
         {id:'dark_grass',   label:'Dark Grass',   color:'#1a4a1a', pat:'solid'},
-        {id:'water',        label:'Water',        color:'#1a5a8a', pat:'solid'},
-        {id:'deep_water',   label:'Deep Water',   color:'#0a2a5a', pat:'solid'},
+        {id:'water',        label:'Water',        color:'#1a5a8a', pat:'solid', water:true},
+        {id:'deep_water',   label:'Deep Water',   color:'#0a2a5a', pat:'solid', water:true, deep:true},
         {id:'sand',         label:'Sand',         color:'#c8a84a', pat:'solid'},
         {id:'dirt',         label:'Dirt',         color:'#8a5a2a', pat:'solid'},
         {id:'snow',         label:'Snow',         color:'#d8e8f0', pat:'solid'},
@@ -253,7 +253,7 @@
         {id:'stairs_down',  label:'Stairs Down',  color:'#4a4a4a', pat:'stair', stair:'down'},
         {id:'chest',        label:'Chest',        color:'#a07820', pat:'chest'},
         {id:'trap',         label:'Trap',         color:'#8a2020', pat:'trap'},
-        {id:'water_d',      label:'Water',        color:'#1a3a5a', pat:'solid'},
+        {id:'water_d',      label:'Water',        color:'#1a3a5a', pat:'solid', water:true},
         {id:'lava_d',       label:'Lava',         color:'#aa3a00', pat:'solid'},
         {id:'pit',          label:'Pit',          color:'#0a0a0a', pat:'solid'},
         {id:'altar',        label:'Altar',        color:'#6a4a8a', pat:'solid'},
@@ -1390,6 +1390,8 @@
     // to whatever's behind it. Keeping this much clearance from solid cells
     // keeps the camera comfortably outside that range.
     const PLAYER_RADIUS = 0.3;
+    const EYE_HEIGHT = 1.6;
+    const WATER_SINK = 0.9, DEEP_WATER_SINK = 1.35;
 
     function stepPlayer() {
       const ps = playState, cam = ps.camera, map = ps.map;
@@ -1415,6 +1417,16 @@
       if (!isSolidAt(map, floor, tryX2, tryZ2)) cam.position.z = nz;
 
       const cx = Math.floor(cam.position.x / TILE_U), cz = Math.floor(cam.position.z / TILE_U);
+
+      // Sink into water tiles — smoothly ease the eye height down while
+      // standing on one, and back up to normal once off it.
+      let targetY = EYE_HEIGHT;
+      if (cx>=0 && cz>=0 && cx<map.width && cz<map.height) {
+        const hereTile = getTile(floor.tiles[cz][cx]);
+        if (hereTile && hereTile.water) targetY = EYE_HEIGHT - (hereTile.deep ? DEEP_WATER_SINK : WATER_SINK);
+      }
+      cam.position.y += (targetY - cam.position.y) * 0.12;
+
       const cellKey = cx+','+cz;
       if (cellKey !== ps.lastCell) {
         ps.lastCell = cellKey;
