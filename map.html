@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css" />
   <style>
     body { overflow: hidden; }
-    .map-layout { display: grid; grid-template-columns: 220px 1fr 180px; height: calc(100vh - 48px); overflow: hidden; }
+    .map-layout { display: grid; grid-template-columns: 220px 1fr 220px; height: calc(100vh - 48px); overflow: hidden; }
 
     .maps-panel { background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
     .maps-panel-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
@@ -21,19 +21,34 @@
     .map-item-del { float: right; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.8rem; padding: 0; }
     .map-item-del:hover { color: var(--red); }
     .new-map-btn { margin: 0.5rem; flex-shrink: 0; }
+    .sync-line { padding: 6px 10px; font-size: 0.65rem; color: var(--text-dim); font-family: var(--font-display); letter-spacing: 0.05em; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .sync-line.live { color: #5aaa50; }
 
-    .canvas-wrap { position: relative; overflow: hidden; background: #0a0a0a; cursor: crosshair; }
+    .canvas-wrap { position: relative; overflow: hidden; background: #0a0a0a; cursor: crosshair; display: flex; flex-direction: column; }
+    .floor-tabs { display: flex; align-items: center; gap: 4px; background: var(--bg2); border-bottom: 1px solid var(--border); padding: 6px 8px; flex-shrink: 0; overflow-x: auto; z-index: 5; }
+    .floor-tab { font-size: 0.68rem; font-family: var(--font-display); letter-spacing: 0.05em; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border2); background: var(--panel); color: var(--text-dim); cursor: pointer; white-space: nowrap; display:flex; align-items:center; gap:6px; }
+    .floor-tab.active { border-color: var(--gold-dim); color: var(--gold); background: var(--bg3); }
+    .floor-tab-del { border:none; background:none; color:var(--text-dim); font-size:0.7rem; padding:0; }
+    .floor-tab-del:hover { color: var(--red); }
+    .floor-add-btn { font-size: 0.75rem; padding: 5px 9px; border-radius: 6px; border: 1px dashed var(--border2); background: none; color: var(--text-dim); cursor: pointer; flex-shrink:0; }
+    .floor-add-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+    .canvas-inner { position: relative; flex: 1; overflow: hidden; }
     #map-canvas { display: block; image-rendering: pixelated; }
-    .canvas-toolbar { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; z-index: 10; flex-wrap: wrap; }
+    .canvas-toolbar { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; z-index: 10; flex-wrap: wrap; max-width: calc(100% - 20px); }
     .tool-btn { background: var(--panel); border: 1px solid var(--border2); border-radius: 6px; color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 5px 10px; font-family: var(--font-display); letter-spacing: 0.06em; transition: all 0.15s; }
     .tool-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
     .tool-btn.active { border-color: var(--gold); color: var(--gold); background: var(--bg3); }
+    .tool-btn.logic-btn.active { border-color: #b39ddb; color: #b39ddb; }
+    .tool-btn.play-btn { border-color: #5aaa50; color: #5aaa50; }
+    .tool-btn.play-btn:hover { border-color: #7acc70; color: #7acc70; }
     .canvas-info { position: absolute; bottom: 10px; left: 10px; font-size: 0.7rem; color: var(--text-dim); font-family: var(--font-display); background: rgba(0,0,0,0.7); padding: 3px 8px; border-radius: 4px; }
     .zoom-btns { position: absolute; bottom: 10px; right: 10px; display: flex; gap: 4px; }
     .zoom-btn { background: var(--panel); border: 1px solid var(--border2); border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
     .zoom-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
     .no-map { display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; gap: 1rem; color: var(--text-dim); }
     .no-map p { font-style: italic; }
+    .logic-badge { position:absolute; pointer-events:none; }
 
     .palette-panel { background: var(--bg2); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
     .palette-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
@@ -49,18 +64,40 @@
     .eraser-btn { grid-column: 1 / -1; }
     .eraser-btn.selected { border-color: var(--red); }
 
-    .session-bar { padding: 0.5rem; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .session-bar { padding: 0.5rem; border-top: 1px solid var(--border); flex-shrink: 0; display:flex; flex-direction:column; gap:6px; }
     .session-btn { width: 100%; padding: 8px; font-size: 0.7rem; letter-spacing: 0.08em; }
     .session-btn.live { border-color: var(--red-dim); color: var(--red-dim); }
 
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 300; align-items: center; justify-content: center; }
     .modal-overlay.open { display: flex; }
-    .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 1.5rem; width: min(360px,90vw); display: flex; flex-direction: column; gap: 1rem; }
+    .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px; padding: 1.5rem; width: min(420px,92vw); max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
     .modal h3 { font-size: 1.1rem; }
     .modal-fields { display: flex; flex-direction: column; gap: 0.75rem; }
     .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
     .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-    select { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 1rem; width: 100%; }
+    select, input[type=text], input[type=number] { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 0.9rem; width: 100%; }
+    label { font-family:var(--font-display); font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:3px; display:block; }
+
+    .logic-section { border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; display:flex; flex-direction:column; gap:0.5rem; }
+    .logic-section-title { font-family: var(--font-display); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-dim); }
+    .output-row { border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem; display:flex; flex-direction:column; gap:6px; position:relative; background: var(--panel); }
+    .output-row-del { position:absolute; top:6px; right:6px; background:none; border:none; color:var(--text-dim); font-size:0.75rem; cursor:pointer; }
+    .output-row-del:hover { color:var(--red); }
+    .add-output-btn { border: 1px dashed var(--border2); background:none; color:var(--text-dim); padding:6px; border-radius:6px; font-size:0.75rem; cursor:pointer; }
+    .add-output-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+    .hint { font-size: 0.68rem; color: var(--text-dim); font-style: italic; }
+
+    /* Play mode */
+    #play-overlay { display:none; position: fixed; inset: 0; background:#000; z-index: 500; }
+    #play-overlay.open { display:block; }
+    #play-canvas { width:100%; height:100%; display:block; }
+    .play-hud { position:absolute; inset:0; pointer-events:none; }
+    .play-crosshair { position:absolute; top:50%; left:50%; width:6px; height:6px; margin:-3px; border-radius:50%; background:rgba(255,255,255,0.8); }
+    .play-msg-banner { position:absolute; bottom:14%; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); border:1px solid var(--gold-dim); color:var(--gold-pale); padding:10px 20px; border-radius:8px; font-family:var(--font-display); font-size:0.9rem; letter-spacing:0.04em; max-width:60%; text-align:center; display:none; }
+    .play-prompt { position:absolute; bottom:20%; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); color:#fff; padding:6px 14px; border-radius:6px; font-size:0.8rem; display:none; }
+    .play-topbar { position:absolute; top:14px; left:14px; display:flex; gap:8px; pointer-events:auto; }
+    .play-exit-btn { background: rgba(0,0,0,0.7); border:1px solid var(--red-dim); color: var(--red-dim); padding:6px 14px; border-radius:6px; font-size:0.75rem; cursor:pointer; font-family:var(--font-display); }
+    .play-lock-hint { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#fff; font-family:var(--font-display); font-size:0.9rem; text-align:center; background:rgba(0,0,0,0.6); padding:1rem 1.5rem; border-radius:10px; pointer-events:auto; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -81,27 +118,33 @@
       <div class="maps-panel-header"><h3>Maps</h3></div>
       <div class="maps-list" id="maps-list"><div style="color:var(--text-dim);font-size:0.8rem;font-style:italic;padding:8px;">Loading...</div></div>
       <button class="primary new-map-btn" onclick="openNewMapModal()">+ New Map</button>
+      <div class="sync-line" id="sync-line">Not synced yet</div>
     </div>
 
     <div class="canvas-wrap" id="canvas-wrap">
-      <div class="no-map" id="no-map-msg">
-        <span style="font-size:2.5rem;">🗺</span>
-        <p>Create or select a map to begin building.</p>
-        <button class="primary" onclick="openNewMapModal()">+ New Map</button>
-      </div>
-      <canvas id="map-canvas" style="display:none;"></canvas>
-      <div class="canvas-toolbar" id="canvas-toolbar" style="display:none;">
-        <button class="tool-btn active" id="tool-paint" onclick="setTool('paint')">🖌 Paint</button>
-        <button class="tool-btn" id="tool-fill" onclick="setTool('fill')">🪣 Fill</button>
-        <button class="tool-btn" id="tool-erase" onclick="setTool('erase')">⌫ Erase</button>
-        <button class="tool-btn" onclick="clearMap()" style="border-color:var(--red-dim);color:var(--red-dim);">🗑 Clear</button>
-        <button class="tool-btn" onclick="saveCurrentMap()" style="border-color:var(--gold-dim);color:var(--gold);">💾 Save</button>
-      </div>
-      <div class="canvas-info" id="canvas-info" style="display:none;"></div>
-      <div class="zoom-btns" id="zoom-btns" style="display:none;">
-        <button class="zoom-btn" onclick="zoom(1.2)">+</button>
-        <button class="zoom-btn" onclick="zoom(0.8)">−</button>
-        <button class="zoom-btn" onclick="resetZoom()" title="Reset">⊙</button>
+      <div class="floor-tabs" id="floor-tabs" style="display:none;"></div>
+      <div class="canvas-inner" id="canvas-inner">
+        <div class="no-map" id="no-map-msg">
+          <span style="font-size:2.5rem;">🗺</span>
+          <p>Create or select a map to begin building.</p>
+          <button class="primary" onclick="openNewMapModal()">+ New Map</button>
+        </div>
+        <canvas id="map-canvas" style="display:none;"></canvas>
+        <div class="canvas-toolbar" id="canvas-toolbar" style="display:none;">
+          <button class="tool-btn active" id="tool-paint" onclick="setTool('paint')">🖌 Paint</button>
+          <button class="tool-btn" id="tool-fill" onclick="setTool('fill')">🪣 Fill</button>
+          <button class="tool-btn" id="tool-erase" onclick="setTool('erase')">⌫ Erase</button>
+          <button class="tool-btn logic-btn" id="tool-logic" onclick="setTool('logic')">⚡ Logic</button>
+          <button class="tool-btn" onclick="clearMap()" style="border-color:var(--red-dim);color:var(--red-dim);">🗑 Clear</button>
+          <button class="tool-btn" onclick="saveCurrentMap(true)" style="border-color:var(--gold-dim);color:var(--gold);">💾 Save</button>
+          <button class="tool-btn play-btn" onclick="enterPlay()">▶ Play</button>
+        </div>
+        <div class="canvas-info" id="canvas-info" style="display:none;"></div>
+        <div class="zoom-btns" id="zoom-btns" style="display:none;">
+          <button class="zoom-btn" onclick="zoom(1.2)">+</button>
+          <button class="zoom-btn" onclick="zoom(0.8)">−</button>
+          <button class="zoom-btn" onclick="resetZoom()" title="Reset">⊙</button>
+        </div>
       </div>
     </div>
 
@@ -145,6 +188,30 @@
     </div>
   </div>
 
+  <!-- Logic editor modal -->
+  <div class="modal-overlay" id="logic-modal">
+    <div class="modal">
+      <h3 id="logic-modal-title">Tile Logic</h3>
+      <div class="modal-fields" id="logic-modal-body"></div>
+      <div class="modal-actions">
+        <button onclick="closeLogicModal()">Cancel</button>
+        <button class="primary" onclick="saveLogicModal()">Save Logic</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Play mode overlay -->
+  <div id="play-overlay">
+    <canvas id="play-canvas"></canvas>
+    <div class="play-hud">
+      <div class="play-crosshair" id="play-crosshair" style="display:none;"></div>
+      <div class="play-msg-banner" id="play-msg-banner"></div>
+      <div class="play-prompt" id="play-prompt">Press E</div>
+      <div class="play-topbar"><button class="play-exit-btn" onclick="exitPlay()">✕ Exit Play</button></div>
+      <div class="play-lock-hint" id="play-lock-hint" onclick="requestPlayLock()">Click to enter · WASD to move · Mouse to look · E to interact · Esc to release</div>
+    </div>
+  </div>
+
   <script src="auth.js"></script>
   <script>
     if (!Auth.require()) throw new Error('not logged in');
@@ -167,10 +234,10 @@
         {id:'ice',          label:'Ice',          color:'#a0c8e0', pat:'solid'},
         {id:'lava',         label:'Lava',         color:'#c84a00', pat:'solid'},
         {id:'volcanic',     label:'Volcanic',     color:'#4a1a00', pat:'solid'},
-        {id:'forest',       label:'Forest',       color:'#1a5a1a', pat:'tree'},
-        {id:'dense_forest', label:'Dense Forest', color:'#0a3a0a', pat:'tree'},
-        {id:'mountain',     label:'Mountain',     color:'#8a8a8a', pat:'peak'},
-        {id:'snow_peak',    label:'Snow Peak',    color:'#c0c0c0', pat:'peak'},
+        {id:'forest',       label:'Forest',       color:'#1a5a1a', pat:'tree', wall:true},
+        {id:'dense_forest', label:'Dense Forest', color:'#0a3a0a', pat:'tree', wall:true},
+        {id:'mountain',     label:'Mountain',     color:'#8a8a8a', pat:'peak', wall:true},
+        {id:'snow_peak',    label:'Snow Peak',    color:'#c0c0c0', pat:'peak', wall:true},
         {id:'swamp',        label:'Swamp',        color:'#3a5a2a', pat:'solid'},
         {id:'desert',       label:'Desert',       color:'#d4a84a', pat:'solid'},
       ],
@@ -178,26 +245,26 @@
         {id:'stone_floor',  label:'Stone Floor',  color:'#5a5a5a', pat:'solid'},
         {id:'dark_floor',   label:'Dark Floor',   color:'#3a3a3a', pat:'solid'},
         {id:'wood_floor',   label:'Wood Floor',   color:'#6a4a2a', pat:'solid'},
-        {id:'wall',         label:'Wall',         color:'#2a2a2a', pat:'wall'},
-        {id:'brick_wall',   label:'Brick Wall',   color:'#5a3a2a', pat:'wall'},
-        {id:'door',         label:'Door',         color:'#8a5a1a', pat:'door'},
-        {id:'locked_door',  label:'Locked Door',  color:'#6a2a1a', pat:'door'},
-        {id:'stairs_up',    label:'Stairs Up',    color:'#7a7a7a', pat:'stair'},
-        {id:'stairs_down',  label:'Stairs Down',  color:'#4a4a4a', pat:'stair'},
+        {id:'wall',         label:'Wall',         color:'#2a2a2a', pat:'wall', wall:true},
+        {id:'brick_wall',   label:'Brick Wall',   color:'#5a3a2a', pat:'wall', wall:true},
+        {id:'door',         label:'Door',         color:'#8a5a1a', pat:'door', door:true},
+        {id:'locked_door',  label:'Locked Door',  color:'#6a2a1a', pat:'door', door:true, locked:true},
+        {id:'stairs_up',    label:'Stairs Up',    color:'#7a7a7a', pat:'stair', stair:'up'},
+        {id:'stairs_down',  label:'Stairs Down',  color:'#4a4a4a', pat:'stair', stair:'down'},
         {id:'chest',        label:'Chest',        color:'#a07820', pat:'chest'},
         {id:'trap',         label:'Trap',         color:'#8a2020', pat:'trap'},
         {id:'water_d',      label:'Water',        color:'#1a3a5a', pat:'solid'},
         {id:'lava_d',       label:'Lava',         color:'#aa3a00', pat:'solid'},
         {id:'pit',          label:'Pit',          color:'#0a0a0a', pat:'solid'},
         {id:'altar',        label:'Altar',        color:'#6a4a8a', pat:'solid'},
-        {id:'pillar',       label:'Pillar',       color:'#3a3a5a', pat:'wall'},
+        {id:'pillar',       label:'Pillar',       color:'#3a3a5a', pat:'wall', wall:true},
       ]
     };
 
     const ALL_TILES = [...TILES.nature, ...TILES.dungeon];
     function getTile(id) { return ALL_TILES.find(t => t.id === id) || null; }
 
-    function drawTile(ctx, tile, x, y, s) {
+    function drawTile(ctx, tile, x, y, s, hidden) {
       if (!tile) { ctx.fillStyle='#0a0a0a'; ctx.fillRect(x,y,s,s); ctx.strokeStyle='rgba(255,255,255,0.03)'; ctx.lineWidth=0.5; ctx.strokeRect(x,y,s,s); return; }
       ctx.fillStyle = tile.color; ctx.fillRect(x,y,s,s);
       ctx.save();
@@ -225,24 +292,82 @@
         ctx.beginPath(); ctx.moveTo(x+s*0.8,y+s*0.2); ctx.lineTo(x+s*0.2,y+s*0.8); ctx.stroke();
       }
       ctx.restore();
+      if (hidden) { ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(x,y,s,s); }
       ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=0.5; ctx.strokeRect(x,y,s,s);
     }
 
     // ── State ──
-    let maps = {}, currentMapId = null, selectedTile = null;
+    let maps = {}, currentMapId = null, currentFloorId = null, selectedTile = null;
     let currentPalette = 'nature', currentTool = 'paint';
     let tileSize = 28, isPainting = false, sessionActive = false;
     let offsetX = 0, offsetY = 0, isDragging = false, dragSX = 0, dragSY = 0;
+    let saveTimer = null, pollTimer = null, lastSavedJSON = null;
+
+    // ── Migration: old single-floor maps -> floors[] + logic{} ──
+    function migrateMap(m) {
+      if (!m.floors) {
+        m.floors = [{ id:'floor_'+Date.now(), name:'Ground Floor', tiles:m.tiles, hidden:blankBool(m.width,m.height), logic:{} }];
+        delete m.tiles;
+      }
+      m.floors.forEach(f => {
+        if (!f.hidden) f.hidden = blankBool(m.width, m.height);
+        if (!f.logic) f.logic = {};
+        if (!f.id) f.id = 'floor_'+Math.random().toString(36).slice(2);
+      });
+      return m;
+    }
+    function blankBool(w,h) { const g=[]; for(let y=0;y<h;y++){g.push(new Array(w).fill(false));} return g; }
+
+    function currentMap() { return currentMapId ? maps[currentMapId] : null; }
+    function currentFloor() {
+      const m = currentMap(); if (!m) return null;
+      return m.floors.find(f => f.id === currentFloorId) || m.floors[0] || null;
+    }
 
     async function loadMaps() {
       maps = await MapStore.getMaps();
+      Object.values(maps).forEach(migrateMap);
       renderMapsList();
+      startPolling();
     }
 
-    async function saveCurrentMap() {
+    function startPolling() {
+      if (pollTimer) return;
+      pollTimer = setInterval(async () => {
+        if (isPainting || isDragging) return;
+        try {
+          const remote = await MapStore.getMaps();
+          Object.values(remote).forEach(migrateMap);
+          const remoteStr = JSON.stringify(remote);
+          if (remoteStr === lastSavedJSON) return; // nothing new
+          maps = remote;
+          lastSavedJSON = remoteStr;
+          renderMapsList();
+          if (currentMapId && maps[currentMapId]) { if (!currentFloor()) currentFloorId = maps[currentMapId].floors[0].id; renderFloorTabs(); redraw(); }
+          else if (currentMapId && !maps[currentMapId]) { currentMapId=null; hideCanvas(); }
+          setSyncLine(true);
+        } catch(e) { /* offline tick, ignore */ }
+      }, 3000);
+    }
+
+    function setSyncLine(live) {
+      const el = document.getElementById('sync-line');
+      el.textContent = live ? 'Synced ' + new Date().toLocaleTimeString() : 'Saving…';
+      el.classList.toggle('live', !!live);
+    }
+
+    function queueAutosave() {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => saveCurrentMap(false), 900);
+    }
+
+    async function saveCurrentMap(manual) {
       if (!currentMapId) return;
+      setSyncLine(false);
       const ok = await MapStore.saveMaps(maps);
-      flash(ok ? 'Saved!' : 'Save failed');
+      lastSavedJSON = JSON.stringify(maps);
+      setSyncLine(true);
+      if (manual) flash(ok ? 'Saved!' : 'Save failed');
     }
 
     function flash(msg) {
@@ -259,7 +384,7 @@
       ids.forEach(id => {
         const m=maps[id], div=document.createElement('div');
         div.className='map-item'+(id===currentMapId?' active':'');
-        div.innerHTML='<button class="map-item-del" onclick="deleteMap(\''+id+'\',event)">✕</button><div class="map-item-name">'+m.name+'</div><div class="map-item-size">'+m.width+'×'+m.height+'</div>';
+        div.innerHTML='<button class="map-item-del" onclick="deleteMap(\''+id+'\',event)">✕</button><div class="map-item-name">'+m.name+'</div><div class="map-item-size">'+m.width+'×'+m.height+' · '+m.floors.length+' floor'+(m.floors.length===1?'':'s')+'</div>';
         div.onclick=()=>loadMap(id);
         list.appendChild(div);
       });
@@ -269,32 +394,88 @@
     function closeNewMapModal() { document.getElementById('new-map-modal').classList.remove('open'); }
     document.getElementById('new-map-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeNewMapModal();});
 
+    function blankTiles(w,h,fill) {
+      const tiles=[];
+      for(let y=0;y<h;y++){tiles.push([]);for(let x=0;x<w;x++)tiles[y].push(fill==='empty'?null:fill);}
+      return tiles;
+    }
+
     function createMap() {
       const name=document.getElementById('new-map-name').value.trim()||'Unnamed Map';
       const w=Math.min(80,Math.max(5,parseInt(document.getElementById('new-map-w').value)||30));
       const h=Math.min(80,Math.max(5,parseInt(document.getElementById('new-map-h').value)||20));
       const fill=document.getElementById('new-map-fill').value;
       const id='map_'+Date.now();
-      const tiles=[];
-      for(let y=0;y<h;y++){tiles.push([]);for(let x=0;x<w;x++)tiles[y].push(fill==='empty'?null:fill);}
-      maps[id]={id,name,width:w,height:h,tiles,created:Date.now()};
+      const floorId='floor_'+Date.now();
+      maps[id]={id,name,width:w,height:h,created:Date.now(),
+        floors:[{id:floorId,name:'Ground Floor',tiles:blankTiles(w,h,fill),hidden:blankBool(w,h),logic:{}}]};
       closeNewMapModal();
       document.getElementById('new-map-name').value='';
-      renderMapsList(); loadMap(id); saveCurrentMap();
+      renderMapsList(); loadMap(id); saveCurrentMap(false);
     }
 
     async function deleteMap(id,e) {
       e.stopPropagation();
-      if(!confirm('Delete "'+maps[id].name+'"?')) return;
+      if(!safeConfirm('Delete "'+maps[id].name+'"?')) return;
       delete maps[id];
       await MapStore.saveMaps(maps);
+      lastSavedJSON = JSON.stringify(maps);
       if(currentMapId===id){currentMapId=null;hideCanvas();}
       renderMapsList();
     }
 
     function loadMap(id) {
       currentMapId=id; offsetX=0; offsetY=0;
-      renderMapsList(); showCanvas(); redraw();
+      currentFloorId = maps[id].floors[0].id;
+      renderMapsList(); renderFloorTabs(); showCanvas(); redraw();
+    }
+
+    // ── Floors ──
+    function renderFloorTabs() {
+      const m = currentMap();
+      const wrap = document.getElementById('floor-tabs');
+      if (!m) { wrap.style.display='none'; return; }
+      wrap.style.display='flex'; wrap.innerHTML='';
+      m.floors.forEach((f,i) => {
+        const tab=document.createElement('div');
+        tab.className='floor-tab'+(f.id===currentFloorId?' active':'');
+        tab.innerHTML='<span>'+(i+1)+'. '+f.name+'</span>'+(m.floors.length>1?'<button class="floor-tab-del" onclick="deleteFloor(\''+f.id+'\',event)">✕</button>':'');
+        tab.onclick=(e)=>{ if(e.target.classList.contains('floor-tab-del')) return; currentFloorId=f.id; renderFloorTabs(); redraw(); };
+        tab.ondblclick=()=>renameFloor(f.id);
+        wrap.appendChild(tab);
+      });
+      const addBtn=document.createElement('button');
+      addBtn.className='floor-add-btn'; addBtn.textContent='+ Floor';
+      addBtn.onclick=addFloor;
+      wrap.appendChild(addBtn);
+    }
+
+    function safePrompt(msg, dflt) { try { return prompt(msg, dflt); } catch { return dflt; } }
+    function safeConfirm(msg) { try { return confirm(msg); } catch { return true; } }
+
+    function addFloor() {
+      const m = currentMap(); if(!m) return;
+      const name = safePrompt('Floor name:', 'Floor ' + (m.floors.length+1)) || ('Floor ' + (m.floors.length+1));
+      const id = 'floor_'+Date.now();
+      m.floors.push({id,name,tiles:blankTiles(m.width,m.height,'empty'),hidden:blankBool(m.width,m.height),logic:{}});
+      currentFloorId = id;
+      renderFloorTabs(); redraw(); queueAutosave();
+    }
+
+    function renameFloor(id) {
+      const m = currentMap(); const f = m.floors.find(x=>x.id===id); if(!f) return;
+      const name = safePrompt('Rename floor:', f.name); if(!name) return;
+      f.name = name.trim() || f.name;
+      renderFloorTabs(); queueAutosave();
+    }
+
+    function deleteFloor(id,e) {
+      e.stopPropagation();
+      const m = currentMap(); if(!m || m.floors.length<=1) return;
+      if(!safeConfirm('Delete this floor?')) return;
+      m.floors = m.floors.filter(f=>f.id!==id);
+      if (currentFloorId===id) currentFloorId = m.floors[0].id;
+      renderFloorTabs(); redraw(); queueAutosave();
     }
 
     function showCanvas() {
@@ -310,29 +491,37 @@
       document.getElementById('canvas-toolbar').style.display='none';
       document.getElementById('canvas-info').style.display='none';
       document.getElementById('zoom-btns').style.display='none';
+      document.getElementById('floor-tabs').style.display='none';
     }
 
     function redraw() {
       if(!currentMapId) return;
-      const map=maps[currentMapId], canvas=document.getElementById('map-canvas'), wrap=document.getElementById('canvas-wrap');
-      canvas.width=wrap.clientWidth; canvas.height=wrap.clientHeight;
+      const map=currentMap(), floor=currentFloor();
+      if (!map || !floor) return;
+      const canvas=document.getElementById('map-canvas'), inner=document.getElementById('canvas-inner');
+      canvas.width=inner.clientWidth; canvas.height=inner.clientHeight;
       const ctx=canvas.getContext('2d');
       ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,canvas.width,canvas.height);
       for(let y=0;y<map.height;y++)
-        for(let x=0;x<map.width;x++)
-          drawTile(ctx,getTile(map.tiles[y][x]),offsetX+x*tileSize,offsetY+y*tileSize,tileSize);
+        for(let x=0;x<map.width;x++) {
+          drawTile(ctx,getTile(floor.tiles[y][x]),offsetX+x*tileSize,offsetY+y*tileSize,tileSize,floor.hidden[y][x]);
+          if (floor.logic[x+','+y]) {
+            const lx=offsetX+x*tileSize, ly=offsetY+y*tileSize;
+            ctx.fillStyle='#b39ddb'; ctx.beginPath(); ctx.arc(lx+tileSize-6,ly+6,3.5,0,Math.PI*2); ctx.fill();
+          }
+        }
       updateInfo();
     }
 
     function updateInfo() {
       if(!currentMapId) return;
-      const m=maps[currentMapId];
-      document.getElementById('canvas-info').textContent=m.name+' · '+m.width+'×'+m.height+' · '+Math.round(tileSize/28*100)+'%';
+      const m=currentMap(), f=currentFloor();
+      document.getElementById('canvas-info').textContent=m.name+' · '+f.name+' · '+m.width+'×'+m.height+' · '+Math.round(tileSize/28*100)+'%';
     }
 
     function setTool(t) {
       currentTool=t;
-      ['paint','fill','erase'].forEach(n=>document.getElementById('tool-'+n).classList.toggle('active',n===t));
+      ['paint','fill','erase','logic'].forEach(n=>document.getElementById('tool-'+n).classList.toggle('active',n===t));
     }
 
     function zoom(f) { tileSize=Math.min(64,Math.max(6,Math.round(tileSize*f))); redraw(); }
@@ -345,39 +534,40 @@
 
     function paintAt(e) {
       if(!currentMapId) return;
-      const map=maps[currentMapId], {tx,ty}=getCoords(e);
+      const map=currentMap(), floor=currentFloor(), {tx,ty}=getCoords(e);
       if(tx<0||ty<0||tx>=map.width||ty>=map.height) return;
-      if(currentTool==='erase') map.tiles[ty][tx]=null;
-      else if(currentTool==='paint'&&selectedTile) map.tiles[ty][tx]=selectedTile.id;
-      redraw();
+      if(currentTool==='erase') floor.tiles[ty][tx]=null;
+      else if(currentTool==='paint'&&selectedTile) floor.tiles[ty][tx]=selectedTile.id;
+      redraw(); queueAutosave();
     }
 
     function floodFill(tx,ty) {
       if(!currentMapId||!selectedTile) return;
-      const map=maps[currentMapId];
+      const map=currentMap(), floor=currentFloor();
       if(tx<0||ty<0||tx>=map.width||ty>=map.height) return;
-      const target=map.tiles[ty][tx], rep=selectedTile.id;
+      const target=floor.tiles[ty][tx], rep=selectedTile.id;
       if(target===rep) return;
       const stack=[[tx,ty]];
       while(stack.length){
         const [x,y]=stack.pop();
-        if(x<0||y<0||x>=map.width||y>=map.height||map.tiles[y][x]!==target) continue;
-        map.tiles[y][x]=rep;
+        if(x<0||y<0||x>=map.width||y>=map.height||floor.tiles[y][x]!==target) continue;
+        floor.tiles[y][x]=rep;
         stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
       }
-      redraw();
+      redraw(); queueAutosave();
     }
 
     function clearMap() {
-      if(!currentMapId||!confirm('Clear the entire map?')) return;
-      const map=maps[currentMapId];
-      for(let y=0;y<map.height;y++) for(let x=0;x<map.width;x++) map.tiles[y][x]=null;
-      redraw();
+      if(!currentMapId||!safeConfirm('Clear the current floor?')) return;
+      const map=currentMap(), floor=currentFloor();
+      for(let y=0;y<map.height;y++) for(let x=0;x<map.width;x++) floor.tiles[y][x]=null;
+      redraw(); queueAutosave();
     }
 
     const canvas=document.getElementById('map-canvas');
     canvas.addEventListener('mousedown',e=>{
       if(e.button===1||e.button===2){isDragging=true;dragSX=e.clientX-offsetX;dragSY=e.clientY-offsetY;return;}
+      if(currentTool==='logic'){ const{tx,ty}=getCoords(e); openLogicModal(tx,ty); return; }
       isPainting=true;
       if(currentTool==='fill'){const{tx,ty}=getCoords(e);floodFill(tx,ty);}
       else paintAt(e);
@@ -416,7 +606,7 @@
         const btn=document.createElement('button');
         btn.className='tile-btn'+(selectedTile&&selectedTile.id===tile.id?' selected':'');
         const pc=document.createElement('canvas'); pc.width=36; pc.height=36; pc.style.borderRadius='4px';
-        drawTile(pc.getContext('2d'),tile,0,0,36);
+        drawTile(pc.getContext('2d'),tile,0,0,36,false);
         const lbl=document.createElement('div'); lbl.className='tile-label'; lbl.textContent=tile.label;
         btn.appendChild(pc); btn.appendChild(lbl);
         btn.onclick=()=>{selectedTile=tile;setTool('paint');renderPalette();};
@@ -431,6 +621,445 @@
       btn.textContent=sessionActive?'⬛ End Session':'▶ Start Session';
       btn.classList.toggle('live',sessionActive);
       await MapSessionStore.set({active:sessionActive,mapId:currentMapId||null,ts:Date.now()});
+    }
+
+    // ══════════════════════════════════════════════
+    // Logic editor (triggers + outputs, Portal-style)
+    // ══════════════════════════════════════════════
+    let logicEditTarget = null; // {x,y}
+    let logicDraft = null;
+
+    function openLogicModal(tx,ty) {
+      const map=currentMap(), floor=currentFloor();
+      if(!map||!floor||tx<0||ty<0||tx>=map.width||ty>=map.height) return;
+      const tileId = floor.tiles[ty][tx];
+      const tile = getTile(tileId);
+      logicEditTarget = {x:tx,y:ty};
+      const existing = floor.logic[tx+','+ty];
+      logicDraft = existing ? JSON.parse(JSON.stringify(existing)) : { trigger:'', requiresFlag:'', passReq:'', outputs:[] };
+      document.getElementById('logic-modal-title').textContent = 'Tile Logic — (' + tx + ',' + ty + ')' + (tile ? ' · ' + tile.label : '');
+      renderLogicModalBody();
+      document.getElementById('logic-modal').classList.add('open');
+    }
+    function closeLogicModal() { document.getElementById('logic-modal').classList.remove('open'); logicEditTarget=null; }
+    document.getElementById('logic-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeLogicModal();});
+
+    const OUTPUT_TYPES = [
+      {id:'message', label:'Show Message'},
+      {id:'reveal', label:'Reveal Area'},
+      {id:'hide', label:'Hide Area'},
+      {id:'settile', label:'Change Tile'},
+      {id:'teleport', label:'Teleport Player'},
+      {id:'setflag', label:'Set Flag'},
+    ];
+
+    function renderLogicModalBody() {
+      const body = document.getElementById('logic-modal-body');
+      const map = currentMap(), floor = currentFloor(), tile = getTile(floor.tiles[logicEditTarget.y][logicEditTarget.x]);
+      const isDoorish = tile && (tile.wall || tile.door);
+      body.innerHTML = `
+        <div class="logic-section">
+          <div class="logic-section-title">Trigger</div>
+          <div class="field">
+            <label>Fires when...</label>
+            <select id="lf-trigger">
+              <option value="">No trigger (passive tile)</option>
+              <option value="enter">A player steps onto this tile</option>
+              <option value="manual">A player interacts (looks + presses E)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Only fires if flag is set (optional)</label>
+            <input type="text" id="lf-requiresFlag" placeholder="e.g. lever_pulled" />
+          </div>
+        </div>
+        ${isDoorish ? `
+        <div class="logic-section">
+          <div class="logic-section-title">Passability</div>
+          <div class="hint">Walls/doors are solid by default (plain doors are always open). Set a flag name here to make this tile only passable once that flag is set — great for secret walls or locked doors.</div>
+          <div class="field">
+            <label>Passable only when flag is set</label>
+            <input type="text" id="lf-passReq" placeholder="e.g. golden_key" />
+          </div>
+        </div>` : ''}
+        <div class="logic-section">
+          <div class="logic-section-title">Outputs (what happens)</div>
+          <div id="lf-outputs"></div>
+          <button class="add-output-btn" onclick="addOutputRow()">+ Add Output</button>
+        </div>
+      `;
+      document.getElementById('lf-trigger').value = logicDraft.trigger || '';
+      document.getElementById('lf-requiresFlag').value = logicDraft.requiresFlag || '';
+      if (isDoorish) document.getElementById('lf-passReq').value = logicDraft.passReq || '';
+      renderOutputRows();
+    }
+
+    function renderOutputRows() {
+      const wrap = document.getElementById('lf-outputs');
+      wrap.innerHTML = '';
+      logicDraft.outputs.forEach((out, i) => {
+        const row = document.createElement('div');
+        row.className = 'output-row';
+        const typeOpts = OUTPUT_TYPES.map(t=>`<option value="${t.id}" ${t.id===out.type?'selected':''}>${t.label}</option>`).join('');
+        let fields = '';
+        if (out.type === 'message') {
+          fields = `<div class="field"><label>Text</label><input type="text" data-f="text" value="${(out.text||'').replace(/"/g,'&quot;')}" placeholder="The wall grinds open..." /></div>`;
+        } else if (out.type === 'reveal' || out.type === 'hide') {
+          fields = `<div class="modal-row">
+            <div class="field"><label>From X,Y</label><input type="text" data-f="from" value="${out.x1??''},${out.y1??''}" placeholder="4,2" /></div>
+            <div class="field"><label>To X,Y</label><input type="text" data-f="to" value="${out.x2??''},${out.y2??''}" placeholder="8,6" /></div>
+          </div>`;
+        } else if (out.type === 'settile') {
+          fields = `<div class="modal-row">
+            <div class="field"><label>Target X,Y (blank = this tile)</label><input type="text" data-f="target" value="${out.x!=null?out.x+','+out.y:''}" placeholder="4,2" /></div>
+            <div class="field"><label>New Tile ID</label><input type="text" data-f="tileId" value="${out.tileId||''}" placeholder="stone_floor" /></div>
+          </div><div class="hint">Use the Tiles panel labels' lowercase id, e.g. door, wall, stone_floor.</div>`;
+        } else if (out.type === 'teleport') {
+          const map = currentMap();
+          const floorOpts = map.floors.map(f=>`<option value="${f.id}" ${out.floor===f.id?'selected':''}>${f.name}</option>`).join('');
+          fields = `<div class="field"><label>Target Floor</label><select data-f="floor"><option value="">Current floor</option>${floorOpts}</select></div>
+          <div class="field"><label>Target X,Y</label><input type="text" data-f="pos" value="${out.x!=null?out.x+','+out.y:''}" placeholder="2,2" /></div>`;
+        } else if (out.type === 'setflag') {
+          fields = `<div class="modal-row">
+            <div class="field"><label>Flag name</label><input type="text" data-f="flag" value="${out.flag||''}" placeholder="lever_pulled" /></div>
+            <div class="field"><label>Value</label><select data-f="value"><option value="true" ${out.value!==false?'selected':''}>Set (true)</option><option value="false" ${out.value===false?'selected':''}>Clear (false)</option></select></div>
+          </div>`;
+        }
+        row.innerHTML = `<button class="output-row-del" onclick="removeOutputRow(${i})">✕</button>
+          <div class="field"><label>Output Type</label><select data-f="type">${typeOpts}</select></div>
+          ${fields}`;
+        row.querySelector('[data-f="type"]').addEventListener('change', e => { logicDraft.outputs[i] = {type:e.target.value}; renderOutputRows(); });
+        row.querySelectorAll('[data-f]:not([data-f="type"])').forEach(inp => {
+          inp.addEventListener('input', () => syncOutputRow(i));
+          inp.addEventListener('change', () => syncOutputRow(i));
+        });
+        wrap.appendChild(row);
+      });
+    }
+
+    function syncOutputRow(i) {
+      const wrap = document.getElementById('lf-outputs');
+      const row = wrap.children[i];
+      const out = logicDraft.outputs[i];
+      row.querySelectorAll('[data-f]').forEach(inp => {
+        const f = inp.dataset.f;
+        if (f === 'from') { const [x1,y1] = inp.value.split(',').map(s=>parseInt(s.trim())); out.x1=isNaN(x1)?0:x1; out.y1=isNaN(y1)?0:y1; }
+        else if (f === 'to') { const [x2,y2] = inp.value.split(',').map(s=>parseInt(s.trim())); out.x2=isNaN(x2)?0:x2; out.y2=isNaN(y2)?0:y2; }
+        else if (f === 'target') { if(!inp.value.trim()){out.x=null;out.y=null;} else { const [x,y]=inp.value.split(',').map(s=>parseInt(s.trim())); out.x=isNaN(x)?null:x; out.y=isNaN(y)?null:y; } }
+        else if (f === 'pos') { const [x,y]=inp.value.split(',').map(s=>parseInt(s.trim())); out.x=isNaN(x)?0:x; out.y=isNaN(y)?0:y; }
+        else if (f === 'value') { out.value = inp.value === 'true'; }
+        else out[f] = inp.value;
+      });
+    }
+
+    function addOutputRow() { logicDraft.outputs.push({type:'message', text:''}); renderOutputRows(); }
+    function removeOutputRow(i) { logicDraft.outputs.splice(i,1); renderOutputRows(); }
+
+    function saveLogicModal() {
+      const map = currentMap(), floor = currentFloor();
+      const {x,y} = logicEditTarget;
+      logicDraft.trigger = document.getElementById('lf-trigger').value;
+      logicDraft.requiresFlag = document.getElementById('lf-requiresFlag').value.trim();
+      const passEl = document.getElementById('lf-passReq');
+      logicDraft.passReq = passEl ? passEl.value.trim() : '';
+      const key = x+','+y;
+      const isEmpty = !logicDraft.trigger && !logicDraft.passReq && logicDraft.outputs.length===0;
+      if (isEmpty) delete floor.logic[key];
+      else floor.logic[key] = logicDraft;
+      closeLogicModal();
+      redraw(); queueAutosave();
+    }
+
+    // ══════════════════════════════════════════════
+    // Play mode — first-person 3D via Three.js
+    // ══════════════════════════════════════════════
+    let THREE = null;
+    let playState = null; // { scene, camera, renderer, floorId, meshByCell, wallHeight, playerFlags, yaw, pitch, keys, animId, playFloorId }
+
+    async function enterPlay() {
+      const map = currentMap();
+      if (!map) return;
+      if (!THREE) {
+        try { THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'); }
+        catch(e) { alert('Could not load the 3D engine (Three.js) — check your internet connection.'); return; }
+      }
+      document.getElementById('play-overlay').classList.add('open');
+      document.getElementById('play-lock-hint').style.display='block';
+      buildPlayScene(map, currentFloorId);
+    }
+
+    function exitPlay() {
+      document.exitPointerLock && document.exitPointerLock();
+      if (playState) {
+        cancelAnimationFrame(playState.animId);
+        window.removeEventListener('keydown', playState.onKeyDown);
+        window.removeEventListener('keyup', playState.onKeyUp);
+        document.removeEventListener('mousemove', playState.onMouseMove);
+      }
+      playState = null;
+      document.getElementById('play-overlay').classList.remove('open');
+      document.getElementById('play-msg-banner').style.display='none';
+    }
+
+    const WALL_H = 3, TILE_U = 2; // world units per tile
+
+    function buildPlayScene(map, floorId, spawnX, spawnY) {
+      if (playState) { cancelAnimationFrame(playState.animId); }
+      const floor = map.floors.find(f=>f.id===floorId) || map.floors[0];
+
+      const canvas = document.getElementById('play-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x05050a);
+      scene.fog = new THREE.Fog(0x05050a, 8, 40);
+
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.05, 200);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+      const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(5,10,3); scene.add(dl);
+
+      const group = new THREE.Group(); scene.add(group);
+      const meshByCell = {};
+
+      for (let y=0;y<map.height;y++) for (let x=0;x<map.width;x++) buildCell(map, floor, x, y, group, meshByCell);
+
+      const start = spawnX!=null ? {x:spawnX,y:spawnY} : findSpawn(map, floor);
+      camera.position.set((start.x+0.5)*TILE_U, 1.6, (start.y+0.5)*TILE_U);
+
+      playState = {
+        scene, camera, renderer, group, meshByCell, map, floor,
+        playFloorId: floor.id,
+        yaw:0, pitch:0, keys:{}, flags:{}, lastCell:null, locked:false, animId:0,
+      };
+
+      playState.onKeyDown = e => { playState.keys[e.code]=true; if (e.code==='KeyE') tryInteract(); };
+      playState.onKeyUp = e => { playState.keys[e.code]=false; };
+      playState.onMouseMove = e => {
+        if (!playState.locked) return;
+        playState.yaw -= e.movementX * 0.0022;
+        playState.pitch -= e.movementY * 0.0022;
+        playState.pitch = Math.max(-1.4, Math.min(1.4, playState.pitch));
+      };
+      window.addEventListener('keydown', playState.onKeyDown);
+      window.addEventListener('keyup', playState.onKeyUp);
+      document.addEventListener('mousemove', playState.onMouseMove);
+
+      window.onresize = () => { if(!playState) return; camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); };
+
+      function loop() {
+        if (!playState) return;
+        stepPlayer();
+        camera.rotation.set(playState.pitch, playState.yaw, 0, 'YXZ');
+        renderer.render(scene, camera);
+        playState.animId = requestAnimationFrame(loop);
+      }
+      loop();
+    }
+
+    function findSpawn(map, floor) {
+      for (let y=0;y<map.height;y++) for (let x=0;x<map.width;x++) {
+        const t = getTile(floor.tiles[y][x]);
+        if (t && !t.wall) return {x,y};
+      }
+      return {x:0,y:0};
+    }
+
+    function isSolidAt(map, floor, x, y) {
+      if (x<0||y<0||x>=map.width||y>=map.height) return true;
+      const tile = getTile(floor.tiles[y][x]);
+      if (!tile) return false;
+      const logic = floor.logic[x+','+y];
+      if (tile.wall) {
+        if (logic && logic.passReq && playState.flags[logic.passReq]) return false;
+        return true;
+      }
+      if (tile.door) {
+        if (tile.locked) {
+          if (logic && logic.passReq && playState.flags[logic.passReq]) return false;
+          return true;
+        }
+        return false;
+      }
+      return false;
+    }
+
+    function buildCell(map, floor, x, y, group, meshByCell) {
+      const key = x+','+y;
+      const old = meshByCell[key];
+      if (old) { old.forEach(m=>{ group.remove(m); m.geometry.dispose(); m.material.dispose(); }); }
+      const meshes = [];
+      const tile = getTile(floor.tiles[y][x]);
+      const cx = (x+0.5)*TILE_U, cz = (y+0.5)*TILE_U;
+
+      if (tile && floor.hidden[y][x]) {
+        // hidden tiles render as solid black void (fog-of-war)
+        const geo = new THREE.BoxGeometry(TILE_U, WALL_H, TILE_U);
+        const mat = new THREE.MeshBasicMaterial({ color:0x000000 });
+        const mesh = new THREE.Mesh(geo, mat); mesh.position.set(cx, WALL_H/2, cz);
+        group.add(mesh); meshes.push(mesh);
+        meshByCell[key] = meshes;
+        return;
+      }
+
+      // floor plane (always, so you don't fall through gaps)
+      const floorGeo = new THREE.BoxGeometry(TILE_U, 0.1, TILE_U);
+      const floorColor = tile ? tile.color : '#0a0a0a';
+      const floorMat = new THREE.MeshStandardMaterial({ color: floorColor });
+      const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+      floorMesh.position.set(cx, -0.05, cz);
+      group.add(floorMesh); meshes.push(floorMesh);
+
+      if (tile && tile.wall) {
+        const h = tile.pat==='peak' ? WALL_H*1.6 : WALL_H;
+        const geo = new THREE.BoxGeometry(TILE_U, h, TILE_U);
+        const mat = new THREE.MeshStandardMaterial({ color: tile.color });
+        const mesh = new THREE.Mesh(geo, mat); mesh.position.set(cx, h/2, cz);
+        group.add(mesh); meshes.push(mesh);
+      } else if (tile && tile.door) {
+        const geo = new THREE.BoxGeometry(TILE_U*0.9, WALL_H*0.85, 0.15);
+        const mat = new THREE.MeshStandardMaterial({ color: tile.color });
+        const mesh = new THREE.Mesh(geo, mat); mesh.position.set(cx, WALL_H*0.425, cz);
+        group.add(mesh); meshes.push(mesh);
+      } else if (tile && tile.pat==='chest') {
+        const geo = new THREE.BoxGeometry(TILE_U*0.5, 0.5, TILE_U*0.4);
+        const mat = new THREE.MeshStandardMaterial({ color: tile.color });
+        const mesh = new THREE.Mesh(geo, mat); mesh.position.set(cx, 0.25, cz);
+        group.add(mesh); meshes.push(mesh);
+      } else if (tile && (tile.pat==='tree' || tile.pat==='peak')) {
+        const h = tile.pat==='peak' ? WALL_H*1.6 : WALL_H*0.9;
+        const geo = new THREE.ConeGeometry(TILE_U*0.5, h, 6);
+        const mat = new THREE.MeshStandardMaterial({ color: tile.color });
+        const mesh = new THREE.Mesh(geo, mat); mesh.position.set(cx, h/2, cz);
+        group.add(mesh); meshes.push(mesh);
+      }
+
+      if (floor.logic[key]) {
+        const geo = new THREE.SphereGeometry(0.08, 8, 8);
+        const mat = new THREE.MeshBasicMaterial({ color:0xb39ddb });
+        const mesh = new THREE.Mesh(geo, mat); mesh.position.set(cx, 0.3, cz);
+        group.add(mesh); meshes.push(mesh);
+      }
+
+      meshByCell[key] = meshes;
+    }
+
+    function requestPlayLock() {
+      const canvas = document.getElementById('play-canvas');
+      canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
+      canvas.requestPointerLock();
+    }
+    document.addEventListener('pointerlockchange', () => {
+      if (!playState) return;
+      playState.locked = document.pointerLockElement === document.getElementById('play-canvas');
+      document.getElementById('play-lock-hint').style.display = playState.locked ? 'none' : 'block';
+      document.getElementById('play-crosshair').style.display = playState.locked ? 'block' : 'none';
+    });
+
+    function stepPlayer() {
+      const ps = playState, cam = ps.camera, map = ps.map;
+      const floor = ps.map.floors.find(f=>f.id===ps.playFloorId);
+      const speed = 0.06;
+      let dx=0, dz=0;
+      const fx = Math.sin(ps.yaw), fz = Math.cos(ps.yaw);
+      const rx = Math.sin(ps.yaw+Math.PI/2), rz = Math.cos(ps.yaw+Math.PI/2);
+      if (ps.keys['KeyW']) { dx -= fx*speed; dz -= fz*speed; }
+      if (ps.keys['KeyS']) { dx += fx*speed; dz += fz*speed; }
+      if (ps.keys['KeyA']) { dx -= rx*speed; dz -= rz*speed; }
+      if (ps.keys['KeyD']) { dx += rx*speed; dz += rz*speed; }
+
+      const nx = cam.position.x + dx, nz = cam.position.z + dz;
+      const cellX = Math.floor(cam.position.x / TILE_U), cellZ = Math.floor(cam.position.z / TILE_U);
+      const tryX = Math.floor(nx / TILE_U), tryZ = Math.floor(cam.position.z / TILE_U);
+      const tryZ2 = Math.floor(nz / TILE_U), tryX2 = Math.floor(cam.position.x / TILE_U);
+      if (!isSolidAt(map, floor, tryX, tryZ)) cam.position.x = nx;
+      if (!isSolidAt(map, floor, tryX2, tryZ2)) cam.position.z = nz;
+
+      const cx = Math.floor(cam.position.x / TILE_U), cz = Math.floor(cam.position.z / TILE_U);
+      const cellKey = cx+','+cz;
+      if (cellKey !== ps.lastCell) {
+        ps.lastCell = cellKey;
+        onEnterCell(cx, cz);
+      }
+    }
+
+    function onEnterCell(x, y) {
+      const ps = playState, floor = ps.map.floors.find(f=>f.id===ps.playFloorId);
+      if (x<0||y<0||x>=ps.map.width||y>=ps.map.height) return;
+      const tile = getTile(floor.tiles[y][x]);
+      const logic = floor.logic[x+','+y];
+      if (logic && logic.trigger==='enter') fireLogic(logic);
+      if (tile && tile.stair) {
+        const idx = ps.map.floors.findIndex(f=>f.id===floor.id);
+        const targetIdx = tile.stair==='up' ? idx-1 : idx+1;
+        const targetFloor = ps.map.floors[targetIdx];
+        if (targetFloor) switchPlayFloor(targetFloor.id, x, y);
+      }
+    }
+
+    function tryInteract() {
+      const ps = playState, floor = ps.map.floors.find(f=>f.id===ps.playFloorId);
+      const cam = ps.camera;
+      const dirx = -Math.sin(ps.yaw), dirz = -Math.cos(ps.yaw);
+      for (let d=0.4; d<=2.2; d+=0.4) {
+        const px = cam.position.x + dirx*d, pz = cam.position.z + dirz*d;
+        const x = Math.floor(px/TILE_U), y = Math.floor(pz/TILE_U);
+        const logic = floor.logic[x+','+y];
+        if (logic && logic.trigger==='manual') { fireLogic(logic); return; }
+      }
+    }
+
+    function fireLogic(logic) {
+      if (logic.requiresFlag && !playState.flags[logic.requiresFlag]) return;
+      (logic.outputs||[]).forEach(runOutput);
+    }
+
+    function runOutput(out) {
+      const ps = playState, map = ps.map;
+      const floor = () => map.floors.find(f=>f.id===ps.playFloorId);
+      if (out.type === 'message') showPlayMessage(out.text||'');
+      else if (out.type === 'reveal' || out.type === 'hide') {
+        const f = floor(); const val = out.type==='hide';
+        const x1=Math.min(out.x1,out.x2), x2=Math.max(out.x1,out.x2), y1=Math.min(out.y1,out.y2), y2=Math.max(out.y1,out.y2);
+        for (let y=y1;y<=y2;y++) for (let x=x1;x<=x2;x++) {
+          if (x<0||y<0||x>=map.width||y>=map.height) continue;
+          f.hidden[y][x] = val;
+          buildCell(map, f, x, y, ps.group, ps.meshByCell);
+        }
+      } else if (out.type === 'settile') {
+        const f = floor();
+        const x = out.x!=null ? out.x : logicEditTarget?.x;
+        const y = out.y!=null ? out.y : logicEditTarget?.y;
+        if (x==null||y==null||x<0||y<0||x>=map.width||y>=map.height) return;
+        f.tiles[y][x] = out.tileId || null;
+        buildCell(map, f, x, y, ps.group, ps.meshByCell);
+      } else if (out.type === 'teleport') {
+        const targetFloorId = out.floor || ps.playFloorId;
+        const x = out.x||0, y = out.y||0;
+        switchPlayFloor(targetFloorId, x, y);
+      } else if (out.type === 'setflag') {
+        ps.flags[out.flag] = out.value !== false;
+      }
+    }
+
+    function switchPlayFloor(floorId, x, y) {
+      const ps = playState;
+      ps.playFloorId = floorId;
+      ps.group.clear();
+      ps.meshByCell = {};
+      const floor = ps.map.floors.find(f=>f.id===floorId);
+      for (let yy=0;yy<ps.map.height;yy++) for (let xx=0;xx<ps.map.width;xx++) buildCell(ps.map, floor, xx, yy, ps.group, ps.meshByCell);
+      ps.camera.position.set((x+0.5)*TILE_U, 1.6, (y+0.5)*TILE_U);
+      ps.lastCell = null;
+    }
+
+    function showPlayMessage(text) {
+      const el = document.getElementById('play-msg-banner');
+      el.textContent = text; el.style.display = 'block';
+      clearTimeout(showPlayMessage._t);
+      showPlayMessage._t = setTimeout(()=>{ el.style.display='none'; }, 3500);
     }
 
     renderPalette();
