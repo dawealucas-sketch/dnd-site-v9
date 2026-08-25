@@ -63,7 +63,11 @@
         <h2>The Party</h2>
         <p class="dm-note" id="dm-note"></p>
       </div>
-      <button class="primary" onclick="openModal()">+ New Character</button>
+      <div style="display:flex;gap:8px;">
+        <button onclick="exportParty()">⬇ Backup</button>
+        <button class="import-btn" style="position:relative;overflow:hidden;">⬆ Restore<input type="file" accept="application/json" onchange="importParty(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;" /></button>
+        <button class="primary" onclick="openModal()">+ New Character</button>
+      </div>
     </div>
 
     <div id="party-grid" class="party-grid">
@@ -117,6 +121,15 @@
 
     async function renderParty() {
       party = await Store.getParty();
+      renderPartyGrid();
+    }
+
+    // Pure DOM render from whatever `party` currently holds — no fetch. Used
+    // after a local create/delete so we trust the state we just built rather
+    // than immediately re-fetching (a save that's still in flight, silently
+    // failed, or hit a backend with brief read-after-write lag would return
+    // stale data and erase what was just added).
+    function renderPartyGrid() {
       const grid = document.getElementById('party-grid');
       grid.innerHTML = '';
 
@@ -161,6 +174,24 @@
       grid.appendChild(addCard);
     }
 
+    function exportParty() {
+      BackupUtils.download('dnd-party-backup-' + BackupUtils.stamp() + '.json', party);
+    }
+
+    async function importParty(input) {
+      const file = input.files[0];
+      input.value = '';
+      if (!file) return;
+      let imported;
+      try { imported = await BackupUtils.readFile(file); }
+      catch (e) { alert(e.message); return; }
+      if (!Array.isArray(imported)) { alert('That file doesn\'t look like a party backup.'); return; }
+      if (!confirm('Replace the current party (' + party.length + ' character' + (party.length===1?'':'s') + ') with the ' + imported.length + ' character' + (imported.length===1?'':'s') + ' from this backup?')) return;
+      party = imported;
+      renderPartyGrid();
+      await Store.saveParty(party);
+    }
+
     function openModal() {
       document.getElementById('modal').classList.add('open');
       setTimeout(() => document.getElementById('new-name').focus(), 50);
@@ -191,9 +222,9 @@
         traits: '', notes: '',
       };
       party.push(c);
-      await Store.saveParty(party);
       closeModal();
-      renderParty();
+      renderPartyGrid();
+      await Store.saveParty(party);
     }
 
     async function removeChar(i, e) {
@@ -201,8 +232,8 @@
       if (!isDM) return;
       if (confirm('Remove ' + party[i].name + ' from the party? This cannot be undone.')) {
         party.splice(i, 1);
+        renderPartyGrid();
         await Store.saveParty(party);
-        renderParty();
       }
     }
 

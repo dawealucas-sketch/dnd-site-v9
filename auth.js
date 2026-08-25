@@ -103,6 +103,35 @@ const MapSessionStore = {
   }
 };
 
+// Backup / restore helpers — export data to a file the user keeps on their
+// own computer, immune to any bug or race in our own JSONBin storage layer.
+const BackupUtils = {
+  download(filename, data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
+  readFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try { resolve(JSON.parse(reader.result)); }
+        catch (e) { reject(new Error('That file is not valid JSON.')); }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    });
+  },
+  stamp() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + '_' + pad(d.getHours()) + pad(d.getMinutes());
+  }
+};
+
 // Scores
 const ScoreStore = {
   async getPlayerData(username) {

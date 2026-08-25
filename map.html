@@ -118,6 +118,10 @@
       <div class="maps-panel-header"><h3>Maps</h3></div>
       <div class="maps-list" id="maps-list"><div style="color:var(--text-dim);font-size:0.8rem;font-style:italic;padding:8px;">Loading...</div></div>
       <button class="primary new-map-btn" onclick="openNewMapModal()">+ New Map</button>
+      <div style="display:flex;gap:6px;margin:0 0.5rem 0.5rem;">
+        <button style="flex:1;font-size:0.65rem;" onclick="exportMaps()">⬇ Backup</button>
+        <button style="flex:1;font-size:0.65rem;position:relative;overflow:hidden;">⬆ Restore<input type="file" accept="application/json" onchange="importMaps(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;" /></button>
+      </div>
       <div class="sync-line" id="sync-line">Not synced yet</div>
     </div>
 
@@ -674,7 +678,7 @@
     let currentPalette = 'nature', currentTool = 'paint';
     let tileSize = 28, isPainting = false, sessionActive = false;
     let offsetX = 0, offsetY = 0, isDragging = false, dragSX = 0, dragSY = 0;
-    let saveTimer = null, pollTimer = null, lastSavedJSON = null;
+    let saveTimer = null, pollTimer = null, lastSavedJSON = null, lastLocalWriteAt = 0;
 
     // ── Migration: old single-floor maps -> floors[] + logic{} ──
     function migrateMap(m) {
@@ -704,12 +708,21 @@
       startPolling();
     }
 
+    // How long after a local save to distrust an incoming poll result. A poll
+    // that was already in flight when we saved (or that raced a backend with
+    // brief eventual-consistency lag) can return data from just before our
+    // save — applying it would wipe out what we just created/changed. The
+    // next poll tick after this window will pick up the actual up-to-date state.
+    const POLL_STALE_GRACE_MS = 3500;
+
     function startPolling() {
       if (pollTimer) return;
       pollTimer = setInterval(async () => {
         if (isPainting || isDragging) return;
+        const pollStartedAt = Date.now();
         try {
           const remote = await MapStore.getMaps();
+          if (pollStartedAt < lastLocalWriteAt + POLL_STALE_GRACE_MS) return; // could be stale relative to our own save
           Object.values(remote).forEach(migrateMap);
           const remoteStr = JSON.stringify(remote);
           if (remoteStr === lastSavedJSON) return; // nothing new
@@ -739,6 +752,7 @@
       setSyncLine(false);
       const ok = await MapStore.saveMaps(maps);
       lastSavedJSON = JSON.stringify(maps);
+      lastLocalWriteAt = Date.now();
       setSyncLine(true);
       if (manual) flash(ok ? 'Saved!' : 'Save failed');
     }
@@ -787,12 +801,38 @@
       renderMapsList(); loadMap(id); saveCurrentMap(false);
     }
 
+    function exportMaps() {
+      BackupUtils.download('dnd-maps-backup-' + BackupUtils.stamp() + '.json', maps);
+    }
+
+    async function importMaps(input) {
+      const file = input.files[0];
+      input.value = '';
+      if (!file) return;
+      let imported;
+      try { imported = await BackupUtils.readFile(file); }
+      catch (e) { alert(e.message); return; }
+      if (!imported || typeof imported !== 'object' || Array.isArray(imported)) { alert('That file doesn\'t look like a maps backup.'); return; }
+      const importedCount = Object.keys(imported).length;
+      if (!confirm('Add the ' + importedCount + ' map' + (importedCount===1?'':'s') + ' from this backup? Maps with the same ID as an existing one will be overwritten with the backup version; everything else stays as-is.')) return;
+      Object.values(imported).forEach(migrateMap);
+      Object.assign(maps, imported);
+      renderMapsList();
+      // Not saveCurrentMap() -- that no-ops when no map is currently open,
+      // but we need this write to happen regardless.
+      const ok = await MapStore.saveMaps(maps);
+      lastSavedJSON = JSON.stringify(maps);
+      lastLocalWriteAt = Date.now();
+      flash(ok ? 'Restored!' : 'Restore failed to save');
+    }
+
     async function deleteMap(id,e) {
       e.stopPropagation();
       if(!safeConfirm('Delete "'+maps[id].name+'"?')) return;
       delete maps[id];
       await MapStore.saveMaps(maps);
       lastSavedJSON = JSON.stringify(maps);
+      lastLocalWriteAt = Date.now();
       if(currentMapId===id){currentMapId=null;hideCanvas();}
       renderMapsList();
     }
