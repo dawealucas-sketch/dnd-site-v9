@@ -148,6 +148,9 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 .slot .bar i { display: block; height: 100%; }
 .slot.active { border-color: var(--gold); }
 .slot.empty { opacity: .5; }
+.hp { display: flex; gap: 4px; align-items: center; }
+.hp i { width: 20px; height: 8px; border-radius: 4px; background: var(--danger); box-shadow: 0 1px 0 rgba(0,0,0,.35); }
+.hp i.off { background: rgba(255,255,255,.2); }
 .ablist { display: grid; gap: 8px; }
 .abrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.04); }
 .abrow .txt { display: grid; gap: 2px; min-width: 0; flex: 1 1 240px; }
@@ -177,6 +180,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 <div id="whud" hidden>
   <div class="hud-tl">
     <div class="region" id="w-region">Sunny Meadow</div>
+    <div class="hp" id="w-hp" role="img" aria-label="Health 5 of 5"></div>
     <div class="tokline"><span class="coin"></span><span id="w-tok">0</span></div>
     <div class="sub" id="w-found">Abilities found: 0</div>
   </div>
@@ -2305,6 +2309,8 @@ const CAMP_IDS = CAMPS.map(c => c.id);
 let hw = null, hsOk = false, explored = null, exploreT = 0, spotT = -99, regionT = -99, wRegion = '', wHudT = 0;
 let wAim = null, wcamX = 0, wcamY = 0;
 const ab = { active: {}, cd: {} };
+const W_HP = 5;
+let wHP = W_HP, lastHP = -1;
 
 // what this device remembers about Hookworld
 function hs() {
@@ -2575,7 +2581,19 @@ function worldAttach(a) {
 function worldHurt(fx, fy) {
   if (P.inv > 0) return;
   if (ab.active.shield > 0) { ab.active.shield = 0; P.inv = 0.8; burst(P.x, P.y, '#ffd34d', 18, 220); return; }
+  wHP--;
+  if (wHP <= 0) { knockedOut(); return; }
   hurt(fx, fy);
+}
+function knockedOut() {
+  burst(P.x, P.y, '#ff5a6e', 30, 300);
+  if (!reduceMotion) shake = 0.4;
+  hw.shots.length = 0;
+  for (const dr of hw.drones) if (dr.st === 'chase') dr.st = 'return';
+  toCampfire();
+  wHP = W_HP;
+  const c = hw.camps.find(cc => cc.id === hs().camp);
+  banner('Knocked out', 'Back to ' + (c ? c.n : 'camp'), 'Five hits and you\'re out. Campfires heal you.');
 }
 function pushOut(bx0, by0, bx1, by1, r, bounce, dt, raw) {
   const cx = clamp(P.x, bx0, bx1), cy = clamp(P.y, by0, by1);
@@ -2666,6 +2684,7 @@ function worldPickups() {
   for (const c of hw.chests) if (!h.ch.includes(c.id) && Math.hypot(P.x - c.x, P.y - c.y) < 42) {
     h.ch.push(c.id); addTokens(c.v, c.x, c.y); burst(c.x, c.y, '#ffd34d', 16, 200); banner('Chest', '+' + c.v + ' tokens'); saveDirty = true;
   }
+  for (const c of hw.camps) if (wHP < W_HP && h.camps.includes(c.id) && Math.hypot(P.x - c.x, P.y - (c.y - 20)) < 70) { wHP = W_HP; burst(P.x, P.y, '#9be15d', 12, 160); }
   for (const c of hw.camps) if (h.camp !== c.id && Math.hypot(P.x - c.x, P.y - (c.y - 20)) < 70) {
     h.camp = c.id; if (!h.camps.includes(c.id)) h.camps.push(c.id);
     banner('Campfire lit', c.n, 'Press R to come back here.'); saveDirty = true;
@@ -2846,6 +2865,7 @@ function startWorld() {
   ensureWorld();
   mode = 'world';
   ab.active = {}; ab.cd = {}; hw.shots.length = 0;
+  wHP = W_HP; lastHP = -1;
   for (const dr of hw.drones) { dr.st = 'patrol'; dr.t = 0; dr.x = dr.ax; dr.y = dr.ay; }
   toCampfire();
   runHeight = 0; reachedCp = 0;
@@ -2926,6 +2946,12 @@ function updateWorldHud(dt) {
   const reg = regionAt(P.x, P.y);
   if (reg !== wRegion) { wRegion = reg; $('w-region').textContent = reg; if (state === 'play' && gt - regionT > 4) { regionT = gt; banner('Now entering', reg); } }
   if (save.tokens !== lastWTok) { lastWTok = save.tokens; $('w-tok').textContent = String(save.tokens); }
+  if (wHP !== lastHP) {
+    lastHP = wHP;
+    const el = $('w-hp'); el.textContent = '';
+    for (let i = 0; i < W_HP; i++) { const pip = document.createElement('i'); if (i >= wHP) pip.className = 'off'; el.append(pip); }
+    el.setAttribute('aria-label', 'Health ' + wHP + ' of ' + W_HP);
+  }
   updateSlots();
   wHudT -= dt;
   if (wHudT > 0) return;
