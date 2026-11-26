@@ -174,7 +174,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <div class="team" id="h-team"></div>
   </div>
   <div id="banner"></div>
-  <div class="hint" id="h-hint"><b>Mouse</b> aim · <b>Hold Space</b> hook · <b>W</b> reel in · <b>S</b> let out · <b>A / D</b> swing · <b>R</b> checkpoint · <b>Esc</b> pause</div>
+  <div class="hint" id="h-hint"><b>Mouse</b> aim · <b>Hold Space</b> hook · <b>W</b> reel in / jump · <b>S</b> let out · <b>A / D</b> swing · <b>R</b> checkpoint · <b>Esc</b> pause</div>
 </div>
 
 <div id="whud" hidden>
@@ -187,7 +187,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   <div class="hud-tr"><div class="team" id="w-team"></div></div>
   <div id="wbanner"></div>
   <div class="slots" id="w-slots"></div>
-  <div class="hint" id="w-hint"><b>Mouse</b> aim · <b>Space</b> hook · <b>W / S</b> reel · <b>A / D</b> swing · <b>1 2 3</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
+  <div class="hint" id="w-hint"><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1 2 3</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
 </div>
 
 <div id="overlay">
@@ -424,7 +424,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <dl class="keys">
       <dt>Mouse</dt><dd>Aim the hook. The faint circle around you is its range.</dd>
       <dt><kbd>Space</kbd> hold</dt><dd>Fire and hold the hook. Let go to release and fly.</dd>
-      <dt><kbd>W</kbd></dt><dd>Reel in, pulling yourself toward the hook.</dd>
+      <dt><kbd>W</kbd></dt><dd>Reel in, pulling yourself toward the hook. On the ground, jump up one block.</dd>
       <dt><kbd>S</kbd></dt><dd>Let rope out, up to the hook's range.</dd>
       <dt><kbd>A</kbd> / <kbd>D</kbd></dt><dd>Swing left / right. Walk when standing.</dd>
       <dt><kbd>R</kbd></dt><dd>Go back to your last checkpoint.</dd>
@@ -463,6 +463,7 @@ const MAX_CP = TOP_CHUNK / CP_EVERY - 1; // last checkpoint below the summit (72
 const SEED = 0x5eed2611;
 const STEP = 1 / 120;
 const G = 1500, SWING = 1700, AIR = 400, WALKMAX = 280, REEL_IN = 520, REEL_OUT = 340, MINL = 40, MAXV = 1800;
+const JUMP_V = 400; // a hop that clears one block (40 units)
 const PULL_COST = 5, SUMMIT_BONUS = 100;
 const COLORS = ['#ffb347', '#5ee6c1', '#ff6b8b', '#7fb2ff', '#c79bff', '#f4f1de', '#9be15d', '#ff8a3d'];
 const SECTIONS = [
@@ -880,6 +881,8 @@ function step(dt) {
   P.vx += ax * dt;
   P.vy += G * dt;
   if (!rope && P.ground) P.vx += (dir * WALKMAX - P.vx) * Math.min(1, 12 * dt);
+  P.jumpCd = (P.jumpCd || 0) - dt;
+  if (!rope && P.ground && held('KeyW', 'ArrowUp') && P.jumpCd <= 0) { P.vy = -JUMP_V; P.ground = false; P.jumpCd = 0.3; }
   if (rope) {
     if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL, rope.L - REEL_IN * dt);
     if (held('KeyS', 'ArrowDown')) rope.L = Math.min(RANGE, rope.L + REEL_OUT * dt);
@@ -2654,6 +2657,8 @@ function stepWorld(dt) {
   else if (!P.ground) ax = dir * AIR;
   P.vx += ax * dt; P.vy += ay * dt;
   if (!rope && P.ground && !fly) P.vx += (dir * WALKMAX - P.vx) * Math.min(1, 12 * dt);
+  P.jumpCd = (P.jumpCd || 0) - dt;
+  if (!rope && P.ground && !fly && held('KeyW', 'ArrowUp') && P.jumpCd <= 0) { P.vy = -JUMP_V; P.ground = false; P.jumpCd = 0.3; }
   if (rope) {
     if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL, rope.L - REEL_IN * dt);
     if (held('KeyS', 'ArrowDown')) rope.L = Math.min(range, rope.L + REEL_OUT * dt);
