@@ -525,6 +525,8 @@ function gen(i) {
   if (i === TOP_CHUNK) {
     const c = Object.assign(EMPTY(), { i });
     c.plats.push({ y: SUMMIT_Y, n: TOP_CHUNK / CP_EVERY, m: TOP_M, summit: true });
+    // rings just above the summit floor: hook one from the last row, reel in, and pass up through the floor
+    for (const x of [150, 340, 560, 750]) c.anchors.push({ x, y: SUMMIT_Y - 140, kind: 'fixed', amp: 0, per: 1, ph: 0, broken: -1, grab: -1 });
     c.blocks.push({ x: -60, y: SUMMIT_Y - 820, w: W + 120, h: 120, grab: false, ceiling: true, spike: null });
     return c;
   }
