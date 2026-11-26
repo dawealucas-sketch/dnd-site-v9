@@ -318,7 +318,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
           <button class="btn primary" id="g-spin1">Spin · 5</button>
           <button class="btn" id="g-spin10">Spin ×10 · 50</button>
         </div>
-        <p class="note">Duplicates give tokens back: 1, 2, 4, 7, 12 or 20 by rarity.</p>
+        <p class="note">Duplicates give tokens back: 2, 3, 4, 6, 8 or 10 by rarity.</p>
         <div class="pulls" id="g-pulls"></div>
       </div>
     </div>
@@ -404,12 +404,12 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // ---------- items ----------
 const RAR = [
-  { n: 'Common', c: '#b8b5c4', w: 45, refund: 1 },
-  { n: 'Uncommon', c: '#7ddc6f', w: 27, refund: 2 },
+  { n: 'Common', c: '#b8b5c4', w: 45, refund: 2 },
+  { n: 'Uncommon', c: '#7ddc6f', w: 27, refund: 3 },
   { n: 'Rare', c: '#5aa8ff', w: 15, refund: 4 },
-  { n: 'Epic', c: '#b77cff', w: 8, refund: 7 },
-  { n: 'Legendary', c: '#ffb347', w: 4, refund: 12 },
-  { n: 'Mythic', c: '#ff4fa3', w: 1, refund: 20 },
+  { n: 'Epic', c: '#b77cff', w: 8, refund: 6 },
+  { n: 'Legendary', c: '#ffb347', w: 4, refund: 8 },
+  { n: 'Mythic', c: '#ff4fa3', w: 1, refund: 10 },
 ];
 const CATS = [
   { id: 'hat', n: 'Hats', one: 'hat' },
@@ -579,19 +579,27 @@ function gen(i) {
   // obstacles sit in the gaps between ring rows
   const slots = [yb - 160, yb - 320];
   if ((i + 1) % CP_EVERY !== 0) slots.push(yb - 470);
+  // steel must not sit under or over a ring in the rows next to it, so the jump between rows stays open
+  const cuts = (ox, oy, tx, ty, box) => { const d = Math.hypot(tx - ox, ty - oy), t = rayBox(ox, oy, (tx - ox) / d, (ty - oy) / d, box); return t != null && t < d; };
+  const clearOfRings = (x, w, h, y) => {
+    const box = { x: x - 20, y: y - h / 2 - 20, w: w + 40, h: h + 40 };
+    if (!c.anchors.every(a => Math.abs(a.y - y) > 200 || Math.abs(x + w / 2 - a.x) > w / 2 + a.amp + 75)) return false;
+    // nor across the path from a ring (or hanging under it) to a ring in the next row up
+    return !c.anchors.some(a => c.anchors.some(b => b.y > a.y + 100 && b.y < a.y + 240 && (cuts(b.x, b.y, a.x, a.y, box) || cuts(b.x, b.y + 90, a.x, a.y, box))));
+  };
   const placeBlock = (w, h, y, grab, spike) => {
-    for (let t = 0; t < 6; t++) {
+    for (let t = 0; t < 8; t++) {
       const x = rr(10, W - 10 - w);
-      if (free(x + w / 2, y, w / 2 + 14)) { c.blocks.push({ x, y: y - h / 2, w, h, grab, spike }); occ.push({ x: x + w / 2, y, r: w / 2 }); return; }
+      if (free(x + w / 2, y, w / 2 + 14) && (grab || clearOfRings(x, w, h, y))) { c.blocks.push({ x, y: y - h / 2, w, h, grab, spike }); occ.push({ x: x + w / 2, y, r: w / 2 }); return; }
     }
   };
   let lasers = 0;
   const maxLasers = sec >= 9 ? 2 : 1;
   for (const sy of slots) {
     if (i > 0 && r() < (sec === 0 ? 0.35 : 0.26)) placeBlock(rr(80, 150), 24, sy, true, null);
-    if (r() < p(1, 0.28, 0.07, 0.8)) {
+    if (sy > yb - 400 && r() < p(1, 0.24, 0.05, 0.6)) {
       const spike = r() < p(2, 0.3, 0.06, 0.65) ? (r() < 0.5 ? 'top' : 'bottom') : null;
-      placeBlock(rr(70, 170 + Math.min(110, sec * 10)), rr(26, 40), sy, false, spike);
+      placeBlock(rr(70, 130 + Math.min(60, sec * 6)), rr(26, 36), sy, false, spike);
     }
     if (r() < p(4, 0.24, 0.06, 0.65)) {
       const rad = rr(18, 30), move = r() < p(8, 0.45, 0.08, 0.7), amp = move ? rr(80, 200) : 0;
