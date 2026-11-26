@@ -353,7 +353,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <dt><kbd>Esc</kbd></dt><dd>Pause.</dd>
     </dl>
     <ul class="legend">
-      <li><span class="chip" style="background:radial-gradient(circle,#ffd34d 0 30%,transparent 35%)"></span><span><b>Tokens.</b> 1 each, plus 1 for every new 10 m of best height and 100 for the summit.</span></li>
+      <li><span class="chip" style="background:radial-gradient(circle,#ffd34d 0 30%,transparent 35%)"></span><span><b>Tokens.</b> 1 each, plus 1 for every 10 m you climb on each climb, and 100 for the summit.</span></li>
       <li><span class="chip" style="background:radial-gradient(circle,#5ee6c1 0 35%,transparent 40%)"></span><span><b>Hook rings.</b> Always grabbable. From 180 m some slide.</span></li>
       <li><span class="chip" style="background:radial-gradient(circle,#e3b45f 0 35%,transparent 40%)"></span><span><b>Cracked rings</b> (300 m) crumble a second after you grab them.</span></li>
       <li><span class="chip" style="background:#9a8571"></span><span><b>Stone ledges.</b> Hook anywhere on them, or stand on them.</span></li>
@@ -652,6 +652,7 @@ let gt = 0, st = sharedTime();
 let state = 'menu', mode = 'solo';
 let reachedCp = 0, runHeight = 0, runTopSec = 0, zoneName = SECTIONS[0][0];
 let runStartGt = 0, runHits = 0, runTokens = 0, runFromBottom = false, summitDone = false;
+let runHTok = 0; // 10 m marks already paid out on this climb
 let camY = -400, shake = 0;
 const keys = Object.create(null);
 const mouse = { sx: 0, sy: 0, wx: W / 2, wy: -300, inside: false };
@@ -859,11 +860,10 @@ function step(dt) {
   }
 
   runHeight = heightOf(P.y);
-  if (runHeight > save.best) {
-    save.best = runHeight; saveDirty = true;
-    const ht = Math.floor(save.best / 10);
-    if (ht > save.hTok) { addTokens(ht - save.hTok, P.x, P.y); save.hTok = ht; }
-  }
+  if (runHeight > save.best) { save.best = runHeight; saveDirty = true; }
+  // 1 token for each new 10 m mark on this climb; a new climb pays again
+  const ht = Math.floor(runHeight / 10);
+  if (ht > runHTok) { addTokens(ht - runHTok, P.x, P.y); runHTok = ht; }
   if (race && race.start <= Date.now() && !race.ended) {
     race.myMax = Math.max(race.myMax, runHeight);
     if (race.type === 'height' && runHeight >= race.goal - 1) { race.myFin = Date.now() - race.start; endMyRace(); }
@@ -1263,6 +1263,7 @@ function beginRun(cp, countRun) {
   runHeight = heightOf(P.y);
   runTopSec = secOf(runHeight);
   runStartGt = gt; runHits = 0; runTokens = 0; runFromBottom = cp === 0; summitDone = false;
+  runHTok = Math.floor(runHeight / 10);
   state = 'play';
   show(null);
   $('hud').hidden = false;
