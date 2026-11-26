@@ -1,0 +1,1123 @@
+<title>Hookspire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one full-screen canvas tower, a thin HUD on top, and a single overlay card for menus. */
+:root {
+  --ink: #f3ecdf;
+  --dim: #a8a1bd;
+  --night: #120f24;
+  --panel: rgba(22, 17, 44, 0.9);
+  --line: rgba(243, 236, 223, 0.16);
+  --rope: #ffb347;
+  --mint: #5ee6c1;
+  --danger: #ff5a6e;
+  --display: 'Bungee', Impact, 'Arial Black', sans-serif;
+  --ui: 'Chakra Petch', ui-sans-serif, system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--night); color: var(--ink); font-family: var(--ui); font-size: 15px; overflow: hidden; }
+#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; cursor: crosshair; }
+
+/* HUD */
+#hud { position: fixed; inset: 0; pointer-events: none; }
+#hud[hidden] { display: none !important; }
+.hud-tl { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: calc(18px + env(safe-area-inset-left, 0px)); display: grid; gap: 4px; }
+.alt { font-family: var(--display); font-size: 46px; line-height: 1; color: var(--rope); font-variant-numeric: tabular-nums; text-shadow: 0 2px 0 rgba(0,0,0,.35); }
+.alt small { font-size: 22px; margin-left: 4px; color: var(--ink); }
+.sub { color: var(--dim); font-size: 14px; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.hud-tr { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: calc(18px + env(safe-area-inset-right, 0px)); display: grid; gap: 10px; justify-items: end; text-align: right; }
+.zone { text-transform: uppercase; letter-spacing: .14em; font-weight: 600; font-size: 13px; color: var(--ink); }
+.team { display: grid; gap: 4px; font-size: 14px; }
+.team-row { display: flex; gap: 8px; align-items: center; justify-content: flex-end; font-variant-numeric: tabular-nums; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.hint { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); background: rgba(10, 8, 24, .62); border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; font-size: 13px; color: var(--dim); white-space: nowrap; transition: opacity 1.2s; max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; }
+.hint b { color: var(--ink); font-weight: 600; }
+.hint.faded { opacity: .35; }
+#banner { position: absolute; top: 22%; left: 0; right: 0; text-align: center; font-family: var(--display); font-size: clamp(26px, 5vw, 46px); color: var(--ink); text-shadow: 0 3px 0 rgba(0,0,0,.4); opacity: 0; transition: opacity .5s; padding-inline: 16px; }
+#banner small { display: block; font-family: var(--ui); font-size: 15px; letter-spacing: .18em; text-transform: uppercase; color: var(--rope); margin-bottom: 6px; }
+#banner.show { opacity: 1; }
+
+/* Overlay */
+#overlay { position: fixed; inset: 0; display: grid; place-items: center; overflow-y: auto; background: radial-gradient(ellipse at 50% 40%, rgba(18,15,36,.35), rgba(8,6,18,.78)); padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.panel { width: min(580px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 28px clamp(18px, 4vw, 32px); display: grid; gap: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.45); backdrop-filter: blur(6px); }
+.logo { font-family: var(--display); font-size: clamp(42px, 9vw, 64px); line-height: .95; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+.logo span { color: var(--rope); }
+h2 { font-family: var(--display); font-weight: 400; font-size: 28px; margin: 0; }
+p { margin: 0; line-height: 1.5; color: var(--dim); max-width: 60ch; }
+.profile { display: grid; gap: 10px; }
+label, .label { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); font-weight: 600; }
+input[type=text] { font: inherit; font-size: 16px; color: var(--ink); background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; }
+input[type=text]:focus-visible { outline: 2px solid var(--mint); outline-offset: 1px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; box-shadow: inset 0 0 0 2px rgba(0,0,0,.25); }
+.swatch[aria-checked=true] { border-color: var(--ink); transform: scale(1.1); }
+.modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 460px) { .modes { grid-template-columns: 1fr; } }
+button { font: inherit; color: var(--ink); cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+.mode { text-align: left; display: grid; gap: 4px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04); transition: border-color .15s, background .15s; }
+.mode b { font-size: 17px; font-weight: 700; }
+.mode small { color: var(--dim); font-size: 13px; line-height: 1.35; }
+.mode:not(:disabled):hover { border-color: var(--mint); background: rgba(94,230,193,.08); }
+.mode:disabled { opacity: .45; cursor: default; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0; }
+.stats div { display: grid; gap: 2px; }
+.stats dt { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.stats dd { margin: 0; font-family: var(--display); font-size: 22px; font-variant-numeric: tabular-nums; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn { padding: 11px 18px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.06); font-weight: 600; }
+.btn:hover:not(:disabled) { background: rgba(255,255,255,.12); }
+.btn.primary { background: var(--rope); color: #24170a; border-color: transparent; }
+.btn.primary:hover:not(:disabled) { background: #ffc46e; }
+.btn:disabled { opacity: .45; cursor: default; }
+.link { background: none; border: 0; padding: 0; color: var(--mint); text-decoration: underline; text-underline-offset: 3px; justify-self: start; font-size: 14px; }
+.note { font-size: 13px; color: var(--dim); }
+.code-box { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; border: 1px dashed var(--line); }
+.code { font-family: var(--display); font-size: 28px; letter-spacing: .12em; user-select: all; }
+.join { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.join label { grid-column: 1 / -1; }
+.err { color: var(--danger); font-size: 14px; }
+.legend { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.legend li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: center; color: var(--dim); line-height: 1.4; }
+.legend li b { color: var(--ink); font-weight: 600; }
+.chip { width: 28px; height: 20px; border-radius: 4px; }
+.keys { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; margin: 0; }
+.keys dt { font-weight: 700; color: var(--ink); white-space: nowrap; }
+.keys dd { margin: 0; color: var(--dim); }
+kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; background: rgba(255,255,255,.06); color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { #banner, .hint, .mode { transition: none; } }
+</style>
+
+<canvas id="game" tabindex="0" aria-label="Hookspire game view"></canvas>
+
+<div id="hud" hidden>
+  <div class="hud-tl">
+    <div class="alt"><span id="h-alt">0</span><small>m</small></div>
+    <div class="sub" id="h-sub">Best 0 m</div>
+  </div>
+  <div class="hud-tr">
+    <div class="zone" id="h-zone">The Footholds</div>
+    <div class="team" id="h-team"></div>
+  </div>
+  <div id="banner"></div>
+  <div class="hint" id="h-hint"><b>Mouse</b> aim · <b>Hold Space</b> hook · <b>W</b> reel in · <b>S</b> let out · <b>A / D</b> swing · <b>R</b> checkpoint · <b>Esc</b> pause</div>
+</div>
+
+<div id="overlay">
+  <section class="panel" id="scr-menu">
+    <h1 class="logo">Hook<span>spire</span></h1>
+    <p>Aim with the mouse, hold Space to fire your grappling hook, and swing your way up a tower that gets meaner the higher you climb.</p>
+    <div class="profile">
+      <label for="name">Climber name</label>
+      <input type="text" id="name" maxlength="16" placeholder="Climber" autocomplete="off" spellcheck="false">
+      <div class="swatches" id="swatches" role="radiogroup" aria-label="Climber color"></div>
+    </div>
+    <div class="modes">
+      <button class="mode" id="m-solo"><b>Solo Climb</b><small>Just you and the tower. Checkpoints every 60 m.</small></button>
+      <button class="mode" id="m-coop"><b>Co-op Climb</b><small>Climb with friends and hook onto each other.</small></button>
+      <button class="mode" disabled><b>Race</b><small>Coming soon</small></button>
+      <button class="mode" disabled><b>More modes</b><small>Coming soon</small></button>
+    </div>
+    <dl class="stats">
+      <div><dt>Best height</dt><dd id="s-best">0 m</dd></div>
+      <div><dt>Checkpoint</dt><dd id="s-cp">Ground</dd></div>
+      <div><dt>Climbs</dt><dd id="s-runs">0</dd></div>
+    </dl>
+    <button class="link" id="b-help">Controls and tower guide</button>
+    <p class="note">Progress saves in this browser on this device. Needs a keyboard and mouse.</p>
+  </section>
+
+  <section class="panel" id="scr-coop" hidden>
+    <h2>Co-op Climb</h2>
+    <p id="coop-msg">Start a team and share its code, or type a friend's code to join them.</p>
+    <div id="coop-ui" class="profile">
+      <div class="row"><button class="btn primary" id="b-create">Create a team</button></div>
+      <div class="join">
+        <label for="code">Team code</label>
+        <input type="text" id="code" maxlength="6" placeholder="e.g. k7rmq" autocomplete="off" spellcheck="false">
+        <button class="btn" id="b-join">Join</button>
+      </div>
+      <p class="err" id="coop-err" hidden></p>
+    </div>
+    <button class="link" id="b-back-coop">Back</button>
+  </section>
+
+  <section class="panel" id="scr-start" hidden>
+    <h2 id="start-title">Solo Climb</h2>
+    <div id="start-team" class="profile" hidden>
+      <div class="code-box">
+        <div><div class="label">Team code</div><div class="code" id="team-code"></div></div>
+        <button class="btn" id="b-copy">Copy code</button>
+      </div>
+      <p class="note">Friends open this same page, choose Co-op Climb and enter the code. Everyone climbs the same tower.</p>
+      <div class="label">On this team</div>
+      <div class="team" id="start-team-list"></div>
+    </div>
+    <p id="start-msg"></p>
+    <div class="row">
+      <button class="btn primary" id="b-cont">Continue</button>
+      <button class="btn" id="b-fresh">Start from the bottom</button>
+    </div>
+    <button class="link" id="b-back-start">Back to menu</button>
+  </section>
+
+  <section class="panel" id="scr-pause" hidden>
+    <h2>Paused</h2>
+    <div class="row">
+      <button class="btn primary" id="b-resume">Resume</button>
+      <button class="btn" id="b-cp">Back to checkpoint</button>
+      <button class="btn" id="b-regroup" hidden>Regroup with team</button>
+    </div>
+    <p class="note" id="regroup-note" hidden>Regroup takes you to the highest checkpoint anyone on your team has reached.</p>
+    <div class="row">
+      <button class="btn" id="b-help2">Controls</button>
+      <button class="btn" id="b-quit">Quit to menu</button>
+    </div>
+  </section>
+
+  <section class="panel" id="scr-help" hidden>
+    <h2>How to climb</h2>
+    <dl class="keys">
+      <dt>Mouse</dt><dd>Aim the hook. The faint circle around you is its range.</dd>
+      <dt><kbd>Space</kbd> hold</dt><dd>Fire and hold the hook. Let go to release and fly.</dd>
+      <dt><kbd>W</kbd></dt><dd>Reel in, pulling yourself toward the hook.</dd>
+      <dt><kbd>S</kbd></dt><dd>Let rope out, up to the hook's range.</dd>
+      <dt><kbd>A</kbd> / <kbd>D</kbd></dt><dd>Swing left / right. Walk when standing.</dd>
+      <dt><kbd>R</kbd></dt><dd>Go back to your last checkpoint.</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Pause.</dd>
+    </dl>
+    <ul class="legend">
+      <li><span class="chip" style="background:radial-gradient(circle,#5ee6c1 0 35%,transparent 40%)"></span><span><b>Hook rings.</b> Always grabbable. Higher up, some slide side to side.</span></li>
+      <li><span class="chip" style="background:radial-gradient(circle,#e3b45f 0 35%,transparent 40%)"></span><span><b>Cracked rings</b> crumble a second after you grab them, then re-form.</span></li>
+      <li><span class="chip" style="background:#9a8571"></span><span><b>Stone ledges.</b> Hook anywhere on them, or stand on them.</span></li>
+      <li><span class="chip" style="background:#4b5b75;box-shadow:inset 0 0 0 2px #7f95b6"></span><span><b>Steel blocks.</b> Can't be hooked, block your path and your aim.</span></li>
+      <li><span class="chip" style="background:linear-gradient(90deg,#ff5a6e,#ffd0d6)"></span><span><b>Spikes, saws and lasers</b> knock you off your rope. Lasers flicker before they fire.</span></li>
+      <li><span class="chip" style="background:repeating-linear-gradient(90deg,rgba(190,220,255,.5) 0 6px,transparent 6px 10px)"></span><span><b>Wind shafts</b> push you sideways in gusts.</span></li>
+      <li><span class="chip" style="background:linear-gradient(#ffb347 0 25%,#3b3355 25%)"></span><span><b>Checkpoint floors</b> every 60 m. You can pass up through them and land on top.</span></li>
+    </ul>
+    <p class="note">In co-op you can hook onto a teammate, too.</p>
+    <button class="btn" id="b-help-back">Back</button>
+  </section>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ---------- constants ----------
+const W = 900;            // tower interior width (world units)
+const M = 40;             // world units per meter
+const RANGE = 340;        // hook range
+const PR = 12;            // climber radius
+const CHUNK = 480;        // generated tower slice height
+const CP_EVERY = 5;       // chunks per checkpoint (60 m)
+const SEED = 0x5eed2611;
+const STEP = 1 / 120;
+const G = 1500, SWING = 1150, AIR = 320, WALKMAX = 260, REEL_IN = 430, REEL_OUT = 320, MINL = 34, MAXV = 1700;
+const COLORS = ['#ffb347', '#5ee6c1', '#ff6b8b', '#7fb2ff', '#c79bff', '#f4f1de', '#9be15d', '#ff8a3d'];
+const ZONES = [[0, 'The Footholds'], [36, 'Ironworks'], [60, 'Spike Gallery'], [120, 'Sawmill'], [180, 'Gale Shaft'], [240, 'Laser Loft'], [360, 'The Endless Spire']];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- save (this device only) ----------
+const SAVE_KEY = 'hookspire.save.v1';
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0 };
+try {
+  const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+  if (s && typeof s === 'object') {
+    if (typeof s.name === 'string') save.name = cleanName(s.name, '');
+    save.color = clampInt(s.color, 0, COLORS.length - 1);
+    save.best = Math.max(0, Number(s.best) || 0);
+    save.cp = clampInt(s.cp, 0, 1e6);
+    save.runs = clampInt(s.runs, 0, 1e9);
+  }
+} catch (e) { /* storage unavailable: play without saving */ }
+let saveDirty = false;
+function writeSave() { saveDirty = false; try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+
+// ---------- helpers ----------
+function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+function clampInt(v, a, b) { v = Math.floor(Number(v)); return Number.isFinite(v) ? clamp(v, a, b) : a; }
+function num(v) { return typeof v === 'number' && Number.isFinite(v) ? v : null; }
+function cleanName(v, fallback) {
+  const s = String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f-\u009f­​-‏‪-‮⁠-⁤﻿]/g, '').trim().slice(0, 16);
+  return s || fallback;
+}
+function mulberry(a) { return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const sharedTime = () => (Date.now() % 1e7) / 1000; // same clock for every player, so moving parts line up
+const $ = (id) => document.getElementById(id);
+
+// ---------- tower generation ----------
+const chunks = new Map();
+function chunk(i) { let c = chunks.get(i); if (!c) { c = gen(i); chunks.set(i, c); } return c; }
+function gen(i) {
+  const prev = i === 0 ? [W / 2] : chunk(i - 1).lastXs;
+  const r = mulberry((SEED ^ Math.imul(i + 7, 2654435761)) >>> 0);
+  const rr = (a, b) => a + r() * (b - a);
+  const yb = -i * CHUNK, hm = i * CHUNK / M;
+  const c = { i, anchors: [], blocks: [], saws: [], lasers: [], winds: [], plats: [], lastXs: prev };
+  const occ = [];
+  const free = (x, y, rad) => occ.every(o => Math.hypot(o.x - x, o.y - y) > o.r + rad);
+
+  if (i === 0) c.blocks.push({ x: -60, y: 0, w: W + 120, h: 600, grab: false, floor: true, spike: null });
+  if (i > 0 && i % CP_EVERY === 0) c.plats.push({ y: yb, n: i / CP_EVERY, m: Math.round(hm) });
+
+  // hook rings: three rows per slice, the first ring of each row near the previous row
+  let last = prev;
+  for (let row = 0; row < 3; row++) {
+    const y = yb - 80 - row * 160 + rr(-18, 18);
+    const n = hm < 30 ? 2 : (r() < 0.55 ? 2 : 1);
+    const xs = [];
+    let special = false;
+    for (let k = 0; k < n; k++) {
+      let x = 0, ok = false;
+      for (let t = 0; t < 8 && !ok; t++) {
+        if (k === 0) x = clamp(last[Math.floor(r() * last.length)] + rr(-280, 280), 70, W - 70);
+        else x = rr(70, W - 70);
+        ok = free(x, y, 90);
+      }
+      if (!ok) continue;
+      const a = { x, y, kind: 'fixed', amp: 0, per: 1, ph: 0, broken: -1, grab: -1 };
+      if (!special && hm >= 60 && r() < Math.min(0.55, 0.15 + (hm - 60) / 300)) {
+        a.kind = 'move'; a.amp = rr(50, 130); a.per = rr(2.6, 4.6); a.ph = r() * 6.283; a.x = clamp(a.x, 70 + a.amp, W - 70 - a.amp); special = true;
+      } else if (!special && k > 0 && hm >= 120 && r() < Math.min(0.5, 0.2 + (hm - 120) / 400)) {
+        a.kind = 'crumble'; special = true;
+      }
+      c.anchors.push(a); occ.push({ x: a.x, y, r: a.amp + 20 }); xs.push(a.x);
+    }
+    if (xs.length) last = xs;
+  }
+  c.lastXs = last;
+
+  // obstacles sit in the gaps between ring rows
+  const slots = [yb - 160, yb - 320];
+  if ((i + 1) % CP_EVERY !== 0) slots.push(yb - 470);
+  let laserUsed = false;
+  const placeBlock = (w, h, y, grab, spike) => {
+    for (let t = 0; t < 6; t++) {
+      const x = rr(10, W - 10 - w);
+      if (free(x + w / 2, y, w / 2 + 14)) {
+        c.blocks.push({ x, y: y - h / 2, w, h, grab, spike });
+        occ.push({ x: x + w / 2, y, r: w / 2 }); return true;
+      }
+    }
+    return false;
+  };
+  for (const sy of slots) {
+    if (hm >= 12 && r() < 0.28) placeBlock(rr(80, 150), 24, sy, true, null);
+    const pSteel = hm < 36 ? 0 : Math.min(0.85, 0.35 + (hm - 36) / 250);
+    if (r() < pSteel) {
+      const spike = hm >= 60 && r() < Math.min(0.7, 0.3 + (hm - 60) / 300) ? (r() < 0.5 ? 'top' : 'bottom') : null;
+      placeBlock(rr(70, 190 + Math.min(120, hm / 3)), rr(26, 40), sy, false, spike);
+    }
+    const pSaw = hm < 120 ? 0 : Math.min(0.7, 0.3 + (hm - 120) / 300);
+    if (r() < pSaw) {
+      const rad = rr(16, 28), move = hm >= 240 && r() < 0.5, amp = move ? rr(80, 200) : 0;
+      for (let t = 0; t < 6; t++) {
+        const x = rr(40 + rad + amp, W - 40 - rad - amp);
+        if (free(x, sy, rad + amp * 0.6 + 24)) { c.saws.push({ x, y: sy, rad, amp, per: rr(3, 5), ph: r() * 6.283 }); occ.push({ x, y: sy, r: rad + amp * 0.6 }); break; }
+      }
+    }
+    if (!laserUsed && hm >= 240 && r() < 0.45) {
+      const len = rr(240, 480), x1 = rr(20, W - 20 - len);
+      c.lasers.push({ x1, x2: x1 + len, y: sy + rr(-20, 20), per: rr(2.8, 4.2), on: 0.42, ph: r() * 10 });
+      laserUsed = true;
+    }
+  }
+  if (hm >= 180 && r() < Math.min(0.6, 0.3 + (hm - 180) / 400)) {
+    c.winds.push({ y1: yb - CHUNK, y2: yb, dir: r() < 0.5 ? -1 : 1, str: rr(420, 760), per: rr(3, 5), ph: r() * 10 });
+  }
+  return c;
+}
+function chunksBetween(yTop, yBottom) {
+  const out = [];
+  const a = Math.max(0, Math.floor(-yBottom / CHUNK)), b = Math.max(0, Math.floor(-yTop / CHUNK));
+  for (let i = a; i <= b; i++) out.push(chunk(i));
+  return out;
+}
+const anchorPos = (a, t) => a.kind === 'move' ? { x: a.x + Math.sin(t * 6.283 / a.per + a.ph) * a.amp, y: a.y } : { x: a.x, y: a.y };
+const sawPos = (s, t) => ({ x: s.x + (s.amp ? Math.sin(t * 6.283 / s.per + s.ph) * s.amp : 0), y: s.y });
+const laserPhase = (l, t) => (((t + l.ph) % l.per) + l.per) % l.per / l.per;
+const laserOn = (l, t) => laserPhase(l, t) < l.on;
+const windForce = (w, t) => w.dir * w.str * (0.55 + 0.45 * Math.sin(t * 6.283 / w.per + w.ph));
+const zoneAt = (m) => { let z = ZONES[0][1]; for (const [h, n] of ZONES) if (m >= h) z = n; return z; };
+const cpY = (n) => n > 0 ? -(n * CP_EVERY * CHUNK) : 0;
+
+// ---------- state ----------
+const P = { x: W / 2, y: -PR - 1, vx: 0, vy: 0, ground: false, stun: 0, inv: 0, face: 1 };
+let rope = null, aim = null;
+let gt = 0, st = sharedTime();
+let state = 'menu', mode = 'solo';
+let reachedCp = 0, runHeight = 0, zoneName = ZONES[0][1];
+let camY = -400, shake = 0;
+const keys = Object.create(null);
+const mouse = { sx: 0, sy: 0, wx: W / 2, wy: -300, inside: false };
+const particles = [];
+
+// ---------- input ----------
+const canvas = $('game'), ctx = canvas.getContext('2d');
+const GAME_KEYS = new Set(['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+const typing = (e) => e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+addEventListener('keydown', (e) => {
+  if (typing(e)) return;
+  if (state === 'play') {
+    if (GAME_KEYS.has(e.code)) e.preventDefault();
+    keys[e.code] = true;
+    if (e.code === 'Escape' || e.code === 'KeyP') pause();
+    else if (e.code === 'KeyR' && !e.repeat) toCheckpoint(reachedCp);
+  } else if (state === 'paused' && (e.code === 'Escape' || e.code === 'KeyP')) resume();
+});
+addEventListener('keyup', (e) => { keys[e.code] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (state === 'play') pause(); });
+canvas.addEventListener('pointermove', (e) => { mouse.sx = e.clientX; mouse.sy = e.clientY; mouse.inside = true; });
+canvas.addEventListener('pointerleave', () => { mouse.inside = false; });
+canvas.addEventListener('pointerdown', () => canvas.focus());
+const held = (a, b) => !!(keys[a] || keys[b]);
+
+// ---------- physics ----------
+function nearChunks() { return chunksBetween(P.y - CHUNK * 0.8, P.y + CHUNK * 0.8); }
+
+function rayBox(ox, oy, ux, uy, b) {
+  let tmin = 0, tmax = Infinity;
+  if (Math.abs(ux) < 1e-9) { if (ox < b.x || ox > b.x + b.w) return null; }
+  else { let t1 = (b.x - ox) / ux, t2 = (b.x + b.w - ox) / ux; if (t1 > t2) [t1, t2] = [t2, t1]; tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2); }
+  if (Math.abs(uy) < 1e-9) { if (oy < b.y || oy > b.y + b.h) return null; }
+  else { let t1 = (b.y - oy) / uy, t2 = (b.y + b.h - oy) / uy; if (t1 > t2) [t1, t2] = [t2, t1]; tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2); }
+  return tmax < tmin ? null : tmin;
+}
+function rayCircle(ox, oy, ux, uy, cx, cy, r) {
+  const fx = cx - ox, fy = cy - oy, tc = fx * ux + fy * uy;
+  if (tc < 0) return null;
+  const d2 = fx * fx + fy * fy - tc * tc;
+  if (d2 > r * r) return null;
+  return Math.max(0, tc - Math.sqrt(r * r - d2));
+}
+function lineBlocked(ox, oy, tx, ty, near) {
+  const dx = tx - ox, dy = ty - oy, d = Math.hypot(dx, dy);
+  if (d < 1) return false;
+  const ux = dx / d, uy = dy / d;
+  for (const c of near) for (const b of c.blocks) { const t = rayBox(ox, oy, ux, uy, b); if (t != null && t < d - 14) return true; }
+  return false;
+}
+
+function computeAim() {
+  const dx = mouse.wx - P.x, dy = mouse.wy - P.y, len = Math.hypot(dx, dy);
+  if (len < 4) return null;
+  const ux = dx / len, uy = dy / len, near = nearChunks();
+  let bestT = RANGE, hit = null;
+  if (ux < -1e-6) { const t = -P.x / ux; if (t < bestT) { bestT = t; hit = { kind: 'steel' }; } }
+  if (ux > 1e-6) { const t = (W - P.x) / ux; if (t < bestT) { bestT = t; hit = { kind: 'steel' }; } }
+  for (const c of near) {
+    for (const b of c.blocks) { const t = rayBox(P.x, P.y, ux, uy, b); if (t != null && t < bestT) { bestT = t; hit = { kind: b.grab ? 'stone' : 'steel' }; } }
+    for (const a of c.anchors) {
+      if (a.broken > gt) continue;
+      const q = anchorPos(a, st), t = rayCircle(P.x, P.y, ux, uy, q.x, q.y, 16);
+      if (t != null && t < bestT) { bestT = t; hit = { kind: 'anchor', ref: a, x: q.x, y: q.y }; }
+    }
+  }
+  for (const [id, s] of peerState) {
+    const t = rayCircle(P.x, P.y, ux, uy, s.rx, s.ry, 18);
+    if (t != null && t < bestT) { bestT = t; hit = { kind: 'peer', ref: id, x: s.rx, y: s.ry }; }
+  }
+  if (hit && hit.kind === 'stone') return { valid: true, kind: 'point', x: P.x + ux * bestT, y: P.y + uy * bestT };
+  if (hit && (hit.kind === 'anchor' || hit.kind === 'peer')) return { valid: true, kind: hit.kind, ref: hit.ref, x: hit.x, y: hit.y };
+  // aim assist: the nearest ring close to where the mouse points, if nothing blocks it
+  let bestA = 0.22, cand = null;
+  for (const c of near) for (const a of c.anchors) {
+    if (a.broken > gt) continue;
+    const q = anchorPos(a, st), ddx = q.x - P.x, ddy = q.y - P.y, d = Math.hypot(ddx, ddy);
+    if (d > RANGE || d < 10) continue;
+    const ang = Math.acos(clamp((ddx * ux + ddy * uy) / d, -1, 1));
+    if (ang < bestA && !lineBlocked(P.x, P.y, q.x, q.y, near)) { bestA = ang; cand = { valid: true, kind: 'anchor', ref: a, x: q.x, y: q.y }; }
+  }
+  if (cand) return cand;
+  return { valid: false, x: P.x + ux * bestT, y: P.y + uy * bestT, blocked: !!hit };
+}
+
+function ropeAnchor() {
+  if (!rope) return null;
+  if (rope.kind === 'anchor') return rope.ref.broken > gt ? null : anchorPos(rope.ref, st);
+  if (rope.kind === 'peer') { const s = peerState.get(rope.ref); return s ? { x: s.rx, y: s.ry } : null; }
+  return { x: rope.x, y: rope.y };
+}
+function attach(a) {
+  const L = Math.hypot(a.x - P.x, a.y - P.y);
+  rope = { kind: a.kind, ref: a.ref, x: a.x, y: a.y, L: clamp(L, MINL, RANGE) };
+  if (a.kind === 'anchor' && a.ref.kind === 'crumble' && a.ref.grab < 0) a.ref.grab = gt;
+  burst(a.x, a.y, '#ffb347', 6, 120);
+}
+function detach() { rope = null; }
+
+function hurt(fx, fy) {
+  if (P.inv > 0) return;
+  detach();
+  let dx = P.x - fx, dy = P.y - fy, d = Math.hypot(dx, dy);
+  if (d < 1) { dx = 0; dy = 1; d = 1; }
+  P.vx = dx / d * 520; P.vy = dy / d * 520 + 60;
+  P.stun = 0.5; P.inv = 1.4;
+  if (!reduceMotion) shake = 0.3;
+  burst(P.x, P.y, '#ff5a6e', 14, 260);
+}
+function circleRect(px, py, r, x, y, w, h) {
+  const cx = clamp(px, x, x + w), cy = clamp(py, y, y + h);
+  return (px - cx) ** 2 + (py - cy) ** 2 < r * r;
+}
+
+function step(dt) {
+  gt += dt;
+  if (P.stun > 0) P.stun -= dt;
+  if (P.inv > 0) P.inv -= dt;
+  const dir = (held('KeyD', 'ArrowRight') ? 1 : 0) - (held('KeyA', 'ArrowLeft') ? 1 : 0);
+  if (dir) P.face = dir;
+  const grabbing = !!keys.Space;
+
+  if (rope && !grabbing) detach();
+  if (!rope && grabbing && P.stun <= 0 && aim && aim.valid) attach(aim);
+  if (rope && !ropeAnchor()) detach();
+
+  const near = nearChunks();
+  let ax = 0;
+  if (rope) ax = dir * SWING;
+  else if (!P.ground) ax = dir * AIR;
+  for (const c of near) for (const w of c.winds) if (P.y > w.y1 && P.y < w.y2) ax += windForce(w, st);
+  P.vx += ax * dt;
+  P.vy += G * dt;
+  if (!rope && P.ground) P.vx += (dir * WALKMAX - P.vx) * Math.min(1, 12 * dt);
+
+  if (rope) {
+    if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL, rope.L - REEL_IN * dt);
+    if (held('KeyS', 'ArrowDown')) rope.L = Math.min(RANGE, rope.L + REEL_OUT * dt);
+  }
+  const damp = 1 - 0.12 * dt;
+  P.vx *= damp; P.vy *= damp;
+  const sp = Math.hypot(P.vx, P.vy);
+  if (sp > MAXV) { P.vx *= MAXV / sp; P.vy *= MAXV / sp; }
+
+  const prevY = P.y;
+  P.x += P.vx * dt; P.y += P.vy * dt;
+
+  // rope keeps the climber within its length
+  const A = ropeAnchor();
+  if (rope && A) {
+    const dx = P.x - A.x, dy = P.y - A.y, d = Math.hypot(dx, dy);
+    if (d > rope.L && d > 0) {
+      const nx = dx / d, ny = dy / d;
+      P.x = A.x + nx * rope.L; P.y = A.y + ny * rope.L;
+      const vr = P.vx * nx + P.vy * ny;
+      if (vr > 0) { P.vx -= nx * vr; P.vy -= ny * vr; }
+    }
+  }
+
+  // hazards
+  if (P.inv <= 0) {
+    for (const c of near) {
+      for (const b of c.blocks) {
+        if (b.spike === 'top' && circleRect(P.x, P.y, PR, b.x + 2, b.y - 9, b.w - 4, 9)) hurt(P.x, b.y);
+        if (b.spike === 'bottom' && circleRect(P.x, P.y, PR, b.x + 2, b.y + b.h, b.w - 4, 9)) hurt(P.x, b.y + b.h);
+      }
+      for (const s of c.saws) { const q = sawPos(s, st); if (Math.hypot(P.x - q.x, P.y - q.y) < PR + s.rad - 3) hurt(q.x, q.y); }
+      for (const l of c.lasers) if (laserOn(l, st) && P.x > l.x1 - PR && P.x < l.x2 + PR && Math.abs(P.y - l.y) < PR - 2) hurt(P.x, l.y);
+    }
+  }
+
+  // solid collisions
+  P.ground = false;
+  if (P.x < PR) { P.x = PR; if (P.vx < 0) P.vx = -P.vx * 0.3; }
+  if (P.x > W - PR) { P.x = W - PR; if (P.vx > 0) P.vx = -P.vx * 0.3; }
+  for (const c of near) {
+    for (const b of c.blocks) {
+      const cx = clamp(P.x, b.x, b.x + b.w), cy = clamp(P.y, b.y, b.y + b.h);
+      let dx = P.x - cx, dy = P.y - cy, d2 = dx * dx + dy * dy;
+      if (d2 >= PR * PR) continue;
+      let nx, ny, pen;
+      if (d2 < 1e-6) { // center inside the block: push out the shortest way
+        const opts = [[P.x - b.x, -1, 0], [b.x + b.w - P.x, 1, 0], [P.y - b.y, 0, -1], [b.y + b.h - P.y, 0, 1]].sort((p, q) => p[0] - q[0])[0];
+        nx = opts[1]; ny = opts[2]; pen = opts[0] + PR;
+      } else { const d = Math.sqrt(d2); nx = dx / d; ny = dy / d; pen = PR - d; }
+      P.x += nx * pen; P.y += ny * pen;
+      const vn = P.vx * nx + P.vy * ny;
+      if (vn < 0) { P.vx -= nx * vn * 1.2; P.vy -= ny * vn * 1.2; }
+      if (ny < -0.7) { P.ground = true; P.vx *= 1 - Math.min(1, 6 * dt); }
+    }
+    for (const pl of c.plats) {
+      if (P.vy > 0 && prevY + PR <= pl.y + 1 && P.y + PR > pl.y) { P.y = pl.y - PR; P.vy = 0; P.ground = true; }
+      if (P.y < pl.y - PR && pl.n > reachedCp) reachCheckpoint(pl);
+    }
+    for (const a of c.anchors) {
+      if (a.kind !== 'crumble') continue;
+      if (a.grab >= 0 && gt - a.grab > 0.9) {
+        a.broken = gt + 5; a.grab = -1;
+        if (rope && rope.ref === a) detach();
+        burst(a.x, a.y, '#e3b45f', 12, 160);
+      }
+      if (a.broken > 0 && a.broken <= gt) a.broken = -1;
+    }
+  }
+
+  // height
+  runHeight = Math.max(0, (-P.y - PR) / M);
+  if (runHeight > save.best) { save.best = runHeight; saveDirty = true; }
+  const z = zoneAt(runHeight);
+  if (z !== zoneName) { zoneName = z; $('h-zone').textContent = z; banner('Now entering', z); }
+}
+
+function reachCheckpoint(pl) {
+  reachedCp = pl.n;
+  if (pl.n > save.cp) { save.cp = pl.n; writeSave(); }
+  banner('Checkpoint', pl.m + ' m');
+  burst(P.x, pl.y, '#5ee6c1', 20, 220);
+}
+function toCheckpoint(n) {
+  detach();
+  P.x = W / 2; P.y = cpY(n) - PR - 1; P.vx = 0; P.vy = 0; P.stun = 0; P.inv = 0.8;
+  reachedCp = n;
+  zoneName = zoneAt(n * CP_EVERY * CHUNK / M); $('h-zone').textContent = zoneName;
+}
+
+// ---------- particles & banner ----------
+function burst(x, y, color, n, spd) {
+  if (reduceMotion) n = Math.min(n, 4);
+  for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = spd * (0.3 + Math.random() * 0.7); particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5 + Math.random() * 0.4, color }); }
+}
+let bannerTimer = 0;
+function banner(small, big) {
+  const el = $('banner');
+  el.textContent = '';
+  const s = document.createElement('small'); s.textContent = small; el.append(s, document.createTextNode(big));
+  el.classList.add('show');
+  clearTimeout(bannerTimer); bannerTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ---------- co-op (claude.ai room) ----------
+let roomApi; // undefined while loading, null when this view can't connect
+let team = null, teamCode = '';
+const peerState = new Map();
+(async () => {
+  try { roomApi = (window.claude && typeof window.claude.use === 'function') ? await window.claude.use('room') : null; }
+  catch (e) { roomApi = null; }
+  refreshCoopScreen();
+})();
+const CODE_CHARS = 'abcdefghjkmnpqrstuvwxyz23456789';
+function newCode() { let s = ''; for (let i = 0; i < 5; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]; return s; }
+async function joinTeam(code) {
+  const err = $('coop-err'); err.hidden = true;
+  $('b-create').disabled = $('b-join').disabled = true;
+  try {
+    team = await roomApi.join('hookspire-coop-' + code);
+    teamCode = code; mode = 'coop';
+    team.onPeers(() => {}, () => { team = null; peerState.clear(); });
+    showStart();
+  } catch (e) {
+    team = null;
+    err.textContent = 'Could not join team "' + code + '". Check the code and try again in a moment.';
+    err.hidden = false;
+  } finally { $('b-create').disabled = $('b-join').disabled = false; }
+}
+function leaveTeam() {
+  if (team) { try { team.leave().catch(() => {}); } catch (e) {} }
+  team = null; teamCode = ''; peerState.clear();
+  if (rope && rope.kind === 'peer') detach();
+}
+function syncPeers(dt) {
+  if (!team) { if (peerState.size) peerState.clear(); return; }
+  let list = [];
+  try { list = team.peers(); } catch (e) { list = []; }
+  const seen = new Set(), now = Date.now();
+  for (const pe of list) {
+    if (pe.sameTab) continue;
+    const pr = pe.presence || {};
+    const x = num(pr.x), y = num(pr.y);
+    if (x == null || y == null) continue;
+    seen.add(pe.peer);
+    const age = Math.min(0.15, Math.max(0, (now - pe.updatedAt) / 1000));
+    const vx = clamp(num(pr.vx) || 0, -MAXV, MAXV), vy = clamp(num(pr.vy) || 0, -MAXV, MAXV);
+    let s = peerState.get(pe.peer);
+    const tx = clamp(x + vx * age, 0, W), ty = clamp(y + vy * age, -1e7, 10);
+    if (!s) { s = { rx: tx, ry: ty }; peerState.set(pe.peer, s); }
+    s.tx = tx; s.ty = ty;
+    s.n = cleanName(pr.n, 'Climber');
+    s.c = COLORS[clampInt(pr.c, 0, COLORS.length - 1)];
+    s.h = Math.max(0, num(pr.h) || 0);
+    s.cp = clampInt(pr.cp, 0, 1e6);
+    s.playing = pr.s === 1;
+    s.a = Array.isArray(pr.a) && num(pr.a[0]) != null && num(pr.a[1]) != null ? [clamp(pr.a[0], 0, W), clamp(pr.a[1], -1e7, 10)] : null;
+  }
+  for (const id of [...peerState.keys()]) if (!seen.has(id)) { peerState.delete(id); if (rope && rope.kind === 'peer' && rope.ref === id) detach(); }
+  const k = 1 - Math.pow(1e-6, dt);
+  for (const s of peerState.values()) {
+    if (Math.hypot(s.tx - s.rx, s.ty - s.ry) > 500) { s.rx = s.tx; s.ry = s.ty; }
+    else { s.rx += (s.tx - s.rx) * k; s.ry += (s.ty - s.ry) * k; }
+  }
+}
+let presenceClock = 0;
+function sendPresence(dt) {
+  if (!team) return;
+  presenceClock -= dt;
+  if (presenceClock > 0) return;
+  presenceClock = 0.05;
+  const A = ropeAnchor();
+  team.presence({
+    n: save.name || 'Climber', c: save.color, s: state === 'menu' ? 0 : 1,
+    x: Math.round(P.x), y: Math.round(P.y), vx: Math.round(P.vx), vy: Math.round(P.vy),
+    a: A ? [Math.round(A.x), Math.round(A.y)] : null,
+    h: Math.round(runHeight * 10) / 10, cp: reachedCp,
+  }).catch(() => {});
+}
+function renderTeamList(el, includeMe) {
+  el.textContent = '';
+  const rows = [];
+  if (includeMe) rows.push({ n: (save.name || 'Climber') + ' (you)', c: COLORS[save.color], h: runHeight, playing: state !== 'menu' });
+  for (const s of peerState.values()) rows.push(s);
+  rows.sort((a, b) => b.h - a.h);
+  for (const r of rows) {
+    const row = document.createElement('div'); row.className = 'team-row';
+    const name = document.createElement('span'); name.textContent = r.n;
+    const h = document.createElement('span'); h.textContent = r.playing ? Math.floor(r.h) + ' m' : 'getting ready';
+    h.style.color = 'var(--dim)';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = r.c;
+    row.append(name, h, dot);
+    el.append(row);
+  }
+}
+
+// ---------- screens ----------
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-pause', 'scr-help'];
+let helpReturn = 'scr-menu';
+function show(id) {
+  $('overlay').hidden = !id;
+  for (const s of screens) $(s).hidden = s !== id;
+}
+function refreshMenu() {
+  $('s-best').textContent = Math.floor(save.best) + ' m';
+  $('s-cp').textContent = save.cp ? (save.cp * 60) + ' m' : 'Ground';
+  $('s-runs').textContent = String(save.runs);
+}
+function refreshCoopScreen() {
+  const msg = $('coop-msg'), ui = $('coop-ui');
+  if (roomApi === undefined) { msg.textContent = 'Connecting to co-op…'; ui.hidden = true; }
+  else if (roomApi === null) { msg.textContent = 'Online co-op works when this game is opened on claude.ai by people it has been shared with. Solo Climb works anywhere.'; ui.hidden = true; }
+  else { msg.textContent = 'Start a team and share its code, or type a friend\'s code to join them.'; ui.hidden = false; }
+}
+function showStart() {
+  $('start-title').textContent = mode === 'coop' ? 'Co-op Climb' : 'Solo Climb';
+  $('start-team').hidden = mode !== 'coop';
+  $('team-code').textContent = teamCode;
+  const cont = $('b-cont');
+  if (save.cp > 0) { cont.hidden = false; cont.textContent = 'Continue from ' + (save.cp * 60) + ' m'; $('start-msg').textContent = 'Your best height is ' + Math.floor(save.best) + ' m.'; }
+  else { cont.hidden = true; $('start-msg').textContent = 'Reach a checkpoint floor every 60 m to save your spot.'; }
+  show('scr-start');
+}
+function startRun(cp) {
+  save.runs++; writeSave();
+  toCheckpoint(cp);
+  camY = P.y - viewH() * 0.58;
+  runHeight = Math.max(0, (-P.y - PR) / M);
+  state = 'play';
+  show(null);
+  $('hud').hidden = false;
+  $('h-hint').classList.remove('faded');
+  setTimeout(() => $('h-hint').classList.add('faded'), 15000);
+  $('h-zone').textContent = zoneName;
+  banner(mode === 'coop' ? 'Co-op Climb' : 'Solo Climb', zoneName);
+  canvas.focus();
+}
+function pause() {
+  if (state !== 'play') return;
+  state = 'paused';
+  for (const k in keys) keys[k] = false;
+  detach();
+  $('b-regroup').hidden = $('regroup-note').hidden = mode !== 'coop';
+  show('scr-pause');
+  writeSave();
+}
+function resume() { state = 'play'; show(null); canvas.focus(); }
+function quitToMenu() {
+  state = 'menu'; detach(); writeSave();
+  if (mode === 'coop') leaveTeam();
+  mode = 'solo';
+  $('hud').hidden = true;
+  toCheckpoint(0);
+  refreshMenu(); show('scr-menu');
+}
+
+// menu wiring
+const nameEl = $('name');
+nameEl.value = save.name;
+nameEl.addEventListener('input', () => { save.name = cleanName(nameEl.value, ''); writeSave(); });
+const sw = $('swatches');
+COLORS.forEach((c, i) => {
+  const b = document.createElement('button');
+  b.className = 'swatch'; b.type = 'button'; b.style.background = c;
+  b.setAttribute('role', 'radio'); b.setAttribute('aria-label', 'Color ' + (i + 1));
+  b.setAttribute('aria-checked', String(i === save.color));
+  b.addEventListener('click', () => { save.color = i; writeSave(); for (const el of sw.children) el.setAttribute('aria-checked', String(el === b)); });
+  sw.append(b);
+});
+$('m-solo').addEventListener('click', () => { mode = 'solo'; showStart(); });
+$('m-coop').addEventListener('click', () => { refreshCoopScreen(); show('scr-coop'); });
+$('b-back-coop').addEventListener('click', () => show('scr-menu'));
+$('b-create').addEventListener('click', () => { if (roomApi) joinTeam(newCode()); });
+const codeEl = $('code');
+const tryJoin = () => {
+  const code = codeEl.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (code.length < 4) { const err = $('coop-err'); err.textContent = 'Team codes are 5 letters and numbers.'; err.hidden = false; return; }
+  if (roomApi) joinTeam(code);
+};
+$('b-join').addEventListener('click', tryJoin);
+codeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryJoin(); });
+$('b-copy').addEventListener('click', () => {
+  const btn = $('b-copy');
+  const done = () => { btn.textContent = 'Copied'; setTimeout(() => btn.textContent = 'Copy code', 1500); };
+  const fallback = () => { const r = document.createRange(); r.selectNodeContents($('team-code')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'Press Ctrl+C'; };
+  try { navigator.clipboard.writeText(teamCode).then(done, fallback); } catch (e) { fallback(); }
+});
+$('b-cont').addEventListener('click', () => startRun(save.cp));
+$('b-fresh').addEventListener('click', () => startRun(0));
+$('b-back-start').addEventListener('click', () => { if (mode === 'coop') leaveTeam(); mode = 'solo'; refreshMenu(); show('scr-menu'); });
+$('b-resume').addEventListener('click', resume);
+$('b-cp').addEventListener('click', () => { toCheckpoint(reachedCp); resume(); });
+$('b-regroup').addEventListener('click', () => {
+  let best = reachedCp;
+  for (const s of peerState.values()) best = Math.max(best, s.cp);
+  toCheckpoint(best); resume();
+});
+$('b-quit').addEventListener('click', quitToMenu);
+$('b-help').addEventListener('click', () => { helpReturn = 'scr-menu'; show('scr-help'); });
+$('b-help2').addEventListener('click', () => { helpReturn = 'scr-pause'; show('scr-help'); });
+$('b-help-back').addEventListener('click', () => show(helpReturn));
+refreshMenu();
+
+// ---------- rendering ----------
+let dpr = 1, cw = 0, ch = 0, scale = 1;
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  cw = innerWidth; ch = innerHeight;
+  canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
+  scale = Math.min(cw / (W + 60), ch / 560);
+}
+addEventListener('resize', resize); resize();
+const viewH = () => ch / scale;
+const viewW = () => cw / scale;
+
+const stars = Array.from({ length: 140 }, () => ({ u: Math.random(), v: Math.random(), s: Math.random() * 1.4 + 0.4, tw: Math.random() * 6 }));
+const SKY = [[0, [59, 42, 92], [232, 138, 90]], [150, [27, 31, 74], [90, 60, 120]], [300, [7, 10, 31], [26, 22, 64]], [500, [2, 3, 10], [10, 10, 31]]];
+function skyAt(m) {
+  let a = SKY[0], b = SKY[SKY.length - 1];
+  for (let i = 0; i < SKY.length - 1; i++) if (m >= SKY[i][0] && m < SKY[i + 1][0]) { a = SKY[i]; b = SKY[i + 1]; break; }
+  if (m >= SKY[SKY.length - 1][0]) a = b;
+  const t = a === b ? 0 : (m - a[0]) / (b[0] - a[0]);
+  const mix = (p, q) => `rgb(${p.map((v, i) => Math.round(v + (q[i] - v) * t)).join(',')})`;
+  return [mix(a[1], b[1]), mix(a[2], b[2])];
+}
+
+function drawBackground(camM) {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const [top, bot] = skyAt(camM);
+  const g = ctx.createLinearGradient(0, 0, 0, ch);
+  g.addColorStop(0, top); g.addColorStop(1, bot);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch);
+  const starA = clamp((camM - 40) / 200, 0, 1);
+  if (starA > 0) {
+    const shift = -camY * scale * 0.08;
+    for (const s of stars) {
+      const y = ((s.v * ch + shift) % ch + ch) % ch;
+      ctx.globalAlpha = starA * (0.5 + 0.5 * Math.sin(gt * 1.5 + s.tw));
+      ctx.fillStyle = '#fff'; ctx.fillRect(s.u * cw, y, s.s, s.s);
+    }
+    ctx.globalAlpha = 1;
+  }
+  // far spires
+  const shift2 = -camY * scale * 0.25;
+  ctx.fillStyle = 'rgba(10,8,26,0.14)';
+  for (let k = 0; k < 7; k++) {
+    const x = ((k * 0.17 + 0.05) % 1) * cw, w = 40 + (k * 37) % 70, base = ch + ((shift2 * (0.6 + k * 0.05)) % (ch * 1.5));
+    ctx.fillRect(x, base - ch * (0.6 + (k % 3) * 0.2), w, ch * 2);
+  }
+}
+
+function worldTransform(sx, sy) {
+  const camX = (W - viewW()) / 2;
+  ctx.setTransform(dpr * scale, 0, 0, dpr * scale, (-camX + sx) * dpr * scale, (-camY + sy) * dpr * scale);
+  return camX;
+}
+
+function drawWalls(camX, top, bottom) {
+  const vw = viewW();
+  ctx.fillStyle = '#1b1631';
+  ctx.fillRect(camX - 10, top, -camX + 10, bottom - top);
+  ctx.fillRect(W, top, vw, bottom - top);
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1.5;
+  const brick = 32, y0 = Math.floor(top / brick) * brick;
+  for (let y = y0; y < bottom; y += brick) {
+    ctx.beginPath(); ctx.moveTo(camX - 10, y); ctx.lineTo(0, y); ctx.moveTo(W, y); ctx.lineTo(W + vw, y); ctx.stroke();
+    const off = ((y / brick) & 1) ? 0 : brick;
+    ctx.beginPath();
+    for (let x = -off; x > camX - 80; x -= 64) { ctx.moveTo(x, y); ctx.lineTo(x, y + brick); }
+    for (let x = W + 64 - off; x < W + vw; x += 64) { ctx.moveTo(x, y); ctx.lineTo(x, y + brick); }
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#2a2345'; ctx.fillRect(-6, top, 6, bottom - top); ctx.fillRect(W, top, 6, bottom - top);
+  // altitude ruler on the left wall
+  ctx.font = '600 13px "Chakra Petch", sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  const step = 10 * M;
+  for (let y = Math.floor(top / step) * step; y < bottom; y += step) {
+    const m = Math.round(-y / M);
+    if (m < 0) continue;
+    ctx.fillStyle = 'rgba(243,236,223,0.45)'; ctx.fillRect(-18, y - 1, 12, 2);
+    if (camX < -30) ctx.fillText(m + ' m', -24, y);
+  }
+}
+
+function drawBlock(b) {
+  if (b.floor) {
+    ctx.fillStyle = '#2a2238'; ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.fillStyle = '#4a3d63'; ctx.fillRect(b.x, b.y, b.w, 6);
+    return;
+  }
+  if (b.grab) {
+    ctx.fillStyle = '#9a8571'; ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.fillStyle = '#c3ad92'; ctx.fillRect(b.x, b.y, b.w, 5);
+    ctx.strokeStyle = 'rgba(40,28,20,0.35)'; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let x = b.x + 18; x < b.x + b.w - 6; x += 26) { ctx.moveTo(x, b.y + 8); ctx.lineTo(x - 5, b.y + b.h - 4); }
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = '#4b5b75'; ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.strokeStyle = '#7f95b6'; ctx.lineWidth = 2; ctx.strokeRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2);
+    ctx.fillStyle = '#a9bad3';
+    for (const [rx, ry] of [[6, 6], [b.w - 6, 6], [6, b.h - 6], [b.w - 6, b.h - 6]]) { ctx.beginPath(); ctx.arc(b.x + rx, b.y + ry, 2, 0, 6.283); ctx.fill(); }
+  }
+  if (b.spike) {
+    const up = b.spike === 'top', y = up ? b.y : b.y + b.h, dir = up ? -1 : 1;
+    ctx.fillStyle = '#e6e2ee'; ctx.beginPath();
+    for (let x = b.x + 2; x + 10 <= b.x + b.w - 2; x += 10) { ctx.moveTo(x, y); ctx.lineTo(x + 5, y + dir * 10); ctx.lineTo(x + 10, y); }
+    ctx.fill();
+    ctx.fillStyle = '#ff5a6e'; ctx.fillRect(b.x + 2, up ? y - 2 : y, b.w - 4, 2);
+  }
+}
+
+function drawAnchor(a, targeted) {
+  if (a.kind === 'move') {
+    ctx.strokeStyle = 'rgba(94,230,193,0.22)'; ctx.lineWidth = 2; ctx.setLineDash([4, 6]);
+    ctx.beginPath(); ctx.moveTo(a.x - a.amp, a.y); ctx.lineTo(a.x + a.amp, a.y); ctx.stroke(); ctx.setLineDash([]);
+  }
+  const q = anchorPos(a, st);
+  if (a.broken > gt) {
+    ctx.strokeStyle = 'rgba(227,180,95,0.3)'; ctx.lineWidth = 2; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.arc(q.x, q.y, 9, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
+    return;
+  }
+  let x = q.x, y = q.y;
+  const crumbling = a.kind === 'crumble' && a.grab >= 0;
+  if (crumbling && !reduceMotion) { x += (Math.random() - 0.5) * 3; y += (Math.random() - 0.5) * 3; }
+  const col = a.kind === 'crumble' ? '#e3b45f' : '#5ee6c1';
+  if (targeted) { ctx.fillStyle = a.kind === 'crumble' ? 'rgba(227,180,95,0.25)' : 'rgba(94,230,193,0.25)'; ctx.beginPath(); ctx.arc(x, y, 20, 0, 6.283); ctx.fill(); }
+  ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, 9, 0, 6.283); ctx.stroke();
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 6.283); ctx.fill();
+  if (a.kind === 'crumble') {
+    ctx.strokeStyle = '#3a2a12'; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(x - 7, y - 6); ctx.lineTo(x - 2, y - 1); ctx.lineTo(x - 5, y + 3); ctx.moveTo(x + 6, y - 4); ctx.lineTo(x + 3, y + 2); ctx.stroke();
+  }
+}
+
+function drawSaw(s) {
+  const q = sawPos(s, st);
+  if (s.amp) { ctx.strokeStyle = 'rgba(255,90,110,0.2)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(s.x - s.amp, s.y); ctx.lineTo(s.x + s.amp, s.y); ctx.stroke(); }
+  ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(st * 9 % 6.283);
+  const teeth = 12; ctx.fillStyle = '#c9ccd6'; ctx.beginPath();
+  for (let k = 0; k < teeth * 2; k++) { const rr = k % 2 ? s.rad * 0.78 : s.rad, ang = k / (teeth * 2) * 6.283; ctx.lineTo(Math.cos(ang) * rr, Math.sin(ang) * rr); }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#3a3550'; ctx.beginPath(); ctx.arc(0, 0, s.rad * 0.3, 0, 6.283); ctx.fill();
+  ctx.fillStyle = '#ff5a6e'; ctx.fillRect(-1.5, -s.rad * 0.6, 3, s.rad * 0.3);
+  ctx.restore();
+}
+
+function drawLaser(l) {
+  const ph = laserPhase(l, st), on = ph < l.on, warn = !on && ph > 0.86;
+  ctx.fillStyle = '#5a3346';
+  ctx.fillRect(l.x1 - 10, l.y - 9, 10, 18); ctx.fillRect(l.x2, l.y - 9, 10, 18);
+  ctx.fillStyle = on ? '#ff5a6e' : '#8a4a5c';
+  ctx.fillRect(l.x1 - 3, l.y - 4, 3, 8); ctx.fillRect(l.x2, l.y - 4, 3, 8);
+  if (on) {
+    ctx.strokeStyle = 'rgba(255,59,92,0.35)'; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(l.x1, l.y); ctx.lineTo(l.x2, l.y); ctx.stroke();
+    ctx.strokeStyle = '#ff3b5c'; ctx.lineWidth = 5; ctx.stroke();
+    ctx.strokeStyle = '#ffe3e8'; ctx.lineWidth = 1.5; ctx.stroke();
+  } else if (warn && Math.floor(gt * 16) % 2 === 0) {
+    ctx.strokeStyle = 'rgba(255,90,110,0.6)'; ctx.lineWidth = 1; ctx.setLineDash([6, 6]);
+    ctx.beginPath(); ctx.moveTo(l.x1, l.y); ctx.lineTo(l.x2, l.y); ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+
+function drawWind(w) {
+  const f = windForce(w, st) / w.str;
+  ctx.fillStyle = 'rgba(190,220,255,0.04)'; ctx.fillRect(0, w.y1, W, w.y2 - w.y1);
+  ctx.strokeStyle = `rgba(200,225,255,${0.12 + Math.abs(f) * 0.18})`; ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let k = 0; k < 14; k++) {
+    const y = w.y1 + ((k * 73.3) % (w.y2 - w.y1));
+    const speed = 160 + (k % 4) * 40;
+    let x = ((k * 211 + st * speed * w.dir) % (W + 120) + W + 120) % (W + 120) - 60;
+    ctx.moveTo(x, y); ctx.lineTo(x - w.dir * (30 + Math.abs(f) * 40), y);
+  }
+  ctx.stroke();
+}
+
+function drawPlat(pl) {
+  const reached = reachedCp >= pl.n;
+  ctx.fillStyle = '#3b3355'; ctx.fillRect(0, pl.y, W, 14);
+  ctx.fillStyle = reached ? '#5ee6c1' : '#ffb347'; ctx.fillRect(0, pl.y, W, 4);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  for (let x = 0; x < W; x += 40) ctx.fillRect(x, pl.y + 6, 20, 6);
+  // flag
+  const fx = W - 70;
+  ctx.fillStyle = '#d8d2e6'; ctx.fillRect(fx, pl.y - 54, 3, 54);
+  ctx.fillStyle = reached ? '#5ee6c1' : '#ffb347';
+  const wave = Math.sin(gt * 4) * 3;
+  ctx.beginPath(); ctx.moveTo(fx + 3, pl.y - 54); ctx.lineTo(fx + 34, pl.y - 46 + wave); ctx.lineTo(fx + 3, pl.y - 36); ctx.fill();
+  ctx.font = '13px Bungee, Impact, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(243,236,223,0.8)'; ctx.fillText(pl.m + ' m', 16, pl.y - 8);
+}
+
+function drawRope(px, py, ax, ay, L, color) {
+  const d = Math.hypot(ax - px, ay - py);
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(px, py);
+  if (L && d < L - 2) { const sag = Math.min(60, (L - d) * 0.6); ctx.quadraticCurveTo((px + ax) / 2, (py + ay) / 2 + sag, ax, ay); }
+  else ctx.lineTo(ax, ay);
+  ctx.stroke();
+}
+
+function drawClimber(x, y, vx, vy, color, anchor, flash, label) {
+  ctx.save(); ctx.translate(x, y);
+  const tilt = clamp(vx / 1600, -0.5, 0.5);
+  ctx.rotate(tilt);
+  if (flash) ctx.globalAlpha = 0.45;
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // head
+  ctx.beginPath(); ctx.arc(0, -10, 5.5, 0, 6.283); ctx.fill();
+  // body
+  ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(0, 7); ctx.stroke();
+  // legs
+  const kick = clamp(vy / 900, -1, 1) * 3 + Math.sin(gt * 10) * Math.min(1, Math.abs(vx) / 300) * 3;
+  ctx.beginPath(); ctx.moveTo(0, 7); ctx.lineTo(-5 - kick * 0.5, 15 + kick * 0.3); ctx.moveTo(0, 7); ctx.lineTo(5 + kick * 0.5, 15 - kick * 0.3); ctx.stroke();
+  // arms: one reaches for the hook
+  ctx.beginPath();
+  if (anchor) {
+    const ang = Math.atan2(anchor.y - y, anchor.x - x) - tilt;
+    ctx.moveTo(0, -2); ctx.lineTo(Math.cos(ang) * 11, -2 + Math.sin(ang) * 11);
+    ctx.moveTo(0, -2); ctx.lineTo(Math.cos(ang + 0.5) * 9, -2 + Math.sin(ang + 0.5) * 9);
+  } else {
+    const flap = clamp(-vy / 700, -1, 1) * 4;
+    ctx.moveTo(0, -2); ctx.lineTo(-8, 3 - flap); ctx.moveTo(0, -2); ctx.lineTo(8, 3 - flap);
+  }
+  ctx.stroke();
+  ctx.restore();
+  if (label) {
+    ctx.font = '600 12px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const w = ctx.measureText(label).width + 10;
+    ctx.fillStyle = 'rgba(10,8,24,0.6)'; ctx.fillRect(x - w / 2, y - 36, w, 16);
+    ctx.fillStyle = color; ctx.fillText(label, x, y - 24);
+  }
+}
+
+function render(dt) {
+  const vh = viewH();
+  const target = P.y - vh * 0.58;
+  camY += (target - camY) * Math.min(1, dt * 6);
+  camY = Math.min(camY, 70 - vh);
+  if (shake > 0) shake -= dt;
+  const sx = shake > 0 ? (Math.random() - 0.5) * 10 : 0, sy = shake > 0 ? (Math.random() - 0.5) * 10 : 0;
+  const camM = Math.max(0, -(camY + vh * 0.5) / M);
+
+  drawBackground(camM);
+  const camX = worldTransform(sx, sy);
+  const top = camY - 40, bottom = camY + vh + 40;
+  const vis = chunksBetween(top - 80, bottom + 80);
+  const targetRef = state === 'play' && !rope && aim && aim.valid && aim.kind === 'anchor' ? aim.ref : null;
+
+  for (const c of vis) for (const w of c.winds) drawWind(w);
+  for (const c of vis) for (const pl of c.plats) drawPlat(pl);
+  for (const c of vis) for (const b of c.blocks) drawBlock(b);
+  for (const c of vis) for (const l of c.lasers) drawLaser(l);
+  for (const c of vis) for (const a of c.anchors) drawAnchor(a, a === targetRef);
+  for (const c of vis) for (const s of c.saws) drawSaw(s);
+  drawWalls(camX, top, bottom);
+
+  // teammates
+  for (const s of peerState.values()) {
+    if (s.a) drawRope(s.rx, s.ry, s.a[0], s.a[1], 0, 'rgba(255,179,71,0.6)');
+    drawClimber(s.rx, s.ry, 0, 0, s.c, s.a ? { x: s.a[0], y: s.a[1] } : null, false, s.n);
+  }
+
+  // aim
+  if (state === 'play' && mouse.inside) {
+    ctx.strokeStyle = 'rgba(243,236,223,0.08)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(P.x, P.y, RANGE, 0, 6.283); ctx.stroke();
+    if (!rope && aim) {
+      ctx.setLineDash([5, 7]); ctx.lineWidth = 1.5;
+      ctx.strokeStyle = aim.valid ? 'rgba(94,230,193,0.55)' : 'rgba(243,236,223,0.25)';
+      ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(aim.x, aim.y); ctx.stroke(); ctx.setLineDash([]);
+      if (aim.valid) {
+        ctx.strokeStyle = '#5ee6c1'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(aim.x, aim.y, 14, 0, 6.283); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(aim.x - 20, aim.y); ctx.lineTo(aim.x - 10, aim.y); ctx.moveTo(aim.x + 10, aim.y); ctx.lineTo(aim.x + 20, aim.y);
+        ctx.moveTo(aim.x, aim.y - 20); ctx.lineTo(aim.x, aim.y - 10); ctx.moveTo(aim.x, aim.y + 10); ctx.lineTo(aim.x, aim.y + 20); ctx.stroke();
+      } else {
+        ctx.strokeStyle = aim.blocked ? 'rgba(255,90,110,0.7)' : 'rgba(243,236,223,0.35)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(aim.x - 5, aim.y - 5); ctx.lineTo(aim.x + 5, aim.y + 5); ctx.moveTo(aim.x + 5, aim.y - 5); ctx.lineTo(aim.x - 5, aim.y + 5); ctx.stroke();
+      }
+    }
+  }
+
+  // you
+  const A = ropeAnchor();
+  if (A) drawRope(P.x, P.y, A.x, A.y, rope.L, '#ffb347');
+  const flash = P.inv > 0 && Math.floor(gt * 14) % 2 === 0;
+  drawClimber(P.x, P.y, P.vx, P.vy, COLORS[save.color], A, flash, peerState.size ? (save.name || 'You') : '');
+
+  // particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life -= dt; if (p.life <= 0) { particles.splice(i, 1); continue; }
+    p.vy += 600 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    ctx.globalAlpha = Math.min(1, p.life * 2); ctx.fillStyle = p.color; ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------- HUD ----------
+let hudClock = 0, lastAlt = -1;
+function updateHud(dt) {
+  hudClock -= dt;
+  const alt = Math.floor(runHeight);
+  if (alt !== lastAlt) { lastAlt = alt; $('h-alt').textContent = String(alt); }
+  if (hudClock > 0) return;
+  hudClock = 0.4;
+  $('h-sub').textContent = 'Best ' + Math.floor(save.best) + ' m · Checkpoint ' + (reachedCp ? reachedCp * 60 + ' m' : 'ground');
+  if (mode === 'coop') renderTeamList($('h-team'), true); else $('h-team').textContent = '';
+  if (!$('scr-start').hidden && mode === 'coop') renderTeamList($('start-team-list'), true);
+  if (saveDirty) writeSave();
+}
+
+// ---------- loop ----------
+let last = performance.now(), acc = 0;
+function frame(ts) {
+  const dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
+  st = sharedTime();
+  syncPeers(dt);
+  const camX = (W - viewW()) / 2;
+  mouse.wx = camX + mouse.sx / scale; mouse.wy = camY + mouse.sy / scale;
+  if (state === 'play') {
+    aim = computeAim();
+    acc += dt;
+    while (acc >= STEP) { step(STEP); acc -= STEP; }
+  } else { acc = 0; aim = null; gt += dt; }
+  sendPresence(dt);
+  render(dt);
+  updateHud(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
