@@ -310,7 +310,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
           <button class="btn primary" id="g-spin1">Spin · 5</button>
           <button class="btn" id="g-spin10">Spin ×10 · 50</button>
         </div>
-        <p class="note">Duplicates give tokens back: 2, 3, 4, 6, 8 or 10 by rarity.</p>
+        <p class="note">Duplicates give tokens back: 2, 2, 3, 4, 6 or 10 by rarity.</p>
         <div class="pulls" id="g-pulls"></div>
       </div>
     </div>
@@ -397,10 +397,10 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // ---------- items ----------
 const RAR = [
   { n: 'Common', c: '#b8b5c4', w: 45, refund: 2 },
-  { n: 'Uncommon', c: '#7ddc6f', w: 27, refund: 3 },
-  { n: 'Rare', c: '#5aa8ff', w: 15, refund: 4 },
-  { n: 'Epic', c: '#b77cff', w: 8, refund: 6 },
-  { n: 'Legendary', c: '#ffb347', w: 4, refund: 8 },
+  { n: 'Uncommon', c: '#7ddc6f', w: 27, refund: 2 },
+  { n: 'Rare', c: '#5aa8ff', w: 15, refund: 3 },
+  { n: 'Epic', c: '#b77cff', w: 8, refund: 4 },
+  { n: 'Legendary', c: '#ffb347', w: 4, refund: 6 },
   { n: 'Mythic', c: '#ff4fa3', w: 1, refund: 10 },
 ];
 const CATS = [
