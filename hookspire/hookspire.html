@@ -2777,7 +2777,7 @@ function updateEnemies(dt) {
       if (Math.abs(da) < 0.2 && wLos(w.x, w.y, P.x, P.y)) {
         if (w.alarm <= 0) spotted();
         w.alarm = 2.5;
-        for (const dr of hw.drones) if (Math.hypot(dr.x - w.x, dr.y - w.y) < 1300) { dr.st = 'chase'; dr.seen = gt; }
+        for (const dr of hw.drones) if (!(dr.rest > gt) && Math.hypot(dr.x - w.x, dr.y - w.y) < 1300) { dr.st = 'chase'; dr.seen = gt; }
       }
     }
   }
@@ -2798,7 +2798,7 @@ function updateEnemies(dt) {
     if (!near(dr.x, dr.y, 1800)) continue;
     dr.spin += dt * 20;
     const dx = P.x - dr.x, dy = P.y - dr.y, d = Math.hypot(dx, dy) || 1;
-    if (vis && d < 260 && wLos(dr.x, dr.y, P.x, P.y)) { if (dr.st !== 'chase') spotted(); dr.st = 'chase'; dr.seen = gt; }
+    if (vis && !(dr.rest > gt) && d < 260 && wLos(dr.x, dr.y, P.x, P.y)) { if (dr.st !== 'chase') spotted(); dr.st = 'chase'; dr.seen = gt; }
     if (dr.st === 'chase') {
       if (!vis || gt - dr.seen > 4) dr.st = 'return';
       else moveDrone(dr, dx / d, dy / d, 290 * edt, false);
@@ -2811,7 +2811,8 @@ function updateEnemies(dt) {
       if (dr.t > 1) { dr.t = 1; dr.dir = -1; } if (dr.t < 0) { dr.t = 0; dr.dir = 1; }
       dr.x = dr.ax + (dr.bx - dr.ax) * dr.t; dr.y = dr.ay + (dr.by - dr.ay) * dr.t;
     }
-    if (vis && Math.hypot(P.x - dr.x, P.y - dr.y) < curR() + 16) worldHurt(dr.x, dr.y);
+    // a drone hits you once, then flies back to its route and leaves you alone for 6 seconds
+    if (vis && P.inv <= 0 && !(dr.rest > gt) && Math.hypot(P.x - dr.x, P.y - dr.y) < curR() + 16) { worldHurt(dr.x, dr.y); dr.st = 'return'; dr.rest = gt + 6; }
   }
   for (let i = hw.shots.length - 1; i >= 0; i--) {
     const s = hw.shots[i];
@@ -3118,7 +3119,7 @@ function renderWorld(dt) {
     for (const s of [-1, 1]) { const rw = Math.abs(Math.cos(d.spin + s)) * 12; ctx.beginPath(); ctx.moveTo(d.x + s * 16 - rw, d.y - 15); ctx.lineTo(d.x + s * 16 + rw, d.y - 15); ctx.stroke(); }
     ctx.fillStyle = '#2c2f3f'; ctx.beginPath(); ctx.arc(d.x, d.y, 13, 0, 6.283); ctx.fill(); ctx.strokeStyle = '#7f95b6'; ctx.lineWidth = 2; ctx.stroke();
     const chase = d.st === 'chase', ea = chase ? Math.atan2(P.y - d.y, P.x - d.x) : 0;
-    ctx.fillStyle = chase ? '#ff5a6e' : '#5ee6c1'; ctx.beginPath(); ctx.arc(d.x + Math.cos(ea) * (chase ? 5 : 0), d.y + Math.sin(ea) * (chase ? 5 : 0), 4.5, 0, 6.283); ctx.fill();
+    ctx.fillStyle = chase ? '#ff5a6e' : d.rest > gt ? '#7f95b6' : '#5ee6c1'; ctx.beginPath(); ctx.arc(d.x + Math.cos(ea) * (chase ? 5 : 0), d.y + Math.sin(ea) * (chase ? 5 : 0), 4.5, 0, 6.283); ctx.fill();
   }
   ctx.fillStyle = '#ff5a6e';
   for (const s of hw.shots) if (inView(s.x, s.y)) { ctx.beginPath(); ctx.arc(s.x, s.y, 5, 0, 6.283); ctx.fill(); }
