@@ -1437,6 +1437,95 @@ function rayCircle(ox, oy, ux, uy, cx, cy, r) {
   if (d2 > r * r) return null;
   return Math.max(0, tc - Math.sqrt(r * r - d2));
 }
+// ---------- rope wrapping: the rope bends around corners it swings into ----------
+function ropeCorners(x0, y0, x1, y1) {
+  const out = [];
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial') && hw) {
+    const vx0 = Math.floor(x0 / TS), vx1 = Math.ceil(x1 / TS), vy0 = Math.floor(y0 / TS), vy1 = Math.ceil(y1 / TS);
+    if ((vx1 - vx0 + 1) * (vy1 - vy0 + 1) > 1600) return out;
+    for (let vy = vy0; vy <= vy1; vy++) for (let vx = vx0; vx <= vx1; vx++) {
+      // a grid point with exactly one solid tile around it is an outside corner
+      const a = wSolid(vx - 1, vy - 1), b = wSolid(vx, vy - 1), c = wSolid(vx - 1, vy), d = wSolid(vx, vy);
+      if (a + b + c + d !== 1) continue;
+      out.push({ x: vx * TS + ((a || c) ? 3 : -3), y: vy * TS + ((a || b) ? 3 : -3) });
+    }
+  } else {
+    for (const c of chunksBetween(y0 - 10, y1 + 10)) for (const b of c.blocks) {
+      if (b.x > x1 || b.x + b.w < x0 || b.y > y1 || b.y + b.h < y0) continue;
+      out.push({ x: b.x - 3, y: b.y - 3 }, { x: b.x + b.w + 3, y: b.y - 3 }, { x: b.x - 3, y: b.y + b.h + 3 }, { x: b.x + b.w + 3, y: b.y + b.h + 3 });
+    }
+  }
+  return out;
+}
+function ropeBlocked(ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
+  if (d < 24) return false;
+  const sx = ax + dx / d * 8, sy = ay + dy / d * 8; // skip the bit of rope right at the hook or corner
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial') && hw) return !wLos(sx, sy, bx, by);
+  return lineBlocked(sx, sy, bx, by, chunksBetween(Math.min(ay, by) - 60, Math.max(ay, by) + 60));
+}
+const triSide = (p, a, b) => (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
+function wrapCorner(pv, ox, oy, nx, ny) {
+  // the corner the rope swept into on its way from the old position to the new one
+  const o = { x: ox, y: oy }, n = { x: nx, y: ny };
+  const cs = ropeCorners(Math.min(pv.x, ox, nx) - 6, Math.min(pv.y, oy, ny) - 6, Math.max(pv.x, ox, nx) + 6, Math.max(pv.y, oy, ny) + 6);
+  const ax = ox - pv.x, ay = oy - pv.y;
+  let best = null, ba = Infinity;
+  for (const c of cs) {
+    if (Math.hypot(c.x - pv.x, c.y - pv.y) < 8) continue;
+    const d1 = triSide(c, pv, o), d2 = triSide(c, o, n), d3 = triSide(c, n, pv);
+    if ((d1 < -1e-6 || d2 < -1e-6 || d3 < -1e-6) && (d1 > 1e-6 || d2 > 1e-6 || d3 > 1e-6)) continue; // outside the swept triangle
+    const cx = c.x - pv.x, cy = c.y - pv.y, ang = Math.abs(Math.atan2(ax * cy - ay * cx, ax * cx + ay * cy));
+    if (ang < ba) { ba = ang; best = c; }
+  }
+  if (best) return best;
+  // fallback: the corner closest to the new rope line
+  const sx = nx - pv.x, sy = ny - pv.y, sl = sx * sx + sy * sy || 1;
+  let bd = 28;
+  for (const c of cs) {
+    if (Math.hypot(c.x - pv.x, c.y - pv.y) < 8) continue;
+    const t = clamp(((c.x - pv.x) * sx + (c.y - pv.y) * sy) / sl, 0, 1), d = Math.hypot(pv.x + sx * t - c.x, pv.y + sy * t - c.y);
+    if (d < bd) { bd = d; best = c; }
+  }
+  return best;
+}
+function ropeWrapLen(r, A) { let L = 0, px = A.x, py = A.y; if (r.w) for (const q of r.w) { L += Math.hypot(q.x - px, q.y - py); px = q.x; py = q.y; } return L; }
+function ropeWrapStep(r, A, body, ox, oy) {
+  const w = r.w || (r.w = []);
+  // unwrap when the rope swings back past a corner
+  while (w.length) {
+    const q = w[w.length - 1], pv = w.length > 1 ? w[w.length - 2] : A;
+    const cr = (q.x - pv.x) * (body.y - q.y) - (q.y - pv.y) * (body.x - q.x);
+    if (cr * q.s < 0) w.pop(); else break;
+  }
+  // wrap around anything now between the last bend and the body
+  for (let k = 0; k < 3 && w.length < 12; k++) {
+    const pv = w.length ? w[w.length - 1] : A;
+    if (!ropeBlocked(pv.x, pv.y, body.x, body.y)) break;
+    const c = wrapCorner(pv, ox, oy, body.x, body.y);
+    if (!c || w.some(q => Math.hypot(q.x - c.x, q.y - c.y) < 4)) break;
+    const sg = Math.sign((c.x - pv.x) * (body.y - c.y) - (c.y - pv.y) * (body.x - c.x));
+    if (!sg) break;
+    w.push({ x: c.x, y: c.y, s: sg });
+  }
+}
+function ropeConstrain(body, r, A, ox, oy) {
+  ropeWrapStep(r, A, body, ox, oy);
+  const pv = r.w.length ? r.w[r.w.length - 1] : A, free = Math.max(6, r.L - ropeWrapLen(r, A));
+  const dx = body.x - pv.x, dy = body.y - pv.y, d = Math.hypot(dx, dy);
+  if (d > free && d > 0) {
+    const nx = dx / d, ny = dy / d;
+    body.x = pv.x + nx * free; body.y = pv.y + ny * free;
+    const vr = body.vx * nx + body.vy * ny;
+    if (vr > 0) { body.vx -= nx * vr; body.vy -= ny * vr; }
+  }
+}
+function drawRopeW(px, py, A, w, L, id, alpha) {
+  if (!w || !w.length) { drawRope(px, py, A.x, A.y, L, id, alpha); return; }
+  let prev = A;
+  for (const q of w) { drawRope(q.x, q.y, prev.x, prev.y, 0, id, alpha); prev = q; }
+  drawRope(px, py, prev.x, prev.y, L ? Math.max(0, L - ropeWrapLen({ w }, A)) : 0, id, alpha);
+}
 function lineBlocked(ox, oy, tx, ty, near) {
   const dx = tx - ox, dy = ty - oy, d = Math.hypot(dx, dy);
   if (d < 1) return false;
@@ -1536,26 +1625,19 @@ function step(dt) {
   P.jumpCd = (P.jumpCd || 0) - dt;
   if (!rope && P.ground && held('KeyW', 'ArrowUp') && P.jumpCd <= 0) { P.vy = -JUMP_V; P.ground = false; P.jumpCd = 0.3; sfx('jump', 0.6); }
   if (rope) {
-    if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL, rope.L - REEL_IN * dt);
-    if (held('KeyS', 'ArrowDown')) rope.L = Math.min(RANGE, rope.L + REEL_OUT * dt);
+    const wl = rope.w && rope.w.length ? ropeWrapLen(rope, ropeAnchor() || rope) : 0;
+    if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL + wl, rope.L - REEL_IN * dt);
+    if (held('KeyS', 'ArrowDown')) rope.L = Math.min(RANGE + wl, rope.L + REEL_OUT * dt);
   }
   const damp = 1 - 0.1 * dt;
   P.vx *= damp; P.vy *= damp;
   const sp = Math.hypot(P.vx, P.vy);
   if (sp > MAXV) { P.vx *= MAXV / sp; P.vy *= MAXV / sp; }
-  const prevY = P.y;
+  const prevY = P.y, prevX = P.x;
   P.x += P.vx * dt; P.y += P.vy * dt;
 
   const A = ropeAnchor();
-  if (rope && A) {
-    const dx = P.x - A.x, dy = P.y - A.y, d = Math.hypot(dx, dy);
-    if (d > rope.L && d > 0) {
-      const nx = dx / d, ny = dy / d;
-      P.x = A.x + nx * rope.L; P.y = A.y + ny * rope.L;
-      const vr = P.vx * nx + P.vy * ny;
-      if (vr > 0) { P.vx -= nx * vr; P.vy -= ny * vr; }
-    }
-  }
+  if (rope && A) ropeConstrain(P, rope, A, prevX, prevY);
 
   if (P.inv <= 0) {
     for (const c of near) {
@@ -1823,6 +1905,7 @@ function syncPeers(dt) {
     s.playing = pr.s === 1;
     s.fx = clampInt(pr.fx, 0, 15);
     s.raw = pr;
+    s.aw = Array.isArray(pr.aw) ? pr.aw.slice(0, 8).filter(e => Array.isArray(e) && num(e[0]) != null && num(e[1]) != null).map(e => ({ x: clamp(e[0], 0, wb ? WB : W), y: clamp(e[1], wb ? 0 : SUMMIT_Y - 800, wb ? HB : 10) })) : null;
     s.a = Array.isArray(pr.a) && num(pr.a[0]) != null && num(pr.a[1]) != null ? [clamp(pr.a[0], 0, wb ? WB : W), clamp(pr.a[1], wb ? 0 : SUMMIT_Y - 800, wb ? HB : 10)] : null;
     s.host = pr.host === 1;
     s.rc = s.host ? parseRc(pr.rc) : null;
@@ -1872,6 +1955,7 @@ function sendPresence(dt) {
     n: save.name || 'Climber', c: save.color, eq: save.eq, ti: hasTitle() ? 1 : 0, s: state === 'play' || state === 'paused' || state === 'over' ? 1 : 0,
     x: Math.round(P.x), y: Math.round(P.y), vx: Math.round(P.vx), vy: Math.round(P.vy),
     a: A ? [Math.round(A.x), Math.round(A.y)] : null,
+    aw: A && rope.w && rope.w.length ? rope.w.slice(-8).map(q => [Math.round(q.x), Math.round(q.y)]) : null,
     h: Math.round(runHeight * 10) / 10, cp: Math.min(reachedCp, MAX_CP),
   };
   if (teamKind === 'race') {
@@ -2968,7 +3052,7 @@ function render(dt) {
     if (!s.playing || teamKind === 'world') continue;
     const o = { x: s.rx, y: s.ry, vx: s.vx, vy: s.vy, base: s.c, eq: s.eq, anchor: s.a ? { x: s.a[0], y: s.a[1] } : null, label: s.n, face: (s.vx || 0) < 0 ? -1 : 1, hist: s.hist, trailAcc: s.trailAcc, title: s.ti ? TITLE : '' };
     emitTrail(o, dt, particles); s.trailAcc = o.trailAcc;
-    if (o.anchor) drawRope(o.x, o.y, o.anchor.x, o.anchor.y, 0, s.eq.rope, 0.85);
+    if (o.anchor) drawRopeW(o.x, o.y, o.anchor, s.aw, 0, s.eq.rope, 0.85);
     drawClimber(o);
   }
 
@@ -2997,7 +3081,7 @@ function render(dt) {
   pushHist(P.hist, P.x, P.y);
   const me = { x: P.x, y: P.y, vx: P.vx, vy: P.vy, base: COLORS[save.color], eq: save.eq, anchor: A, flash: P.inv > 0 && Math.floor(gt * 14) % 2 === 0, label: (peerState.size || (race && race.bots.length)) ? (save.name || 'You') : '', face: P.face, hist: P.hist, trailAcc: P.trailAcc, title: hasTitle() ? TITLE : '' };
   if (state === 'play') { emitTrail(me, dt, particles); P.trailAcc = me.trailAcc; }
-  if (A) drawRope(P.x, P.y, A.x, A.y, rope.L, save.eq.rope);
+  if (A) drawRopeW(P.x, P.y, A, rope.w, rope.L, save.eq.rope);
   drawClimber(me);
 
   updateParticles(particles, dt);
@@ -3505,25 +3589,19 @@ function stepWorld(dt) {
   P.jumpCd = (P.jumpCd || 0) - dt;
   if (!rope && P.ground && !fly && held('KeyW', 'ArrowUp') && P.jumpCd <= 0) { P.vy = -JUMP_V; P.ground = false; P.jumpCd = 0.3; sfx('jump', 0.6); }
   if (rope) {
-    if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL, rope.L - REEL_IN * dt);
-    if (held('KeyS', 'ArrowDown')) rope.L = Math.min(range, rope.L + REEL_OUT * dt);
+    const wl = rope.w && rope.w.length ? ropeWrapLen(rope, ropeAnchor() || rope) : 0;
+    if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL + wl, rope.L - REEL_IN * dt);
+    if (held('KeyS', 'ArrowDown')) rope.L = Math.min(range + wl, rope.L + REEL_OUT * dt);
   }
   const damp = fly && !rope ? 1 - 2.2 * dt : 1 - 0.1 * dt;
   P.vx *= damp; P.vy *= damp;
   if (feather && P.vy > 170) P.vy = 170;
   const sp = Math.hypot(P.vx, P.vy), mx = fly && !rope ? 640 : MAXV;
   if (sp > mx) { P.vx *= mx / sp; P.vy *= mx / sp; }
+  const prevX = P.x, prevY = P.y;
   P.x += P.vx * dt; P.y += P.vy * dt;
   const A = ropeAnchor();
-  if (rope && A) {
-    const dx = P.x - A.x, dy = P.y - A.y, d = Math.hypot(dx, dy);
-    if (d > rope.L && d > 0) {
-      const nx = dx / d, ny = dy / d;
-      P.x = A.x + nx * rope.L; P.y = A.y + ny * rope.L;
-      const vr = P.vx * nx + P.vy * ny;
-      if (vr > 0) { P.vx -= nx * vr; P.vy -= ny * vr; }
-    }
-  }
+  if (rope && A) ropeConstrain(P, rope, A, prevX, prevY);
   collideWorld(r, dt);
   if (!Number.isFinite(P.x) || !Number.isFinite(P.y) || !Number.isFinite(P.vx) || !Number.isFinite(P.vy)) { toCampfire(); return; }
   worldPickups();
@@ -4024,7 +4102,7 @@ function renderWorld(dt) {
     const fx = s.fx || 0;
     const o = { x: s.rx, y: s.ry, vx: s.vx, vy: s.vy, base: s.c, eq: s.eq, anchor: s.a ? { x: s.a[0], y: s.a[1] } : null, label: s.n, face: (s.vx || 0) < 0 ? -1 : 1, hist: s.hist, trailAcc: s.trailAcc, alpha: fx & 1 ? (mode === 'pvp' ? 0.12 : 0.3) : 1, sc: fx & 2 ? 0.55 : 1, title: s.ti ? TITLE : '' };
     emitTrail(o, dt, particles); s.trailAcc = o.trailAcc;
-    if (o.anchor) drawRope(o.x, o.y, o.anchor.x, o.anchor.y, 0, s.eq.rope, 0.85);
+    if (o.anchor) drawRopeW(o.x, o.y, o.anchor, s.aw, 0, s.eq.rope, 0.85);
     drawClimber(o);
     if (fx & 8) shieldBubble(o.x, o.y, fx & 2 ? 8 : PR);
   }
@@ -4057,7 +4135,7 @@ function renderWorld(dt) {
   if (mode === 'pvp' && pvp) pvpRender(dt);
   if (mode === 'trial' && trial) trialRender(dt);
   if (mode !== 'pvp' || (pvp && pvp.me.alive)) {
-    if (A) drawRope(P.x, P.y, A.x, A.y, rope.L, save.eq.rope);
+    if (A) drawRopeW(P.x, P.y, A, rope.w, rope.L, save.eq.rope);
     drawClimber(me);
     if (ab.active.shield > 0) for (let k = 0; k < Math.max(1, ab.shieldHits || 1); k++) shieldBubble(P.x, P.y, curR() + k * 7);
     if (mode === 'pvp' && pvp) pvpMeOverlay();
@@ -4596,8 +4674,9 @@ function botPhysics(b, dt, now) {
     const wallAhead = Math.abs(b.vx) > 120 && wSolid(Math.floor((b.x + Math.sign(b.vx) * (PR + 6 + Math.abs(b.vx) * 0.12)) / TS), Math.floor(b.y / TS));
     if (wallAhead) { push = -Math.sign(b.vx); b.wallT = (b.wallT || 0) + dt; } else b.wallT = Math.max(0, (b.wallT || 0) - dt);
     ax = push * SWING * 0.95 * (PDIFF[b.diff] || PDIFF.medium).mv * (b.spd || 1) * (b.od > now ? 1.5 : 1);
-    if (b.rope.L > 230) b.rope.L -= REEL_IN * dt * 0.5;
-    else if (b.wantUp && b.rope.L > 130) b.rope.L -= REEL_IN * dt * 0.3;
+    const fr = b.rope.L - (b.rope.w && b.rope.w.length ? ropeWrapLen(b.rope, b.rope) : 0); // free rope after any wraps
+    if (fr > 230) b.rope.L -= REEL_IN * dt * 0.5;
+    else if (b.wantUp && fr > 130) b.rope.L -= REEL_IN * dt * 0.3;
   }
   else if (b.ground) {
     const tx = Math.floor((b.x + b.dir * (PR + 6)) / TS), ty = Math.floor(b.y / TS), above = Math.floor((b.y - TS) / TS);
@@ -4617,11 +4696,9 @@ function botPhysics(b, dt, now) {
   b.vx *= 1 - 0.1 * dt; b.vy *= 1 - 0.1 * dt;
   const sp = Math.hypot(b.vx, b.vy);
   if (sp > MAXV) { b.vx *= MAXV / sp; b.vy *= MAXV / sp; }
+  const bx0 = b.x, by0 = b.y;
   b.x += b.vx * dt; b.y += b.vy * dt;
-  if (b.rope) {
-    const dx = b.x - b.rope.x, dy = b.y - b.rope.y, d = Math.hypot(dx, dy);
-    if (d > b.rope.L && d > 0) { const nx = dx / d, ny = dy / d; b.x = b.rope.x + nx * b.rope.L; b.y = b.rope.y + ny * b.rope.L; const vr = b.vx * nx + b.vy * ny; if (vr > 0) { b.vx -= nx * vr; b.vy -= ny * vr; } }
-  }
+  if (b.rope) ropeConstrain(b, b.rope, b.rope, bx0, by0);
   const vx0 = b.vx;
   collideBody(b, PR, dt);
   if (b.rope && Math.abs(vx0) > 300 && Math.abs(vx0) - Math.abs(b.vx) > 250) b.wallHits = (b.wallHits || 0) + 1; // swung into a wall
@@ -4987,7 +5064,7 @@ function drawUltFx(kind, x, y, ang, age, dur) {
 function drawFighter(b, x, y, anchor, invis, prot, frozen, netted, dt) {
   const o = { x, y, vx: b.vx || 0, vy: b.vy || 0, base: b.base, eq: b.eq, anchor, label: b.name, face: (b.vx || 0) < 0 ? -1 : 1, hist: b.hist, trailAcc: b.trailAcc, alpha: invis ? 0.12 : 1, flash: prot && Math.floor(gt * 14) % 2 === 0 };
   emitTrail(o, dt, particles); b.trailAcc = o.trailAcc;
-  if (anchor) drawRope(x, y, anchor.x, anchor.y, 0, b.eq.rope, 0.85);
+  if (anchor) drawRopeW(x, y, anchor, b.rope && b.rope.w, 0, b.eq.rope, 0.85);
   drawClimber(o);
   drawTag(x, y, b.hp, pvp.cfg.teams ? TEAM_COLORS[b.team & 1] : null);
   if (frozen) iceOverlay(x, y);
@@ -6184,7 +6261,7 @@ function chessRender(dt) {
     const p = v.piece, T = KF_TYPES[p.type];
     const anchor = kfAuth() ? (p.id === C.peerCp ? (p.anchorA ? { x: p.anchorA[0], y: p.anchorA[1] } : null) : p.rope ? { x: p.rope.x, y: p.rope.y } : null) : (p.a ? { x: p.a[0], y: p.a[1] } : null);
     ctx.fillStyle = p.side ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.arc(v.x, v.y - 2, 22, 0, 6.283); ctx.fill();
-    if (anchor) drawRope(v.x, v.y, anchor.x, anchor.y, 0, null, 0.85);
+    if (anchor) drawRopeW(v.x, v.y, anchor, kfAuth() && p.rope ? p.rope.w : null, 0, null, 0.85);
     drawClimber({ x: v.x, y: v.y, vx: v.vx, vy: v.vy, base: KF_COL[p.side], eq: NOEQ, anchor, label: T.g[p.side] + ' ' + T.n, face: p.face || 1, hist: p.hist });
     chessBar(v.x, v.y, p.hp, p.maxhp, p.side);
     if (v.human) { ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(v.x, v.y + 24, 18, 5, 0, 0, 6.283); ctx.stroke(); }
