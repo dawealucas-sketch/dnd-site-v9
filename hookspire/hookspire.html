@@ -84,6 +84,14 @@ button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
 .keygrid .keybtn.changed { border-color: rgba(94,230,193,.6); }
 .mutepill { position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 45; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: rgba(10,8,24,.7); color: var(--ink); font-size: 17px; display: grid; place-items: center; cursor: pointer; }
 .mutepill:hover { border-color: var(--mint); }
+.msec { display: grid; gap: 8px; }
+.msec > .label { display: flex; align-items: center; gap: 10px; }
+.msec > .label::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.lastplay { justify-self: start; }
+.helpgrid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 14px; align-items: baseline; }
+.helpgrid kbd, .helpgrid .k { justify-self: end; font-family: var(--ui); font-weight: 700; font-size: 13px; padding: 3px 9px; border-radius: 7px; border: 1px solid var(--line); background: rgba(255,255,255,.07); white-space: nowrap; }
+.helptips { margin: 0; padding-left: 18px; color: var(--dim); display: grid; gap: 4px; line-height: 1.45; }
+textarea.savebox { font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--ink); background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; resize: vertical; min-height: 70px; word-break: break-all; }
 .stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0; }
 .stats div { display: grid; gap: 2px; }
 .stats dt { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
@@ -243,7 +251,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <div class="team" id="h-team"></div>
   </div>
   <div id="banner"></div>
-  <div class="hint" id="h-hint"><b>Mouse</b> aim · <b>Hold Space</b> hook · <b>W</b> reel in / jump · <b>S</b> let out · <b>A / D</b> swing · <b>R</b> checkpoint · <b>Esc</b> pause</div>
+  <div class="hint" id="h-hint"><b>H</b> help · <b>Mouse</b> aim · <b>Hold Space</b> hook · <b>W</b> reel in / jump · <b>S</b> let out · <b>A / D</b> swing · <b>R</b> checkpoint · <b>Esc</b> pause</div>
 </div>
 
 <div id="whud" hidden>
@@ -256,16 +264,16 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   <div class="hud-tr"><canvas class="minimap" id="w-mini" width="440" height="220" hidden aria-label="Arena minimap"></canvas><div class="team" id="w-team"></div></div>
   <div id="wbanner"></div>
   <div class="race-top" id="t-timer" hidden></div>
-  <div class="hint" id="t-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W / S</b> reel · <b>A / D</b> swing · <b>R</b> restart · <b>Esc</b> pause</div>
+  <div class="hint" id="t-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W / S</b> reel · <b>A / D</b> swing · <b>R</b> restart · <b>Esc</b> pause</div>
   <div class="ult" id="w-ult" hidden><span class="k">Q</span><span id="w-ult-name"></span><span class="bar"><i id="w-ult-bar"></i></span></div>
   <div class="slots" id="w-slots"></div>
-  <div class="hint" id="g-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>E</b> tag shot when you're IT · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
+  <div class="hint" id="g-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>E</b> tag shot when you're IT · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
   <div class="kroster" id="k-roster" hidden></div>
   <div class="kmenu" id="k-menu" hidden></div>
-  <div class="hint" id="k-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>E</b> attack · <b>Q</b> piece move · <b>1–8 / Tab</b> switch · <b>O</b> order all · <b>M</b> map</div>
-  <div class="hint" id="c-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump / yank a hooked enemy · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
-  <div class="hint" id="p-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / yank a hooked player · <b>E</b> shoot · <b>Q</b> ultimate · <b>1–5</b> abilities · <b>Esc</b> pause</div>
-  <div class="hint" id="w-hint"><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1–5</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
+  <div class="hint" id="k-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>E</b> attack · <b>Q</b> piece move · <b>1–8 / Tab</b> switch · <b>O</b> order all · <b>M</b> map</div>
+  <div class="hint" id="c-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump / yank a hooked enemy · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
+  <div class="hint" id="p-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / yank a hooked player · <b>E</b> shoot · <b>Q</b> ultimate · <b>1–5</b> abilities · <b>Esc</b> pause</div>
+  <div class="hint" id="w-hint"><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1–5</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
 </div>
 
 <div id="overlay">
@@ -281,22 +289,35 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <p class="titled" id="m-title" hidden></p>
       <div class="swatches" id="swatches" role="radiogroup" aria-label="Climber color"></div>
     </div>
-    <div class="modes two">
-      <button class="mode" id="m-solo"><b>Climb</b><small>Reach the summit at 780 m. Checkpoints every 60 m.</small></button>
-      <button class="mode" id="m-coop"><b>Co-op Climb</b><small>Climb with friends and hook onto each other.</small></button>
-      <button class="mode" id="m-race"><b>Race</b><small>Race bots and friends to a height or against the clock.</small></button>
-      <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
-      <button class="mode" id="m-trial"><b>Time Trials</b><small>30 courses against the clock. Gold medals unlock skins.</small></button>
-      <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
-      <button class="mode" id="m-tag"><b>Hook Tag</b><small>Tag or be tagged. Classic or Infection, with bots or friends.</small></button>
-      <button class="mode" id="m-ctf"><b>Capture the Flag</b><small>Red vs Blue. Steal their flag and bring it home. First to 3.</small></button>
-      <button class="mode" id="m-chess"><b>Kingfall</b><small>Real-time chess battle. Command your pieces and take the enemy King.</small></button>
-      <button class="mode soon" id="m-story" disabled aria-disabled="true"><b>Story Mode</b><small>A new adventure is on the way.</small><span class="badge">Coming soon</span></button>
+    <button class="btn primary lastplay" id="m-last" hidden></button>
+    <div class="msec"><span class="label">Climb</span>
+      <div class="modes two">
+        <button class="mode" id="m-solo"><b>Climb</b><small>Reach the summit at 780 m. Checkpoints every 60 m.</small></button>
+        <button class="mode" id="m-coop"><b>Co-op Climb</b><small>Climb with friends and hook onto each other.</small></button>
+        <button class="mode" id="m-race"><b>Race</b><small>Race bots and friends to a height or against the clock.</small></button>
+        <button class="mode" id="m-trial"><b>Time Trials</b><small>30 courses against the clock. Gold medals unlock skins.</small></button>
+      </div>
     </div>
-    <div class="modes">
-      <button class="mode shop" id="m-gacha"><b>Gacha</b><small>Spend 5 tokens to spin for hats, colors, ropes, trails and auras.</small></button>
-      <button class="mode shop" id="m-locker"><b>Locker</b><small>Equip items and skins you've won.</small></button>
-      <button class="mode shop" id="m-ach"><b>Achievements</b><small>30 to earn. Unlock them all for a title.</small></button>
+    <div class="msec"><span class="label">Explore</span>
+      <div class="modes two">
+        <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
+        <button class="mode soon" id="m-story" disabled aria-disabled="true"><b>Story Mode</b><small>A new adventure is on the way.</small><span class="badge">Coming soon</span></button>
+      </div>
+    </div>
+    <div class="msec"><span class="label">Battle</span>
+      <div class="modes two">
+        <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
+        <button class="mode" id="m-tag"><b>Hook Tag</b><small>Tag or be tagged. Classic or Infection, with bots or friends.</small></button>
+        <button class="mode" id="m-ctf"><b>Capture the Flag</b><small>Red vs Blue. Steal their flag and bring it home. First to 3.</small></button>
+        <button class="mode" id="m-chess"><b>Kingfall</b><small>Real-time chess battle. Command your pieces and take the enemy King.</small></button>
+      </div>
+    </div>
+    <div class="msec"><span class="label">Collection</span>
+      <div class="modes">
+        <button class="mode shop" id="m-gacha"><b>Gacha</b><small>Spend 5 tokens to spin for hats, colors, ropes, trails and auras.</small></button>
+        <button class="mode shop" id="m-locker"><b>Locker</b><small>Equip items and skins you've won.</small></button>
+        <button class="mode shop" id="m-ach"><b>Achievements</b><small>30 to earn. Unlock them all for a title.</small></button>
+      </div>
     </div>
     <dl class="stats">
       <div><dt>Best height</dt><dd id="s-best">0 m</dd></div>
@@ -422,11 +443,19 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <p class="note" id="pause-diff-note" hidden>Difficulty changes apply when you restart.</p>
     <div class="field"><span class="label">Switch to another mode</span><div class="seg small" id="pause-modes"></div></div>
     <div class="row">
-      <button class="btn" id="b-help2">Controls</button>
+      <button class="btn" id="b-help2">How to play</button>
       <button class="btn" id="b-settings2">Settings</button>
       <button class="btn" id="b-pause-adm" hidden>Admin</button>
       <button class="btn" id="b-quit">Quit to menu</button>
     </div>
+  </section>
+
+  <section class="panel wide" id="scr-mhelp" hidden>
+    <div class="head-row"><h2 id="mh-title">How to play</h2><span class="note">Press <b>H</b> any time to open this.</span></div>
+    <p id="mh-goal"></p>
+    <div class="helpgrid" id="mh-keys"></div>
+    <ul class="helptips" id="mh-tips"></ul>
+    <button class="btn primary" id="b-mh-close" style="justify-self:start">Got it</button>
   </section>
 
   <section class="panel wide" id="scr-settings" hidden>
@@ -451,6 +480,13 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <p class="note">Click a key, then press the new key. Esc cancels. If the key is already used, the two swap. Arrow keys and 1–8 always work too.</p>
       <div class="keygrid" id="set-keys"></div>
       <div class="row"><button class="btn" id="b-keys-reset">Reset controls</button></div>
+    </div>
+    <div class="adm-sec">
+      <h3 style="color:var(--mint)">Progress</h3>
+      <p class="note">Copy a save code to move your progress (tokens, items, skins, medals, abilities, achievements and settings) to another browser, device or Hookspire link. Loading a code replaces the progress on this device.</p>
+      <div class="row"><button class="btn" id="b-save-copy">Copy save code</button><span class="note" id="save-msg" role="status"></span></div>
+      <textarea class="savebox" id="save-code" rows="3" placeholder="Paste a save code here" spellcheck="false" autocomplete="off" aria-label="Save code"></textarea>
+      <div class="row"><button class="btn" id="b-save-load">Load save code</button></div>
     </div>
     <button class="btn primary" id="b-set-back" style="justify-self:start">Done</button>
   </section>
@@ -762,7 +798,15 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <div class="adm-sec">
         <h3>Room</h3>
         <div class="team" id="adm-room"></div>
-        <p class="note">Kicked players go back to the menu and can't rejoin that room for 20 seconds. Kick buttons also show in Race and PvP lobbies.</p>
+        <div class="adm-sec" id="adm-give" hidden style="background:rgba(94,230,193,.05)">
+          <h3 style="color:var(--mint)" id="adm-give-title">Give</h3>
+          <div class="row"><input class="adm-in" type="number" id="ag-tok" min="1" max="1000000" value="100" aria-label="Tokens to give"><button class="btn" id="b-ag-tok">Send tokens</button></div>
+          <div class="row"><select class="adm-in wide" id="ag-item" aria-label="Item to give"></select><button class="btn" id="b-ag-item">Send item</button><button class="btn" id="b-ag-items">Send every item</button></div>
+          <div class="row"><select class="adm-in wide" id="ag-skin" aria-label="Skin to give"></select><button class="btn" id="b-ag-skin">Send skin</button></div>
+          <div class="row"><select class="adm-in wide" id="ag-ab" aria-label="Ability to give"></select><button class="btn" id="b-ag-ab">Send ability</button><button class="btn" id="b-ag-aball">Send all abilities</button></div>
+          <div class="row"><button class="link" id="b-ag-close">Close</button><span class="note" id="ag-msg" role="status"></span></div>
+        </div>
+        <p class="note">Kicked players go back to the menu and can't rejoin that room for 20 seconds. Kick buttons also show in Race and PvP lobbies. Give sends tokens, items, skins or abilities to that player.</p>
       </div>
     </div>
     <div class="row"><button class="btn" id="b-adm-back">Back</button><button class="link" id="b-adm-lockbtn" hidden>Lock admin on this device</button></div>
@@ -975,7 +1019,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -1005,6 +1049,8 @@ try {
     if (s.ctfCfg && typeof s.ctfCfg === 'object') save.ctfCfg = s.ctfCfg;
     if (typeof s.kfDiff === 'string') save.kfDiff = s.kfDiff;
     if (s.set && typeof s.set === 'object') save.set = s.set;
+    if (s.seen && typeof s.seen === 'object') save.seen = s.seen;
+    if (typeof s.last === 'string' && /^m-[a-z]+$/.test(s.last)) save.last = s.last;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
 const gotSet = new Set(save.got);
@@ -1016,7 +1062,7 @@ const BIND_ACTIONS = [
   ['hook', 'Space', 'Hook (hold)'], ['up', 'KeyW', 'Reel in · jump · yank'], ['down', 'KeyS', 'Let rope out'],
   ['left', 'KeyA', 'Swing left'], ['right', 'KeyD', 'Swing right'], ['attack', 'KeyE', 'Shoot · attack'],
   ['special', 'KeyQ', 'Ultimate · piece move'], ['map', 'KeyM', 'Map'], ['equip', 'Tab', 'Equip abilities'],
-  ['reset', 'KeyR', 'Checkpoint · campfire · restart'], ['mute', 'KeyN', 'Mute sound'],
+  ['reset', 'KeyR', 'Checkpoint · campfire · restart'], ['mute', 'KeyN', 'Mute sound'], ['help', 'KeyH', 'How to play'],
 ];
 const SET = Object.assign({ sfx: 0.7, music: 0.4, mute: false, shake: 1, fx: 1, keys: {} }, save.set || {});
 SET.sfx = clamp(Number(SET.sfx) || 0, 0, 1); SET.music = clamp(Number(SET.music) || 0, 0, 1); SET.mute = SET.mute === true;
@@ -1284,6 +1330,9 @@ addEventListener('keydown', (e0) => {
   if (rebinding) return; // the settings screen is waiting for a new key
   const e = { code: vcode(e0.code), repeat: e0.repeat, target: e0.target, key: e0.key, preventDefault: () => e0.preventDefault() };
   if (e.code === 'KeyN' && !e.repeat) { toggleMute(); return; }
+  if (state === 'play' && e.code === 'KeyH' && !e.repeat) { openModeHelp(); return; }
+  if (state === 'paused' && current === 'scr-mhelp' && (e.code === 'KeyH' || e.code === 'Escape') && !e.repeat) { $('b-mh-close').click(); return; }
+  if (state === 'menu' && e.code === 'Escape' && current && current !== 'scr-menu') { menuBack(); return; }
   if (state === 'play') {
     if (GAME_KEYS.has(e.code) || ((mode === 'world' || (mode === 'pvp' && pvp && pvp.chess)) && e.code === 'Tab')) e.preventDefault();
     keys[e.code] = true;
@@ -1746,6 +1795,7 @@ function syncPeers(dt) {
   }
   for (const id of [...peerState.keys()]) if (!seen.has(id)) { peerState.delete(id); if (rope && rope.kind === 'peer' && rope.ref === id) detach(); }
   if (myPeerId) for (const s of peerState.values()) { const kk = s.raw && s.raw.kk; if (Array.isArray(kk) && kk.slice(0, 20).includes(myPeerId)) { gotKicked(); return; } }
+  readGifts();
   const k = 1 - Math.pow(1e-6, dt);
   const smooth = (o, tx, ty) => {
     if (Math.hypot(tx - o.rx, ty - o.ry) > 500) { o.rx = tx; o.ry = ty; } else { o.rx += (tx - o.rx) * k; o.ry += (ty - o.ry) * k; }
@@ -1789,6 +1839,7 @@ function sendPresence(dt) {
   if (teamKind === 'pvp') pvpPresence(pr);
   const kk = admKicks();
   if (kk.length) pr.kk = kk;
+  if (save.adm && giftsOut.length) { const ag = giftsPresence(); if (ag.length) pr.ag = ag; }
   team.presence(pr).catch(() => {});
 }
 
@@ -1888,7 +1939,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-chess', 'scr-settings'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-chess', 'scr-settings', 'scr-mhelp'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -1902,6 +1953,7 @@ function refreshMenu() {
   $('s-wins').textContent = String(save.raceWins);
   $('m-tokens').textContent = String(save.tokens);
   if (achRefresh) achRefresh();
+  if (typeof refreshLast === 'function' && $('m-last')) try { refreshLast(); } catch (e) {}
 }
 function refreshCoopScreen() {
   const msg = $('coop-msg'), ui = $('coop-ui');
@@ -1940,6 +1992,7 @@ function beginRun(cp, countRun) {
   $('h-zone').textContent = zoneName;
   if (mode !== 'race') banner(mode === 'coop' ? 'Co-op Climb' : 'Climb', zoneName, SECTIONS[runTopSec][1]);
   canvas.focus();
+  firstHelp();
 }
 function showSummit(t) {
   state = 'over';
@@ -2106,7 +2159,7 @@ $('b-cp').addEventListener('click', () => { if (mode === 'trial' && trial) { sta
 $('b-regroup').addEventListener('click', () => { let best = reachedCp; for (const s of peerState.values()) best = Math.max(best, s.cp); toCheckpoint(best); resume(); });
 $('b-quit').addEventListener('click', toMenu);
 $('b-help').addEventListener('click', () => { helpReturn = 'scr-menu'; show('scr-help'); });
-$('b-help2').addEventListener('click', () => { helpReturn = 'scr-pause'; show('scr-help'); });
+
 $('b-help-back').addEventListener('click', () => show(helpReturn));
 
 // ---------- gacha ----------
@@ -3143,7 +3196,7 @@ function buildWorld() {
   const vb = surf[140];
   { fill(134, vb + 8, 14, 9, TMETAL); fill(135, vb + 9, 10, 6, TAIR);
     fill(145, vb + 12, 22, 3, TAIR); fill(164, vb, 3, 15, TAIR);
-    vault = { x: 145 * TS, y: (vb + 12) * TS, w: TS, h: 3 * TS };
+    vault = { x: 145 * TS, y: (vb + 12) * TS, w: TS, h: 3 * TS, room: { x0: 134 * TS, y0: (vb + 8) * TS, x1: 146 * TS, y1: (vb + 17) * TS } };
     treasure = { x: 139 * TS + TS / 2, y: (vb + 15) * TS - 16 }; }
 
   // forest trees: trunks are scenery, canopies can be hooked
@@ -3425,7 +3478,13 @@ function stepWorld(dt) {
   if (!Number.isFinite(P.x) || !Number.isFinite(P.y) || !Number.isFinite(P.vx) || !Number.isFinite(P.vy)) { toCampfire(); return; }
   worldPickups();
 }
+function inSealedVault(x, y) {
+  const v = mode === 'world' && hw && hw.vault;
+  if (!v || !v.room || vaultOpen()) return false;
+  return x > v.room.x0 && x < v.room.x1 && y > v.room.y0 && y < v.room.y1;
+}
 function worldPickups() {
+  if (inSealedVault(P.x, P.y) && !ADM.fly) { toCampfire(); banner('The Vault is sealed', 'Back to camp', 'Find all the abilities and the Vault will open by itself.'); return; }
   const h = hs();
   for (const s of hw.shrines) if (!h.ab.includes(s.id) && Math.hypot(P.x - s.x, P.y - s.y) < 46) gainAbility(s.id);
   for (const c of hw.chests) if (!h.ch.includes(c.id) && Math.hypot(P.x - c.x, P.y - c.y) < 42) {
@@ -3486,6 +3545,7 @@ function useAbility(i) {
       let ok = false;
       for (let k = 0; reach - k * 20 >= 30; k++) {
         const tx = P.x + ux * (reach - k * 20), ty = P.y + uy * (reach - k * 20);
+        if (inSealedVault(tx, ty)) continue; // can't blink into the Vault before it opens
         if (circleFree(tx, ty, curR() + 1)) { burst(P.x, P.y, A.c, 12, 180); detach(); P.x = tx; P.y = ty; P.vx *= 0.3; P.vy *= 0.3; P.hist.length = 0; burst(tx, ty, A.c, 16, 200); ok = true; break; }
       }
       if (!ok) { toast('No room to blink there.'); return; }
@@ -3636,6 +3696,7 @@ function startWorld() {
   buildSlots();
   banner('Hookworld', wRegion, hs().ab.length ? 'Welcome back.' : 'Explore. Abilities are hidden in hard-to-reach places.');
   canvas.focus();
+  firstHelp();
 }
 function openLoadout() { state = 'paused'; for (const k in keys) keys[k] = false; detach(); renderLoadout(); show('scr-loadout'); }
 function openMap() {
@@ -4583,6 +4644,7 @@ function startPvp(pm, online) {
   $('wbanner').dataset.cd = '';
   buildSlots(); lastHP = -1; wHP = P_HP;
   canvas.focus();
+  firstHelp();
 }
 function startPvpOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: [] }, false); }
 function hostStartPvp() {
@@ -6284,14 +6346,135 @@ $('b-settings').addEventListener('click', () => openSettings('scr-menu'));
 $('b-settings2').addEventListener('click', () => openSettings('scr-pause'));
 $('mute-pill').addEventListener('click', (e) => { audioInit(); toggleMute(); e.currentTarget.blur(); canvas.focus(); });
 // key names shown on screen follow your bindings
-const HINT_TOKENS = { Space: 'hook', W: 'up', S: 'down', A: 'left', D: 'right', E: 'attack', Q: 'special', M: 'map', Tab: 'equip', R: 'reset', N: 'mute' };
+const HINT_TOKENS = { Space: 'hook', W: 'up', S: 'down', A: 'left', D: 'right', E: 'attack', Q: 'special', M: 'map', Tab: 'equip', R: 'reset', N: 'mute', H: 'help' };
 function refreshKeyHints() {
-  for (const el of document.querySelectorAll('.hint b, kbd, #scr-chess .note b, #scr-help b')) {
+  for (const el of document.querySelectorAll('.hint b, kbd, #scr-chess .note b, #scr-help b, #scr-mhelp .head-row b')) {
     if (el.dataset.k == null) { if (!/^(Hold )?(Space|Tab|[A-Z])( \/ (Space|Tab|[A-Z]))*$/.test(el.textContent)) continue; el.dataset.k = el.textContent; }
     el.textContent = el.dataset.k.replace(/\b(Space|Tab|[A-Z])\b/g, (t) => HINT_TOKENS[t] ? keyLabel(keyOf(HINT_TOKENS[t])) : t);
   }
 }
 refreshKeyHints();
+
+// =================================================================
+// ---------- How to play (H), menu helpers and save codes ----------
+// =================================================================
+function helpKey() {
+  if (mode === 'pvp' && pvp) return pvp.chess ? 'chess' : pvp.ctf ? 'ctf' : pvp.tag ? 'tag' : 'pvp';
+  if (mode === 'world' || mode === 'trial' || mode === 'race' || mode === 'coop') return mode;
+  return 'climb';
+}
+function modeHelp(k) {
+  const K = (a) => keyLabel(keyOf(a)), sw = K('left') + ' / ' + K('right'), move = [
+    [K('hook'), 'Hold to fire your hook at what you aim at; let go to release'], ['Mouse', 'Aim'],
+    [K('up'), 'Reel in, or jump when standing'], [K('down'), 'Let rope out'], [sw, 'Swing, or walk on the ground'],
+  ];
+  const abil = [['1–5', 'Use your Hookworld abilities'], [K('equip'), 'Choose which abilities are on 1–5']];
+  const H = {
+    climb: { t: 'Climb', g: 'Swing up the 780 m tower. Pass up through a checkpoint floor every 60 m to save your spot. Reach the summit for 100 tokens.',
+      k: [...move, [K('reset'), 'Back to your last checkpoint'], ['Esc', 'Pause']],
+      tips: ['Every new 10 m on a climb gives you a token, and coins on the way give one each.', 'From 120 m on, each checkpoint adds a new hazard: spikes, saws, wind, lasers and more.', 'Steel blocks can\'t be hooked. Stone ledges and rings can.'] },
+    coop: { t: 'Co-op Climb', g: 'Climb the tower together. You can hook onto your teammates and pull each other up.',
+      k: [...move, [K('reset'), 'Back to your last checkpoint'], ['Esc', 'Pause (the game keeps going for others)']],
+      tips: ['Pause → Regroup takes you to the highest checkpoint anyone on your team has reached.'] },
+    race: { t: 'Race', g: 'Beat the bots and your friends: be first to the goal height, or highest when the clock runs out.',
+      k: [...move, [K('reset'), 'Back to your last checkpoint'], ['Esc', 'Pause (the race clock keeps running)']],
+      tips: ['Checkpoints work like in Climb, so falling only costs you time.'] },
+    world: { t: 'Hookworld', g: 'Explore an open world. Find the 12 hidden abilities, open chests, light campfires and uncover the map.',
+      k: [...move, ...abil, [K('map'), 'Map'], [K('reset'), 'Back to your campfire'], ['Esc', 'Pause']],
+      tips: ['Drones, turrets and watchtowers shoot at you. Five hits sends you back to the last campfire you lit.', 'Abilities are hidden in hard-to-reach places. Some need other abilities to get to.', 'Find all 12 and the Vault opens.'] },
+    trial: { t: 'Time Trials', g: 'Reach the finish flag as fast as you can. Bronze, silver and gold times show at the start.',
+      k: [...move, [K('reset'), 'Restart the course'], ['Esc', 'Pause']],
+      tips: ['Spikes, saws and lasers send you back to the last checkpoint flag.', 'Medals give 2, 5 and 10 tokens. Every 2 gold medals unlock a skin.', 'Your best run shows as a ghost.'] },
+    pvp: { t: 'PvP', g: 'Knock everyone else out. The last player or team standing wins.',
+      k: [...move, [K('attack'), 'Shoot'], [K('up') + ' (hooked to a player)', 'Yank them toward you'], [K('special'), 'Use your ultimate when it\'s charged'], ...abil, [K('map'), 'Map'], ['Esc', 'Pause']],
+      tips: ['Your ultimate charges over time and faster when you hit people.', 'Each player has 5 hp per life. When you\'re out, ' + sw + ' changes who you watch.'] },
+    tag: { t: 'Hook Tag' + (pvp && pvp.tag ? ' · ' + TAGV[pvp.tag.v].n : ''), g: pvp && pvp.tag ? TAGV[pvp.tag.v].d : 'Whoever is IT tags people.',
+      k: [...move, [K('attack'), 'Fire a tag shot (only when you\'re IT)'], ...abil, [K('map'), 'Map'], ['Esc', 'Pause']],
+      tips: ['IT tags by touching someone or hitting them with a tag shot.', 'Newly tagged players freeze for a moment and can\'t tag straight back.', 'IT has a red ring and an IT label, and shows red on the map.'] },
+    ctf: { t: 'Capture the Flag', g: 'Touch the other team\'s flag to grab it, then bring it to your base while your own flag is home. First to 3 captures wins.',
+      k: [...move, [K('up') + ' (hooked to an enemy)', 'Yank them'], ...abil, [K('map'), 'Map'], ['Esc', 'Pause']],
+      tips: ['Stop a carrier on your side of the map by touching them or yanking them. Past the middle, they\'re safe.', 'Touch your own dropped flag to send it home. Otherwise it goes home after 20 seconds.', 'You can only score while your own flag is at your base.'] },
+    chess: { t: 'Kingfall', g: 'A real-time chess battle. Play any of your 8 pieces while the rest follow your orders. Take the enemy King to win.',
+      k: [...move, [K('attack'), 'Attack (each piece has its own)'], [K('special'), 'Piece move · as the King, revive a piece'], ['1–8 / ' + K('equip'), 'Switch piece'], ['O', 'Order everyone'], ['Z X C V T R', 'Attack · Guard · Follow · Hold · Go to spot · Attack the King'], [K('map'), 'Map'], ['Esc', 'Pause']],
+      tips: ['Click a piece\'s order in the list on the left to change just that piece.', 'Every 30 seconds your King can bring back a taken piece. If you aren\'t playing it, it does that on its own.', 'Knights leap, Bishops dash diagonally, Rooks charge, and the Queen dashes any way.'] },
+  };
+  return H[k] || H.climb;
+}
+let helpBack = null;
+function openModeHelp(fromPause) {
+  const h = modeHelp(helpKey());
+  if (state === 'play') { state = 'paused'; for (const k in keys) keys[k] = false; detach(); }
+  helpBack = fromPause ? 'scr-pause' : null;
+  $('mh-title').textContent = h.t;
+  $('mh-goal').textContent = h.g;
+  const kg = $('mh-keys'); kg.textContent = '';
+  for (const [k, d] of h.k) { const a = document.createElement('span'); a.className = 'k'; a.textContent = k; const b = document.createElement('span'); b.textContent = d; kg.append(a, b); }
+  const tl = $('mh-tips'); tl.textContent = '';
+  for (const t of h.tips) { const li = document.createElement('li'); li.textContent = t; tl.append(li); }
+  refreshKeyHints();
+  show('scr-mhelp');
+}
+function firstHelp() {
+  // the first time you play each mode, show how it works
+  const k = helpKey();
+  if (!save.seen || typeof save.seen !== 'object') save.seen = {};
+  if (save.seen[k]) return;
+  save.seen[k] = 1; writeSave();
+  setTimeout(() => { if (state === 'play' && helpKey() === k) openModeHelp(); }, 400);
+}
+$('b-mh-close').addEventListener('click', () => { if (helpBack === 'scr-pause') { helpBack = null; show('scr-pause'); } else resume(); });
+$('b-help2').addEventListener('click', () => openModeHelp(true), { capture: true });
+
+// ----- menu: play-again shortcut and Esc to go back -----
+function refreshLast() {
+  const b = $('m-last'), src = save.last && document.getElementById(save.last);
+  b.hidden = !src || src.disabled;
+  if (src) b.textContent = '▶  Play ' + src.querySelector('b').textContent + ' again';
+}
+document.querySelectorAll('#scr-menu .mode').forEach((el) => el.addEventListener('click', () => { if (/^m-(solo|coop|race|world|trial|pvp|tag|ctf|chess)$/.test(el.id)) { save.last = el.id; saveDirty = true; } }));
+$('m-last').addEventListener('click', () => { const src = save.last && document.getElementById(save.last); if (src) src.click(); });
+refreshLast();
+const BACKS = ['b-back-coop', 'b-back-start', 'b-back-race', 'b-lobby-leave', 'b-res-menu', 'b-sum-menu', 'b-set-back', 'g-back', 'l-back', 'b-w-back', 'b-p-back', 'b-g-back', 'b-c-back', 'b-k-back', 'b-p-leave', 'b-pr-menu', 'b-tr-back', 'b-ach-back', 'b-help-back', 'b-adm-back', 'b-trr-list'];
+function menuBack() {
+  const sec = document.getElementById(current);
+  const b = sec && BACKS.map(id => sec.querySelector('#' + id)).find(Boolean);
+  if (b) b.click();
+}
+
+// ----- save codes -----
+function saveCode() {
+  writeSave();
+  const data = JSON.parse(JSON.stringify(save));
+  delete data.adm; // admin access never travels in a save code
+  const json = JSON.stringify(data);
+  return 'HS1.' + btoa(unescape(encodeURIComponent(json))) + '.' + fnv(json).toString(36);
+}
+function readSaveCode(code) {
+  const m = /^HS1\.([A-Za-z0-9+/=]+)\.([a-z0-9]+)$/.exec(code.replace(/\s+/g, ''));
+  if (!m) return null;
+  try {
+    const json = decodeURIComponent(escape(atob(m[1])));
+    if (fnv(json).toString(36) !== m[2]) return null;
+    const o = JSON.parse(json);
+    return o && typeof o === 'object' && !Array.isArray(o) ? o : null;
+  } catch (e) { return null; }
+}
+let loadArm = 0;
+$('b-save-copy').addEventListener('click', () => {
+  const code = saveCode(), box = $('save-code'), msg = $('save-msg');
+  box.value = code;
+  const fallback = () => { box.focus(); box.select(); msg.textContent = 'Press Ctrl+C to copy it.'; };
+  try { navigator.clipboard.writeText(code).then(() => { msg.textContent = 'Copied. Paste it into Settings → Progress on the other device or link.'; }, fallback); } catch (e) { fallback(); }
+});
+$('b-save-load').addEventListener('click', () => {
+  const o = readSaveCode($('save-code').value), msg = $('save-msg'), btn = $('b-save-load');
+  if (!o) { msg.textContent = 'That isn\'t a valid save code. Copy the whole thing, from HS1. to the end.'; return; }
+  if (Date.now() > loadArm) { loadArm = Date.now() + 6000; btn.textContent = 'Click again to replace your progress'; msg.textContent = 'This replaces everything saved on this device.'; setTimeout(() => { if (Date.now() > loadArm) btn.textContent = 'Load save code'; }, 6100); return; }
+  o.adm = save.adm; // keep this device's admin access as it is
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(o)); } catch (e) { msg.textContent = 'This browser won\'t let the game save, so the code can\'t be loaded here.'; return; }
+  msg.textContent = 'Loaded. Restarting the game…';
+  setTimeout(() => location.reload(), 500);
+});
 
 // =================================================================
 // ---------- Achievements and skins ----------
@@ -6632,6 +6815,7 @@ function startTrial(n) {
   $('t-hint').hidden = false; $('t-timer').hidden = false; $('w-hp').hidden = true; $('w-slots').hidden = true;
   banner('Time Trial ' + n, TRIAL_NAMES[n - 1], 'Gold ' + fmtTime(c.gold) + ' · Silver ' + fmtTime(c.silver) + ' · Bronze ' + fmtTime(c.bronze));
   canvas.focus();
+  firstHelp();
 }
 function trialDie() {
   sfx('hurt');
@@ -6968,9 +7152,71 @@ function renderAdmRoom() {
     const row = document.createElement('div'); row.className = 'team-row'; row.style.justifyContent = 'flex-start';
     const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = s.c;
     const nm = document.createElement('span'); nm.textContent = s.n;
-    row.append(dot, nm); addKick(row, s.id); el.append(row);
+    row.append(dot, nm); addKick(row, s.id);
+    const g = document.createElement('button'); g.type = 'button'; g.className = 'kick'; g.style.marginLeft = '6px'; g.style.color = '#bdf5e4'; g.style.borderColor = 'rgba(94,230,193,.6)'; g.style.background = 'rgba(94,230,193,.12)'; g.textContent = 'Give';
+    g.addEventListener('pointerdown', (e) => { e.preventDefault(); openGive(s.id); });
+    row.append(g); el.append(row);
   }
 }
+// ----- gifts: sent in your presence; the other player's game applies them -----
+let giveTo = null;
+const giftsOut = [];
+function openGive(id) {
+  giveTo = id;
+  const s = peerState.get(id);
+  $('adm-give-title').textContent = 'Give to ' + (s ? s.n : 'player');
+  $('ag-msg').textContent = '';
+  const fill = (sel, opts) => { const el = $(sel); if (el.options.length) return; for (const [v, t] of opts) { const o = document.createElement('option'); o.value = v; o.textContent = t; el.append(o); } };
+  fill('ag-item', ITEMS.filter(i => !i.sk).map(i => [i.id, CATS.find(c => c.id === i.cat).one + ': ' + i.n + ' (' + RAR[i.r].n + ')']));
+  fill('ag-skin', SKINS.map(k => [k.id, k.n + ' skin']));
+  fill('ag-ab', ABIL_IDS.map(a => [a, ABIL[a].n]));
+  $('adm-give').hidden = false;
+}
+function sendGift(kind, value, label) {
+  if (!save.adm || !team || !giveTo) return;
+  const s = peerState.get(giveTo);
+  if (!s) { $('ag-msg').textContent = 'That player left the room.'; return; }
+  giftsOut.push([Date.now().toString(36) + Math.random().toString(36).slice(2, 6), giveTo, kind, value, Date.now()]);
+  presenceClock = 0;
+  $('ag-msg').textContent = 'Sent ' + label + ' to ' + s.n + '.';
+}
+function giftsPresence() {
+  const now = Date.now();
+  while (giftsOut.length && now - giftsOut[0][4] > 30000) giftsOut.shift();
+  return giftsOut.slice(-10).map(g => g.slice(0, 4));
+}
+const giftsDone = new Set((() => { try { return JSON.parse(localStorage.getItem('hookspire.gifts') || '[]'); } catch (e) { return []; } })());
+function readGifts() {
+  if (!myPeerId) return;
+  for (const s of peerState.values()) {
+    const ag = s.raw && s.raw.ag;
+    if (!Array.isArray(ag)) continue;
+    for (const g of ag.slice(-10)) {
+      if (!Array.isArray(g) || typeof g[0] !== 'string' || g[1] !== myPeerId || giftsDone.has(g[0])) continue;
+      giftsDone.add(g[0]);
+      try { localStorage.setItem('hookspire.gifts', JSON.stringify([...giftsDone].slice(-60))); } catch (e) {}
+      const what = applyGift(g[2], g[3]);
+      if (what) { notice(s.n + ' (admin) gave you ' + what + '!'); sfx('rare'); }
+    }
+  }
+}
+function applyGift(kind, v) {
+  const h = hs();
+  if (kind === 'tok') { const n = clampInt(v, 1, 1000000); save.tokens += n; achStat('earned', n); writeSave(); refreshMenu(); return n + ' tokens'; }
+  if (kind === 'item' && typeof v === 'string' && ITEM[v] && !ITEM[v].sk) { save.owned[v] = (save.owned[v] || 0) + 1; writeSave(); return ITEM[v].n; }
+  if (kind === 'items') { for (const it of ITEMS) if (!it.adm) save.owned[it.id] = Math.max(1, save.owned[it.id] || 0); writeSave(); return 'every item and skin'; }
+  if (kind === 'skin' && typeof v === 'string' && SKIN_BY[v]) { for (const id of Object.values(skinEq(v))) save.owned[id] = Math.max(1, save.owned[id] || 0); writeSave(); return 'the ' + SKIN_BY[v].n + ' skin'; }
+  if (kind === 'ab' && ABIL[v]) { if (h.ab.includes(v)) return null; h.ab.push(v); const e = h.slots.indexOf(null); if (e >= 0) h.slots[e] = v; writeSave(); if (mode === 'world' && state !== 'menu') buildSlots(); return 'the ' + ABIL[v].n + ' ability'; }
+  if (kind === 'aball') { for (const a of ABIL_IDS) if (!h.ab.includes(a)) { h.ab.push(a); const e = h.slots.indexOf(null); if (e >= 0) h.slots[e] = a; } writeSave(); if (mode === 'world' && state !== 'menu') buildSlots(); return 'every ability'; }
+  return null;
+}
+$('b-ag-tok').addEventListener('click', () => { const n = clampInt($('ag-tok').value, 1, 1000000); sendGift('tok', n, n + ' tokens'); });
+$('b-ag-item').addEventListener('click', () => { const id = $('ag-item').value; if (ITEM[id]) sendGift('item', id, ITEM[id].n); });
+$('b-ag-items').addEventListener('click', () => sendGift('items', 1, 'every item and skin'));
+$('b-ag-skin').addEventListener('click', () => { const id = $('ag-skin').value; if (SKIN_BY[id]) sendGift('skin', id, 'the ' + SKIN_BY[id].n + ' skin'); });
+$('b-ag-ab').addEventListener('click', () => { const id = $('ag-ab').value; if (ABIL[id]) sendGift('ab', id, ABIL[id].n); });
+$('b-ag-aball').addEventListener('click', () => sendGift('aball', 1, 'every ability'));
+$('b-ag-close').addEventListener('click', () => { giveTo = null; $('adm-give').hidden = true; });
 function admTick(dt) {
   if (current !== 'scr-admin' || !save.adm) return;
   admRoomT -= dt;
@@ -6984,7 +7230,7 @@ $('m-logo').addEventListener('click', () => {
 });
 $('b-adm-unlock').addEventListener('click', admUnlock);
 $('adm-pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') admUnlock(); });
-$('b-adm-back').addEventListener('click', () => { if (admReturn === 'scr-pause' && state === 'paused') show('scr-pause'); else if (state === 'play') { show(null); canvas.focus(); } else { refreshMenu(); show('scr-menu'); } });
+$('b-adm-back').addEventListener('click', () => { giveTo = null; $('adm-give').hidden = true; if (admReturn === 'scr-pause' && state === 'paused') show('scr-pause'); else if (state === 'play') { show(null); canvas.focus(); } else { refreshMenu(); show('scr-menu'); } });
 $('b-adm-lockbtn').addEventListener('click', () => { save.adm = false; ADM.god = ADM.fly = false; ADM.kicks.clear(); admBadge(); writeSave(); refreshMenu(); show('scr-menu'); });
 $('b-pause-adm').addEventListener('click', () => openAdmin('scr-pause'));
 $('b-adm-all').addEventListener('click', () => {
