@@ -91,6 +91,26 @@ button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
 .helpgrid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 14px; align-items: baseline; }
 .helpgrid kbd, .helpgrid .k { justify-self: end; font-family: var(--ui); font-weight: 700; font-size: 13px; padding: 3px 9px; border-radius: 7px; border: 1px solid var(--line); background: rgba(255,255,255,.07); white-space: nowrap; }
 .helptips { margin: 0; padding-left: 18px; color: var(--dim); display: grid; gap: 4px; line-height: 1.45; }
+/* touch controls */
+body.touch { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+body.touch #game { touch-action: none; }
+body.touch .hint { display: none; }
+#touch { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+#touch .tstick { position: absolute; left: calc(26px + env(safe-area-inset-left, 0px)); bottom: calc(26px + env(safe-area-inset-bottom, 0px)); width: 150px; height: 150px; border-radius: 50%; background: rgba(10,8,24,.35); border: 2px solid rgba(243,236,223,.25); pointer-events: auto; touch-action: none; }
+#touch .tknob { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; background: rgba(243,236,223,.35); border: 2px solid rgba(243,236,223,.6); pointer-events: none; }
+#touch .tpad { position: absolute; right: calc(20px + env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(2, auto); gap: 10px; justify-items: end; }
+#touch .tside { position: absolute; right: calc(14px + env(safe-area-inset-right, 0px)); top: 50%; transform: translateY(-50%); display: grid; gap: 8px; }
+#touch .tab { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; }
+#touch button { pointer-events: auto; touch-action: none; border-radius: 50%; border: 2px solid rgba(243,236,223,.4); background: rgba(10,8,24,.55); color: var(--ink); font: 700 13px var(--ui); display: grid; place-items: center; text-align: center; line-height: 1.05; padding: 4px; }
+#touch button.big { width: 76px; height: 76px; font-size: 14px; }
+#touch button.mid { width: 60px; height: 60px; }
+#touch button.sm { width: 46px; height: 46px; font-size: 16px; }
+#touch button.ab { width: 54px; height: 54px; border-radius: 14px; font-size: 11px; }
+#touch button.ab b { display: block; font-size: 15px; }
+#touch button.on { background: rgba(94,230,193,.35); border-color: var(--mint); }
+#touch .tturn { position: absolute; inset: auto 0 45% 0; text-align: center; font: 700 16px var(--ui); color: var(--ink); text-shadow: 0 2px 6px #000; }
+body.touch .mutepill { display: none; }
+@media (max-height: 460px) { #touch .tstick { width: 124px; height: 124px; } #touch button.big { width: 64px; height: 64px; } #touch button.ab { width: 46px; height: 46px; } }
 textarea.savebox { font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--ink); background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; resize: vertical; min-height: 70px; word-break: break-all; }
 .stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0; }
 .stats div { display: grid; gap: 2px; }
@@ -327,7 +347,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <div><dt>Achievements</dt><dd id="s-ach">0/30</dd></div>
     </dl>
     <div class="links"><button class="link" id="b-help">Controls and tower guide</button><button class="link" id="b-settings">Settings</button></div>
-    <p class="note">Progress, tokens and items save in this browser on this device. Needs a keyboard and mouse.</p>
+    <p class="note">Progress, tokens and items save in this browser on this device. Play with a keyboard and mouse, or with touch on a phone or tablet held sideways.</p>
   </section>
 
   <section class="panel" id="scr-coop" hidden>
@@ -473,6 +493,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <div class="setgrid">
         <span>Screen shake</span><div class="seg" id="set-shake"></div>
         <span>Particles and trails</span><div class="seg" id="set-fx"></div>
+        <span>Touch controls</span><div class="seg" id="set-touch"></div>
       </div>
     </div>
     <div class="adm-sec">
@@ -813,6 +834,13 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   </section>
 </div>
 
+<div id="touch" hidden>
+  <div class="tstick" id="t-stick" aria-label="Movement stick"><div class="tknob" id="t-knob"></div></div>
+  <div class="tab" id="t-abil"></div>
+  <div class="tside" id="t-side"></div>
+  <div class="tpad" id="t-pad"></div>
+  <div class="tturn" id="t-turn" hidden>Turn your phone sideways to play</div>
+</div>
 <div class="adm-badge" id="adm-badge" hidden></div>
 <button class="mutepill" id="mute-pill" type="button" aria-label="Mute sound" title="Mute (N)">🔊</button>
 <div class="notice" id="notice" hidden role="status" aria-live="polite"></div>
@@ -1068,6 +1096,7 @@ const SET = Object.assign({ sfx: 0.7, music: 0.4, mute: false, shake: 1, fx: 1, 
 SET.sfx = clamp(Number(SET.sfx) || 0, 0, 1); SET.music = clamp(Number(SET.music) || 0, 0, 1); SET.mute = SET.mute === true;
 if (![0, 0.4, 1].includes(SET.shake)) SET.shake = 1;
 if (![0, 0.4, 1].includes(SET.fx)) SET.fx = 1;
+if (!['auto', 'on', 'off'].includes(SET.touch)) SET.touch = 'auto';
 if (!SET.keys || typeof SET.keys !== 'object') SET.keys = {};
 for (const k of Object.keys(SET.keys)) if (!BIND_ACTIONS.some(a => a[0] === k) || typeof SET.keys[k] !== 'string' || !/^[A-Za-z0-9]{1,20}$/.test(SET.keys[k])) delete SET.keys[k];
 save.set = SET;
@@ -1184,7 +1213,7 @@ function musicTick() {
   }
 }
 setInterval(musicTick, 60);
-function toggleMute() { SET.mute = !SET.mute; audioLevels(); writeSave(); }
+function toggleMute() { SET.mute = !SET.mute; audioLevels(); writeSave(); if (typeof touchMode !== 'undefined') touchMode = ''; }
 
 // ---------- tower generation ----------
 const chunks = new Map();
@@ -1358,8 +1387,21 @@ addEventListener('keydown', (e0) => {
 });
 addEventListener('keyup', (e) => { keys[vcode(e.code)] = false; keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (state === 'play') pause(); });
-canvas.addEventListener('pointermove', (e) => { mouse.sx = e.clientX; mouse.sy = e.clientY; mouse.inside = true; });
-canvas.addEventListener('pointerleave', () => { mouse.inside = false; });
+canvas.addEventListener('pointermove', (e) => { if (e.pointerType === 'touch' && e.pointerId !== aimTouch) return; mouse.sx = e.clientX; mouse.sy = e.clientY; mouse.inside = true; if (e.pointerType === 'touch' && !rope) snapAim(); });
+canvas.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') mouse.inside = false; });
+// touch: hold a finger on the game to aim there and fire the hook; lift it to let go
+let aimTouch = null;
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'touch') return;
+  touchSeen();
+  if (mode === 'pvp' && pvp && pvp.chess && pvp.chess.picking) return; // picking a spot in Kingfall
+  aimTouch = e.pointerId; mouse.sx = e.clientX; mouse.sy = e.clientY; mouse.inside = true; snapAim();
+  try { canvas.setPointerCapture(e.pointerId); } catch (er) {}
+  fireKey(keyOf('hook'), true);
+});
+const aimEnd = (e) => { if (e.pointerId !== aimTouch) return; aimTouch = null; fireKey(keyOf('hook'), false); mouse.inside = false; };
+canvas.addEventListener('pointerup', aimEnd); canvas.addEventListener('pointercancel', aimEnd);
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 canvas.addEventListener('pointerdown', (e) => {
   canvas.focus();
   if (mode === 'pvp' && pvp && pvp.chess) {
@@ -6315,6 +6357,7 @@ function renderSettings() {
   seg('set-mute', [[false, 'Sound on'], [true, 'Muted']], () => SET.mute, (v) => { SET.mute = v; audioLevels(); });
   seg('set-shake', [[1, 'Full'], [0.4, 'Low'], [0, 'Off']], () => SET.shake, (v) => { SET.shake = v; });
   seg('set-fx', [[1, 'Full'], [0.4, 'Low'], [0, 'Off']], () => SET.fx, (v) => { SET.fx = v; });
+  seg('set-touch', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']], () => SET.touch, (v) => { SET.touch = v; touchRefresh(); });
   const kg = $('set-keys'); kg.textContent = '';
   for (const [act, def, label] of BIND_ACTIONS) {
     const l = document.createElement('span'); l.textContent = label;
@@ -6475,6 +6518,110 @@ $('b-save-load').addEventListener('click', () => {
   msg.textContent = 'Loaded. Restarting the game…';
   setTimeout(() => location.reload(), 500);
 });
+
+// =================================================================
+// ---------- Touch controls ----------
+// =================================================================
+let touchUsed = false, touchMode = '';
+const coarse = matchMedia('(pointer: coarse)').matches;
+function touchOn() { return SET.touch === 'on' || (SET.touch === 'auto' && (coarse || touchUsed)); }
+function touchSeen() { if (!touchUsed) { touchUsed = true; touchRefresh(); } }
+addEventListener('touchstart', touchSeen, { passive: true, capture: true });
+function snapAim() {
+  // touch aim assist: snap to the nearest ring within a thumb's width of your finger
+  const R2 = 70, tower = !(mode === 'world' || mode === 'pvp' || mode === 'trial') || !hw;
+  let best = null, bd = R2;
+  const consider = (x, y, toScreen) => {
+    if (Math.hypot(x - P.x, y - P.y) > (tower ? RANGE : curRange()) * 0.97) return;
+    const [sx, sy] = toScreen(x, y), d = Math.hypot(sx - mouse.sx, sy - mouse.sy);
+    if (d < bd) { bd = d; best = [sx, sy]; }
+  };
+  if (tower) { const camX = (W - viewW()) / 2, f = (x, y) => [(x - camX) * scale, (y - camY) * scale]; for (const c of nearChunks()) for (const a of c.anchors) { if (a.broken > gt) continue; const q = anchorPos(a, st); consider(q.x, q.y, f); } }
+  else { const sc = wScale(), f = (x, y) => [(x - wcamX) * sc, (y - wcamY) * sc]; for (const rg of hw.rings) consider(rg.x, rg.y, f); }
+  if (best) { mouse.sx = best[0]; mouse.sy = best[1]; }
+}
+function fireKey(code, down) {
+  // touch buttons press the same keys the keyboard would, so every mode works the same way
+  dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code, bubbles: true }));
+}
+function touchRefresh() {
+  const on = touchOn();
+  document.body.classList.toggle('touch', on);
+  if (!on) $('touch').hidden = true;
+  touchMode = '';
+}
+// the stick: left/right swing or walk, up reels in / jumps / yanks, down lets rope out
+const stick = { id: null, dirs: {} };
+function stickSet(dir, down) {
+  if (!!stick.dirs[dir] === down) return;
+  stick.dirs[dir] = down;
+  fireKey(keyOf(dir), down);
+}
+function stickMove(e) {
+  const r = $('t-stick').getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, R = r.width / 2;
+  let dx = (e.clientX - cx) / R, dy = (e.clientY - cy) / R;
+  const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; }
+  $('t-knob').style.transform = 'translate(' + (dx * R * 0.6) + 'px,' + (dy * R * 0.6) + 'px)';
+  stickSet('left', dx < -0.35); stickSet('right', dx > 0.35);
+  stickSet('up', dy < -0.5); stickSet('down', dy > 0.55);
+}
+function stickEnd() { stick.id = null; $('t-knob').style.transform = ''; for (const d of ['left', 'right', 'up', 'down']) stickSet(d, false); }
+$('t-stick').addEventListener('pointerdown', (e) => { e.preventDefault(); touchSeen(); stick.id = e.pointerId; try { $('t-stick').setPointerCapture(e.pointerId); } catch (er) {} stickMove(e); });
+$('t-stick').addEventListener('pointermove', (e) => { if (e.pointerId === stick.id) stickMove(e); });
+$('t-stick').addEventListener('pointerup', (e) => { if (e.pointerId === stick.id) stickEnd(); });
+$('t-stick').addEventListener('pointercancel', (e) => { if (e.pointerId === stick.id) stickEnd(); });
+function tbtn(parent, cls, html, code, opts) {
+  opts = opts || {};
+  const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.innerHTML = html;
+  let held = false;
+  const up = () => { if (!held) return; held = false; b.classList.remove('on'); if (!opts.tap) fireKey(code, false); };
+  b.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); e.stopPropagation(); touchSeen();
+    if (opts.fn) { opts.fn(); return; }
+    held = true; b.classList.add('on'); fireKey(code, true);
+    if (opts.tap) { fireKey(code, false); setTimeout(() => b.classList.remove('on'), 120); held = false; }
+  });
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
+  parent.append(b);
+  return b;
+}
+function touchLayout() {
+  // which buttons this mode needs
+  const pad = $('t-pad'), side = $('t-side'), abl = $('t-abil');
+  pad.textContent = ''; side.textContent = ''; abl.textContent = '';
+  const pv = mode === 'pvp' && pvp, kf = pv && pvp.chess, ctf = pv && pvp.ctf, tag = pv && pvp.tag;
+  if (kf) {
+    tbtn(pad, 'big', 'Move', keyOf('special'), { tap: true });
+    tbtn(pad, 'big', 'Attack', keyOf('attack'));
+    tbtn(pad, 'mid', 'Next<br>piece', keyOf('equip'), { tap: true });
+    tbtn(pad, 'mid', 'Orders', 'KeyO', { tap: true });
+  } else if (pv && !ctf) {
+    if (!tag) tbtn(pad, 'big', 'Ult', keyOf('special'), { tap: true });
+    tbtn(pad, 'big', tag ? 'Tag<br>shot' : 'Shoot', keyOf('attack'));
+  }
+  if (mode === 'world' || (pv && !kf)) {
+    const h = hs();
+    for (let i = 0; i < 5; i++) { const id = h.slots[i]; const b = tbtn(abl, 'ab', '<b>' + (i + 1) + '</b>' + (id ? ABIL[id].n.split(' ')[0] : '—'), 'Digit' + (i + 1), { tap: true }); if (!id) b.style.opacity = '.4'; }
+  }
+  if (mode === 'world') tbtn(side, 'sm', '⚙', keyOf('equip'), { tap: true }).title = 'Equip';
+  if (mode === 'world' || pv) tbtn(side, 'sm', '🗺', keyOf('map'), { tap: true }).title = 'Map';
+  if (mode === 'world' || mode === 'trial' || mode === 'solo' || mode === 'coop' || (mode === 'race' && !raceCountdown())) tbtn(side, 'sm', mode === 'world' ? '🔥' : '↺', keyOf('reset'), { tap: true }).title = mode === 'world' ? 'Campfire' : mode === 'trial' ? 'Restart' : 'Checkpoint';
+  tbtn(side, 'sm', SET.mute ? '🔇' : '🔊', keyOf('mute'), { tap: true }).title = 'Mute';
+  tbtn(side, 'sm', '?', keyOf('help'), { tap: true }).title = 'How to play';
+  tbtn(side, 'sm', 'II', 'Escape', { tap: true }).title = 'Pause';
+}
+let touchT = 0;
+function touchTick(dt) {
+  if (!touchOn()) return;
+  const show = state === 'play' && !(mode === 'pvp' && pvp && pvp.over);
+  $('touch').hidden = !show;
+  if (!show) { if (stick.id != null) stickEnd(); touchMode = ''; return; }
+  // rebuild the buttons when the mode or ability slots change
+  const key = mode + '|' + (pvp ? (pvp.chess ? 'k' : pvp.ctf ? 'c' : pvp.tag ? 't' : 'p') : '') + '|' + (mode === 'world' || mode === 'pvp' ? hs().slots.join(',') : '');
+  if (key !== touchMode) { touchMode = key; touchLayout(); }
+  $('t-turn').hidden = innerWidth >= innerHeight;
+}
+touchRefresh();
 
 // =================================================================
 // ---------- Achievements and skins ----------
@@ -7263,6 +7410,7 @@ function frame(ts) {
   const dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
   st = sharedTime();
   achTick(dt);
+  touchTick(dt);
   admTick(dt);
   syncPeers(dt);
   if ((mode === 'world' || mode === 'pvp' || mode === 'trial') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
