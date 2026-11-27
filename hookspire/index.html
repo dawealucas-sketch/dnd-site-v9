@@ -628,6 +628,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <div class="seg small">
           <button type="button" id="b-adm-items">All items and skins</button>
           <button type="button" id="b-adm-skin">Admin skin (wear it)</button>
+          <button type="button" id="b-adm-unskin">Take off admin skin</button>
           <button type="button" id="b-adm-abil">All abilities + whole map</button>
           <button type="button" id="b-adm-medal">Gold on every Time Trial</button>
           <button type="button" id="b-adm-ach">All achievements + title</button>
@@ -5583,6 +5584,12 @@ $('b-adm-tadd').addEventListener('click', () => { save.tokens = Math.min(9999999
 $('b-adm-tset').addEventListener('click', () => { save.tokens = tokIn(); admDone('Tokens: ' + save.tokens); });
 $('b-adm-items').addEventListener('click', () => { giveItems(); admDone('You own every item and skin.'); });
 $('b-adm-skin').addEventListener('click', () => { giveAdminSkin(); admDone('You are wearing the admin skin.'); });
+$('b-adm-unskin').addEventListener('click', () => {
+  // unequip every admin piece; you keep the skin and can wear it again from the locker
+  let n = 0;
+  for (const c of CATS) if (save.eq[c.id] && ITEM[save.eq[c.id]] && ITEM[save.eq[c.id]].adm) { save.eq[c.id] = null; n++; }
+  admDone(n ? 'Admin skin taken off. Your name shows again. You still own it in the Skins tab.' : 'You weren\'t wearing any admin skin pieces.');
+});
 $('b-adm-abil').addEventListener('click', () => { giveWorld(); admDone('All abilities, campfires, the Vault and the whole map.'); });
 $('b-adm-medal').addEventListener('click', () => { giveMedals(); admDone('Gold on all 30 Time Trials, and all 15 skins.'); });
 $('b-adm-ach').addEventListener('click', () => { giveAch(); admDone('Every achievement, and the title ' + TITLE + '.'); });
