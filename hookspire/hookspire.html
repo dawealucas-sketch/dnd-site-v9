@@ -1056,7 +1056,7 @@ const PALETTES = [
   { id: 'astronaut', n: 'Astronaut', cols: ['#ffffff', '#9aa3b5', '#ff8a3d'], hat: 'bubble', hc: '#ff8a3d', rope: 'chain', trail: 'spark', aura: 'orbit', ac: '#ff8a3d' },
   { id: 'samurai', n: 'Samurai', cols: ['#ffd34d', '#8a1f2b', '#2a2540'], hat: 'horns', hc: '#ffd34d', rope: 'plain', trail: 'leaf', aura: 'ring' },
   { id: 'tidecaller', n: 'Tidecaller', cols: ['#e8fffb', '#5fe3d0', '#1fa3b5', '#14456b'], hat: 'coralcrown', hc: '#ff8a7a', rope: 'glow', rc: '#5fe3d0', trail: 'ring', aura: 'tide', ac: '#5fe3d0', glow: 12, story: 3 },
-  { id: 'frostbite', n: 'Frostbite', cols: ['#ffffff', '#bff3ff', '#7fd8ff', '#3a6ea5'], hat: 'icecrown', hc: '#e8fbff', rope: 'glow', rc: '#bff3ff', trail: 'flake', aura: 'frost', ac: '#bff3ff', glow: 12, story: 2 },
+  { id: 'frostbite', n: 'Frostbite', cols: ['#5fd8ff', '#1f4f8a', '#0b1e3f', '#2a6fb0'], hat: 'glacier', hc: '#5fd8ff', rope: 'grad', rc: '#5fd8ff', trail: 'icicle', aura: 'blizzard', ac: '#9fe8ff', glow: 14, story: 2 },
   { id: 'stormbreaker', n: 'Stormbreaker', cols: ['#fff6c9', '#ffe14a', '#38bdf8', '#1e3a8a'], hat: 'boltcrown', hc: '#ffe14a', rope: 'bolt', rc: '#fff6c9', trail: 'zap', aura: 'zap', ac: '#7fd8ff', glow: 16, story: 1 },
   { id: 'celestial', n: 'Celestial', cols: ['#ffffff', '#ffd34d', '#c79bff', '#5aa8ff'], hat: 'halo', hc: '#ffd34d', rope: 'grad', trail: 'galaxy', aura: 'rainbowring', glow: 16 },
 ];
@@ -1065,7 +1065,7 @@ const SKIN_ORDER = ['forest', 'ocean', 'candy', 'toxic', 'pirate', 'frost', 'lav
 const PAL_BY = Object.create(null);
 for (const s of PALETTES) PAL_BY[s.id] = s;
 const SKINS = SKIN_ORDER.map(id => PAL_BY[id]);
-const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon', boltcrown: 'Bolt Crown', icecrown: 'Ice Crown', coralcrown: 'Coral Crown' };
+const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon', boltcrown: 'Bolt Crown', icecrown: 'Ice Crown', coralcrown: 'Coral Crown', glacier: 'Glacier Crown' };
 const SKIN_BY = Object.create(null);
 for (const s of [...SKINS, PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller]) {
   SKIN_BY[s.id] = s;
@@ -1086,6 +1086,7 @@ const ADMIN_SKIN = { id: 'admin', n: 'Admin', cols: ['#ff1f3d', '#0b0b0f', '#ff1
   ITEMS.push(Object.assign({ cat: 'aura', id: 'k_admin_a', n: 'Glitch Aura', k: 'glitch', c: '#ff1f3d', cols }, base)); }
 const ITEM = Object.create(null);
 for (const it of ITEMS) ITEM[it.id] = it;
+ITEM.k_frostbite_c.fx = 'glacier'; ITEM.k_frostbite_t.cols = ['#bff3ff', '#5fd8ff', '#ffffff', '#9fe8ff']; ITEM.k_frostbite_c.n = 'Frostbite Glacier'; ITEM.k_frostbite_r.n = 'Frostbite Rime'; ITEM.k_frostbite_t.n = 'Frostbite Icicles'; ITEM.k_frostbite_a.n = 'Frostbite Blizzard';
 ITEM.k_stormbreaker_c.fx = 'zap'; ITEM.k_stormbreaker_c.n = 'Stormbreaker Charge'; ITEM.k_stormbreaker_r.n = 'Stormbreaker Bolt'; ITEM.k_stormbreaker_t.n = 'Stormbreaker Arc'; ITEM.k_stormbreaker_a.n = 'Stormbreaker Field';
 // glitch helpers: a hash of a number, and whether this instant is a glitch frame
 const ghash = (n) => { let t = Math.imul((n | 0) ^ 0x9e3779b9, 0x85ebca6b); t ^= t >>> 13; t = Math.imul(t, 0xc2b2ae35); t ^= t >>> 16; return (t >>> 0) / 4294967296; };
@@ -2727,6 +2728,12 @@ function bodyStyle(eq, base, xy) {
     it.cols.forEach((c, i) => g.addColorStop(i / (it.cols.length - 1), c));
     return { c: g, g: 14 + Math.sin(gt * 20) * 4, gc: '#38bdf8', flat: '#ffe14a' };
   }
+  if (it.fx === 'glacier') {
+    // deep glacier ice: dark navy with a bright cyan glint sliding through it
+    const g = ctx.createLinearGradient(-10, -17, 10, 16), p = (gt * 0.45) % 1.4 - 0.2;
+    g.addColorStop(0, '#0b1e3f'); g.addColorStop(Math.max(0, Math.min(1, p - 0.12)), '#1f4f8a'); g.addColorStop(Math.max(0, Math.min(1, p)), '#bff3ff'); g.addColorStop(Math.max(0, Math.min(1, p + 0.12)), '#1f4f8a'); g.addColorStop(1, '#0b1e3f');
+    return { c: g, g: 12 + Math.sin(gt * 2) * 3, gc: '#5fd8ff', flat: '#1f4f8a' };
+  }
   if (it.fx === 'glitch') {
     // snaps between black and red, with extra flips on glitch frames
     const red = (Math.floor(gt * 2.4) + (glitching(3) ? 1 : 0)) % 2 === 0;
@@ -2827,6 +2834,18 @@ function drawAura(x, y, id) {
       }
       ctx.globalAlpha = 0.7; ctx.strokeStyle = '#e8fffb'; ctx.lineWidth = 1.4;
       for (let k = 0; k < 4; k++) { const p = (t * 0.5 + k / 4) % 1; ctx.beginPath(); ctx.arc(Math.sin(k * 2.3 + t) * 22, 30 - p * 62, 2 + p * 1.5, 0, 6.283); ctx.stroke(); }
+      break;
+    }
+    case 'blizzard': {
+      // a cold haze with snow whipping around you in a spiral
+      const hz = ctx.createRadialGradient(0, 0, 8, 0, 0, 44); hz.addColorStop(0, 'rgba(31,79,138,0.35)'); hz.addColorStop(1, 'rgba(31,79,138,0)');
+      ctx.fillStyle = hz; ctx.beginPath(); ctx.arc(0, 0, 44, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = it.c; ctx.lineCap = 'round';
+      for (let k = 0; k < 10; k++) {
+        const a = t * 2.6 + k * 0.628, rr = 26 + ((k * 7) % 14) + Math.sin(t * 3 + k) * 3;
+        ctx.globalAlpha = 0.45 + (k % 3) * 0.18; ctx.lineWidth = 1.6 + (k % 2);
+        ctx.beginPath(); ctx.arc(0, 0, rr, a, a + 0.35); ctx.stroke();
+      }
       break;
     }
     case 'frost':
@@ -2965,6 +2984,16 @@ function drawHat(id, face) {
       ctx.fillStyle = '#f3f0ff'; ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8 + Math.sin(t * 3) * 3; ctx.beginPath(); ctx.arc(0, -18, 2.8, 0, 6.283); ctx.fill();
       break;
     }
+    case 'glacier': {
+      // a jagged crown of dark glacier ice with glowing cyan edges
+      ctx.fillStyle = '#123a6b'; ctx.strokeStyle = c; ctx.lineWidth = 1.2; ctx.shadowBlur = 10; ctx.shadowColor = c;
+      ctx.beginPath(); ctx.moveTo(-7, -13.5);
+      for (const [x0, y0] of [[-6, -20], [-4, -16.5], [-2.2, -25], [0.2, -17], [2, -22], [3.6, -16.5], [6, -21.5], [7, -13.5]]) ctx.lineTo(x0, y0);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(191,243,255,0.8)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(-2.2, -23); ctx.lineTo(-1.5, -16); ctx.moveTo(2, -20.5); ctx.lineTo(2.6, -15.5); ctx.stroke();
+      if (Math.sin(t * 2.5) > 0.9) { ctx.fillStyle = '#ffffff'; ctx.fillRect(-2.8, -25.5, 1.6, 1.6); }
+      break;
+    }
     case 'icecrown': {
       // a band of frost with icicles pointing up, glinting
       ctx.fillStyle = c; ctx.shadowBlur = 8; ctx.shadowColor = '#7fd8ff';
@@ -3018,7 +3047,7 @@ function emitTrail(o, dt, list) {
   }
   if (list.length > 800) list.splice(0, list.length - 800);
 }
-const PGRAV = { burst: 600, spark: 500, sq: 250, dot: 30, leaf: 80, ring: -70, flame: -140, star: 0, galaxy: 0, text: 0, flake: 25 };
+const PGRAV = { burst: 600, spark: 500, sq: 250, dot: 30, leaf: 80, ring: -70, flame: -140, star: 0, galaxy: 0, text: 0, flake: 25, icicle: 320 };
 function updateParticles(list, dt) {
   for (let i = list.length - 1; i >= 0; i--) {
     const p = list[i];
@@ -3039,6 +3068,7 @@ function drawParticles(list) {
       case 'spark': ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.03, p.y - p.vy * 0.03); ctx.stroke(); break;
       case 'star': case 'galaxy': drawStar(p.x, p.y, 3.6, p.rot || 0); break;
       case 'sq': ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot || 0); ctx.fillRect(-2, -2, 4, 4); ctx.restore(); break;
+      case 'icicle': { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.atan2(p.vy, p.vx)); ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(-4, -2); ctx.lineTo(-4, 2); ctx.closePath(); ctx.fill(); ctx.restore(); break; }
       case 'flake': ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot || 0); ctx.lineWidth = 1.3; ctx.beginPath(); for (let k = 0; k < 3; k++) { const a = k * 1.047; ctx.moveTo(Math.cos(a) * 5, Math.sin(a) * 5); ctx.lineTo(-Math.cos(a) * 5, -Math.sin(a) * 5); } ctx.stroke(); ctx.restore(); break;
       case 'flame': ctx.beginPath(); ctx.arc(p.x, p.y, 2 + p.life * 5, 0, 6.283); ctx.fill(); break;
       default: ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
@@ -7083,7 +7113,7 @@ const STORY = [{
       outro: [['masked', 'I promised you would see my face.'], ['wren', '...'], ['rook', 'Wren? WREN?! Is that really you?'], ['wren', 'Hello, Dad.'], ['pip', 'DAD?!'], ['wren', 'I was the Spire\'s Keeper. I was on watch the night the Tempest came... and I couldn\'t stop it.'], ['wren', 'So I hid behind a mask and went after the pieces alone. I was too ashamed to come home.'], ['rook', 'Oh, Wren. Nobody could have stopped that storm. I\'m just glad you\'re safe.'], ['you', 'Then we find the rest together.'], ['wren', 'Together. But first: the Tempest woke something in the deep water. The Tide Serpent guards the Spire piece.']] },
     { id: '3-5', n: 'The Tide Serpent', goal: 'boss', boss: 'serpent', par: 130, pal: DEEPP,
       intro: [['tempest', 'A family reunion? How sweet. My Serpent will drag you all to the bottom!'], ['wren', 'After it lunges, it\'s dizzy for a moment. Hook the glowing pearl on its head and reel in!'], ['pip', 'And watch the tide! It goes up and down. Don\'t run out of air!']],
-      outro: [['tempest', 'THREE TIMES?! No more games, climber. Next time, I will come for you myself!'], ['wren', 'The third piece of the Spire. Dad... it\'s glowing.'], ['rook', 'Just like the night it was whole. We\'re getting there, kids.'], ['pip', 'Chapter 3 complete! You learned Rewind: it jumps you back to where you were 3 seconds ago!'], ['pip', 'And look at you. Tidecaller, straight from the deep!']],
+      outro: [['tempest', 'THREE TIMES?! Enjoy your little pieces, climber. The fire mountain will be your end!'], ['wren', 'The third piece of the Spire. Dad... it\'s glowing.'], ['rook', 'Just like the night it was whole. We\'re getting there, kids.'], ['pip', 'Chapter 3 complete! You learned Rewind: it jumps you back to where you were 3 seconds ago!'], ['pip', 'And look at you. Tidecaller, straight from the deep!']],
       gift: 'rewind' },
   ],
 }];
