@@ -129,6 +129,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 .item small { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
 .item[aria-pressed=true] { background: rgba(94,230,193,.14); outline: 2px solid var(--mint); }
 .item:disabled { opacity: .45; cursor: default; }
+.titled { color: var(--gold); font-weight: 700; letter-spacing: .04em; margin: 0; }
 .strip { display: block; height: 6px; border-radius: 3px; margin-top: 4px; }
 /* Achievements */
 .achbar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.1); overflow: hidden; }
@@ -211,6 +212,8 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   </div>
   <div class="hud-tr"><canvas class="minimap" id="w-mini" width="440" height="220" hidden aria-label="Arena minimap"></canvas><div class="team" id="w-team"></div></div>
   <div id="wbanner"></div>
+  <div class="race-top" id="t-timer" hidden></div>
+  <div class="hint" id="t-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W / S</b> reel · <b>A / D</b> swing · <b>R</b> restart · <b>Esc</b> pause</div>
   <div class="ult" id="w-ult" hidden><span class="k">Q</span><span id="w-ult-name"></span><span class="bar"><i id="w-ult-bar"></i></span></div>
   <div class="slots" id="w-slots"></div>
   <div class="hint" id="p-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / yank a hooked player · <b>E</b> shoot · <b>Q</b> ultimate · <b>1–5</b> abilities · <b>Esc</b> pause</div>
@@ -227,6 +230,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <div class="profile">
       <label for="name">Climber name</label>
       <input type="text" id="name" maxlength="16" placeholder="Climber" autocomplete="off" spellcheck="false">
+      <p class="titled" id="m-title" hidden></p>
       <div class="swatches" id="swatches" role="radiogroup" aria-label="Climber color"></div>
     </div>
     <div class="modes two">
@@ -234,12 +238,13 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <button class="mode" id="m-coop"><b>Co-op Climb</b><small>Climb with friends and hook onto each other.</small></button>
       <button class="mode" id="m-race"><b>Race</b><small>Race bots and friends to a height or against the clock.</small></button>
       <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
+      <button class="mode" id="m-trial"><b>Time Trials</b><small>30 courses against the clock. Gold medals unlock skins.</small></button>
       <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
     </div>
     <div class="modes">
       <button class="mode shop" id="m-gacha"><b>Gacha</b><small>Spend 5 tokens to spin for hats, colors, ropes, trails and auras.</small></button>
       <button class="mode shop" id="m-locker"><b>Locker</b><small>Equip items and skins you've won.</small></button>
-      <button class="mode shop" id="m-ach"><b>Achievements</b><small>30 to earn. Each one unlocks a themed skin.</small></button>
+      <button class="mode shop" id="m-ach"><b>Achievements</b><small>30 to earn. Unlock them all for a title.</small></button>
     </div>
     <dl class="stats">
       <div><dt>Best height</dt><dd id="s-best">0 m</dd></div>
@@ -499,6 +504,31 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     </div>
   </section>
 
+  <section class="panel wide" id="scr-trials" hidden>
+    <div class="head-row"><h2>Time Trials</h2><span class="tok"><span class="coin"></span><span id="tr-golds">0</span>&nbsp;/ 30 gold</span></div>
+    <p id="tr-next"></p>
+    <div class="items" id="tr-list"></div>
+    <p class="note">Bronze, silver and gold give 2, 5 and 10 tokens the first time. Every 2 gold medals unlock a skin. Finish a course to unlock the next one. Abilities are off in Time Trials.</p>
+    <button class="link" id="b-tr-back">Back to menu</button>
+  </section>
+
+  <section class="panel" id="scr-trial-res" hidden>
+    <h2 id="trr-title"></h2>
+    <p id="trr-sub"></p>
+    <dl class="stats">
+      <div><dt>Your time</dt><dd id="trr-time"></dd></div>
+      <div><dt>Best</dt><dd id="trr-best"></dd></div>
+      <div><dt>Falls</dt><dd id="trr-deaths"></dd></div>
+    </dl>
+    <ul class="odds" id="trr-targets"></ul>
+    <p class="note" id="trr-msg"></p>
+    <div class="row">
+      <button class="btn primary" id="b-trr-next">Next course</button>
+      <button class="btn" id="b-trr-retry">Retry</button>
+      <button class="btn" id="b-trr-list">All courses</button>
+    </div>
+  </section>
+
   <section class="panel wide" id="scr-ach" hidden>
     <div class="head-row"><h2>Achievements</h2><span class="note" id="ach-sum"></span></div>
     <div class="achbar"><i id="ach-bar"></i></div>
@@ -651,7 +681,7 @@ const ITEMS = [
   ['aura', 'a_world', 'Compass Aura', 5, { k: 'orbit', c: '#ffd34d', ex: true }],
 ].map(([cat, id, n, r, p]) => Object.assign({ cat, id, n, r }, p));
 // themed skins: a hat, a color blend, a rope, a trail and an aura each, unlocked by achievements
-const SKINS = [
+const PALETTES = [
   { id: 'comet', n: 'Comet', cols: ['#ffffff', '#bff3ff', '#7fb2ff'], hat: 'comet', rope: 'bolt', trail: 'galaxy', aura: 'orbit' },
   { id: 'lava', n: 'Lava', cols: ['#ffd25a', '#ff6a1f', '#8a1f10'], hat: 'flame', rope: 'glow', trail: 'flame', aura: 'fire' },
   { id: 'frost', n: 'Frost', cols: ['#ffffff', '#bff3ff', '#4a8bea'], hat: 'shards', rope: 'glow', trail: 'dot', aura: 'frost' },
@@ -683,6 +713,11 @@ const SKINS = [
   { id: 'samurai', n: 'Samurai', cols: ['#ffd34d', '#8a1f2b', '#2a2540'], hat: 'horns', hc: '#ffd34d', rope: 'plain', trail: 'leaf', aura: 'ring' },
   { id: 'celestial', n: 'Celestial', cols: ['#ffffff', '#ffd34d', '#c79bff', '#5aa8ff'], hat: 'halo', hc: '#ffd34d', rope: 'grad', trail: 'galaxy', aura: 'rainbowring', glow: 16 },
 ];
+// the 15 skins Time Trials unlock, one for every 2 gold medals, in this order
+const SKIN_ORDER = ['forest', 'ocean', 'candy', 'toxic', 'pirate', 'frost', 'lava', 'neon', 'storm', 'shadow', 'ghost', 'royal', 'dragon', 'galaxy', 'celestial'];
+const PAL_BY = Object.create(null);
+for (const s of PALETTES) PAL_BY[s.id] = s;
+const SKINS = SKIN_ORDER.map(id => PAL_BY[id]);
 const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon' };
 const SKIN_BY = Object.create(null);
 for (const s of SKINS) {
@@ -719,7 +754,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2 };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -733,6 +768,7 @@ try {
     if (s.hTok == null) save.tokens += save.hTok; // pay out height tokens earned before tokens existed
     if (Array.isArray(s.got)) save.got = s.got.filter(n => Number.isInteger(n) && n >= 0 && n < 1e5).slice(0, 2000);
     if (s.owned && typeof s.owned === 'object') for (const id in s.owned) if (ITEM[id]) save.owned[id] = clampInt(s.owned[id], 0, 1e6);
+    if (s.skinV !== 2) for (const id of Object.keys(save.owned)) if (ITEM[id] && ITEM[id].sk) delete save.owned[id]; // skins are re-earned from Time Trials
     save.eq = cleanEq(s.eq);
     for (const c of CATS) if (save.eq[c.id] && !save.owned[save.eq[c.id]]) save.eq[c.id] = null;
     save.summits = clampInt(s.summits, 0, 1e9);
@@ -742,6 +778,7 @@ try {
     if (s.hw && typeof s.hw === 'object') save.hw = s.hw;
     if (s.pvpCfg && typeof s.pvpCfg === 'object') save.pvpCfg = s.pvpCfg;
     if (s.ach && typeof s.ach === 'object') save.ach = s.ach;
+    if (s.trials && typeof s.trials === 'object') save.trials = s.trials;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
 const gotSet = new Set(save.got);
@@ -893,8 +930,9 @@ addEventListener('keydown', (e) => {
     if (GAME_KEYS.has(e.code) || (mode === 'world' && e.code === 'Tab')) e.preventDefault();
     keys[e.code] = true;
     if (e.code === 'Escape' || e.code === 'KeyP') pause();
-    else if (mode === 'world' || mode === 'pvp') {
-      if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
+    else if (mode === 'world' || mode === 'pvp' || mode === 'trial') {
+      if (mode === 'trial') { if (e.code === 'KeyR' && !e.repeat && trial) startTrial(trial.n); }
+      else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
       else if (e.code === 'Tab') openLoadout();
       else if (mode === 'pvp') { if (e.code === 'KeyE') pvpShoot(); else if (e.code === 'KeyQ' && !e.repeat) pvpUltKey(); else if (e.code === 'KeyW' && !e.repeat) pvpYank(); else if (e.code === 'KeyM' && !e.repeat) openMap(); else if (!e.repeat && pvp && !pvp.me.alive && (e.code === 'KeyA' || e.code === 'KeyD' || e.code === 'ArrowLeft' || e.code === 'ArrowRight')) specCycle(e.code === 'KeyA' || e.code === 'ArrowLeft' ? -1 : 1); }
       else if (e.code === 'KeyM') openMap();
@@ -1301,6 +1339,7 @@ function syncPeers(dt) {
     if (!s) { s = { id: pe.peer, rx: tx, ry: ty, hist: [], bots: [], trailAcc: 0 }; peerState.set(pe.peer, s); }
     s.tx = tx; s.ty = ty; s.vx = vx; s.vy = vy;
     s.n = cleanName(pr.n, 'Climber');
+    s.ti = pr.ti === 1;
     s.c = COLORS[clampInt(pr.c, 0, COLORS.length - 1)];
     s.eq = cleanEq(pr.eq);
     s.h = clamp(num(pr.h) || 0, 0, TOP_M);
@@ -1352,7 +1391,7 @@ function sendPresence(dt) {
   presenceClock = 0.05;
   const A = ropeAnchor();
   const pr = {
-    n: save.name || 'Climber', c: save.color, eq: save.eq, s: state === 'play' || state === 'paused' || state === 'over' ? 1 : 0,
+    n: save.name || 'Climber', c: save.color, eq: save.eq, ti: hasTitle() ? 1 : 0, s: state === 'play' || state === 'paused' || state === 'over' ? 1 : 0,
     x: Math.round(P.x), y: Math.round(P.y), vx: Math.round(P.vx), vy: Math.round(P.vy),
     a: A ? [Math.round(A.x), Math.round(A.y)] : null,
     h: Math.round(runHeight * 10) / 10, cp: Math.min(reachedCp, MAX_CP),
@@ -1402,11 +1441,11 @@ function startRace(rc, online) {
 }
 function offlineRc() { return { id: Date.now() % 1e9, st: Date.now() + 3500, ty: cfg.type, g: cfg.type === 'height' ? cfg.goal : cfg.time, nb: cfg.nb, df: cfg.diff }; }
 function standings() {
-  const rows = [{ name: (save.name || 'You') + ' (you)', me: true, c: COLORS[save.color], fin: race.myFin, mx: race.myMax }];
+  const rows = [{ name: tn(save.name || 'You', hasTitle()) + ' (you)', me: true, c: COLORS[save.color], fin: race.myFin, mx: race.myMax }];
   const h = hostPeer();
   const bots = race.bots.length ? race.bots : (race.online && h ? h.bots.filter(Boolean) : []);
   for (const b of bots) rows.push({ name: b.name, c: botColor(b.k), fin: b.fin, mx: b.mx });
-  if (race.online) for (const s of peerState.values()) if (s.rid === race.id) rows.push({ name: s.n, c: s.c, fin: s.fin, mx: s.mx });
+  if (race.online) for (const s of peerState.values()) if (s.rid === race.id) rows.push({ name: tn(s.n, s.ti), c: s.c, fin: s.fin, mx: s.mx });
   if (race.type === 'height') rows.sort((a, b) => (a.fin >= 0) !== (b.fin >= 0) ? (a.fin >= 0 ? -1 : 1) : a.fin >= 0 ? a.fin - b.fin : b.mx - a.mx);
   else rows.sort((a, b) => b.mx - a.mx);
   return rows;
@@ -1469,7 +1508,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -1538,7 +1577,7 @@ function pause() {
   $('b-regroup').hidden = $('regroup-note').hidden = mode !== 'coop';
   $('pause-note').hidden = mode !== 'race';
   $('b-cp').hidden = raceCountdown() || mode === 'pvp';
-  $('b-cp').textContent = mode === 'world' ? 'Back to campfire' : 'Back to checkpoint';
+  $('b-cp').textContent = mode === 'world' ? 'Back to campfire' : mode === 'trial' ? 'Restart course' : 'Back to checkpoint';
   show('scr-pause');
   writeSave();
 }
@@ -1550,6 +1589,7 @@ function toMenu() {
   $('hud').hidden = true; $('h-race').hidden = true; $('whud').hidden = true;
   ab.active = {}; ab.cd = {};
   pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true;
+  trial = null; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false;
   toCheckpoint(0);
   runHeight = 0;
   refreshMenu(); show('scr-menu');
@@ -1588,8 +1628,8 @@ function renderLobby() {
   $('lobby-settings').textContent = rc ? cfgText(rc.ty, rc.g, rc.nb, rc.df) : 'Waiting to hear from the host…';
   const list = $('lobby-list');
   list.textContent = '';
-  const rows = [{ n: (save.name || 'Climber') + (raceHosting ? ' (you, host)' : ' (you)'), c: COLORS[save.color] }];
-  for (const s of peerState.values()) rows.push({ n: s.n + (s.host ? ' (host)' : ''), c: s.c });
+  const rows = [{ n: tn(save.name || 'Climber', hasTitle()) + (raceHosting ? ' (you, host)' : ' (you)'), c: COLORS[save.color] }];
+  for (const s of peerState.values()) rows.push({ n: tn(s.n, s.ti) + (s.host ? ' (host)' : ''), c: s.c });
   for (const r of rows) {
     const row = document.createElement('div'); row.className = 'team-row'; row.style.justifyContent = 'flex-start';
     const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = r.c;
@@ -1679,7 +1719,7 @@ $('b-sum-again').addEventListener('click', () => beginRun(0, true));
 $('b-sum-menu').addEventListener('click', toMenu);
 $('b-sum-gacha').addEventListener('click', () => { toMenu(); openGacha(); });
 $('b-resume').addEventListener('click', resume);
-$('b-cp').addEventListener('click', () => { if (mode === 'world') toCampfire(); else toCheckpoint(reachedCp); resume(); });
+$('b-cp').addEventListener('click', () => { if (mode === 'trial' && trial) { startTrial(trial.n); return; } if (mode === 'world') toCampfire(); else toCheckpoint(reachedCp); resume(); });
 $('b-regroup').addEventListener('click', () => { let best = reachedCp; for (const s of peerState.values()) best = Math.max(best, s.cp); toCheckpoint(best); resume(); });
 $('b-quit').addEventListener('click', toMenu);
 $('b-help').addEventListener('click', () => { helpReturn = 'scr-menu'; show('scr-help'); });
@@ -2318,6 +2358,7 @@ function drawClimber(o) {
     const w = ctx.measureText(o.label).width + 10;
     ctx.fillStyle = 'rgba(10,8,24,0.6)'; ctx.fillRect(o.x - w / 2, o.y - 66, w, 17);
     ctx.fillStyle = o.base; ctx.fillText(o.label, o.x, o.y - 53);
+    if (o.title) { ctx.font = '700 11px "Chakra Petch", sans-serif'; ctx.fillStyle = '#ffd34d'; ctx.fillText(o.title, o.x, o.y - 70); }
   }
 }
 
@@ -2362,7 +2403,7 @@ function render(dt) {
   }
   for (const s of peerState.values()) {
     if (!s.playing || teamKind === 'world') continue;
-    const o = { x: s.rx, y: s.ry, vx: s.vx, vy: s.vy, base: s.c, eq: s.eq, anchor: s.a ? { x: s.a[0], y: s.a[1] } : null, label: s.n, face: (s.vx || 0) < 0 ? -1 : 1, hist: s.hist, trailAcc: s.trailAcc };
+    const o = { x: s.rx, y: s.ry, vx: s.vx, vy: s.vy, base: s.c, eq: s.eq, anchor: s.a ? { x: s.a[0], y: s.a[1] } : null, label: s.n, face: (s.vx || 0) < 0 ? -1 : 1, hist: s.hist, trailAcc: s.trailAcc, title: s.ti ? TITLE : '' };
     emitTrail(o, dt, particles); s.trailAcc = o.trailAcc;
     if (o.anchor) drawRope(o.x, o.y, o.anchor.x, o.anchor.y, 0, s.eq.rope, 0.85);
     drawClimber(o);
@@ -2391,7 +2432,7 @@ function render(dt) {
   // you
   const A = ropeAnchor();
   pushHist(P.hist, P.x, P.y);
-  const me = { x: P.x, y: P.y, vx: P.vx, vy: P.vy, base: COLORS[save.color], eq: save.eq, anchor: A, flash: P.inv > 0 && Math.floor(gt * 14) % 2 === 0, label: (peerState.size || (race && race.bots.length)) ? (save.name || 'You') : '', face: P.face, hist: P.hist, trailAcc: P.trailAcc };
+  const me = { x: P.x, y: P.y, vx: P.vx, vy: P.vy, base: COLORS[save.color], eq: save.eq, anchor: A, flash: P.inv > 0 && Math.floor(gt * 14) % 2 === 0, label: (peerState.size || (race && race.bots.length)) ? (save.name || 'You') : '', face: P.face, hist: P.hist, trailAcc: P.trailAcc, title: hasTitle() ? TITLE : '' };
   if (state === 'play') { emitTrail(me, dt, particles); P.trailAcc = me.trailAcc; }
   if (A) drawRope(P.x, P.y, A.x, A.y, rope.L, save.eq.rope);
   drawClimber(me);
@@ -2875,7 +2916,7 @@ function tickAbilities(dt) {
 function stepWorld(dt) {
   gt += dt;
   tickAbilities(dt);
-  if (mode === 'pvp' && pvp && pvpGate(dt)) return;
+  if ((mode === 'pvp' && pvp && pvpGate(dt)) || (mode === 'trial' && trial && (trial.count > 0 || trial.done))) { if (mode === 'trial') { P.vx = 0; P.vy = 0; detach(); } return; }
   if (P.stun > 0) P.stun -= dt;
   if (P.inv > 0) P.inv -= dt;
   const r = curR(), range = curRange();
@@ -3209,10 +3250,14 @@ function updateWorldHud(dt) {
   }
   updateSlots();
   if (mode === 'pvp' && pvp) pvpHudFast();
+  if (mode === 'trial' && trial) trialHudFast();
   wHudT -= dt;
   if (wHudT > 0) return;
   wHudT = 0.4;
-  if (mode === 'pvp' && pvp) {
+  if (mode === 'trial' && trial) {
+    $('w-found').textContent = 'Falls ' + trial.deaths + (trState().best[trial.n] ? ' · Best ' + fmtTime(trState().best[trial.n]) : '');
+    $('w-team').textContent = '';
+  } else if (mode === 'pvp' && pvp) {
     $('w-found').textContent = pvp.me.alive ? 'Lives ' + Math.max(0, pvp.me.lives) + ' · KOs ' + kosOf(selfId()) : (specTarget() ? 'Watching ' + specTarget().name + ' · A / D to switch' : 'Knocked out');
     renderPvpBoard($('w-team'));
     pvpLobbyTick();
@@ -3326,6 +3371,12 @@ function renderWorld(dt) {
       case TSNOW: ctx.fillStyle = '#e4ecf8'; ctx.fillRect(px, py, TS + 0.5, TS + 0.5); if (open) { ctx.fillStyle = '#ffffff'; ctx.fillRect(px, py, TS + 0.5, 8); } break;
       case TMETAL: ctx.fillStyle = '#4b5b75'; ctx.fillRect(px, py, TS + 0.5, TS + 0.5); ctx.fillStyle = '#5a6c8c'; ctx.fillRect(px + 4, py + 4, TS - 8, TS - 8); break;
       case TLEAF: ctx.fillStyle = '#3f8f3f'; ctx.fillRect(px, py, TS + 0.5, TS + 0.5); if (open) { ctx.fillStyle = '#5cb35a'; ctx.fillRect(px, py, TS + 0.5, 10); } break;
+      case TSPIKE:
+        ctx.fillStyle = '#3a3550'; ctx.fillRect(px, py, TS + 0.5, TS + 0.5);
+        ctx.fillStyle = '#e6e2ee'; ctx.beginPath();
+        for (let k = 0; k < 4; k++) { ctx.moveTo(px + k * 10, py + 14); ctx.lineTo(px + k * 10 + 5, py); ctx.lineTo(px + k * 10 + 10, py + 14); }
+        ctx.fill(); ctx.fillStyle = '#ff5a6e'; ctx.fillRect(px, py + 12, TS + 0.5, 3);
+        break;
       case TCRYS: ctx.fillStyle = '#5fb8e6'; ctx.fillRect(px, py, TS + 0.5, TS + 0.5); ctx.fillStyle = '#c8f1ff'; ctx.fillRect(px + 8, py + 6, 8, 14); break;
     }
   }
@@ -3377,7 +3428,7 @@ function renderWorld(dt) {
   if (teamKind === 'world' || teamKind === 'pvp') for (const s of peerState.values()) {
     if (!s.playing || (mode === 'pvp' && !pvpPeerVisible(s))) continue;
     const fx = s.fx || 0;
-    const o = { x: s.rx, y: s.ry, vx: s.vx, vy: s.vy, base: s.c, eq: s.eq, anchor: s.a ? { x: s.a[0], y: s.a[1] } : null, label: s.n, face: (s.vx || 0) < 0 ? -1 : 1, hist: s.hist, trailAcc: s.trailAcc, alpha: fx & 1 ? (mode === 'pvp' ? 0.12 : 0.3) : 1, sc: fx & 2 ? 0.55 : 1 };
+    const o = { x: s.rx, y: s.ry, vx: s.vx, vy: s.vy, base: s.c, eq: s.eq, anchor: s.a ? { x: s.a[0], y: s.a[1] } : null, label: s.n, face: (s.vx || 0) < 0 ? -1 : 1, hist: s.hist, trailAcc: s.trailAcc, alpha: fx & 1 ? (mode === 'pvp' ? 0.12 : 0.3) : 1, sc: fx & 2 ? 0.55 : 1, title: s.ti ? TITLE : '' };
     emitTrail(o, dt, particles); s.trailAcc = o.trailAcc;
     if (o.anchor) drawRope(o.x, o.y, o.anchor.x, o.anchor.y, 0, s.eq.rope, 0.85);
     drawClimber(o);
@@ -3403,12 +3454,13 @@ function renderWorld(dt) {
   // you
   const A = ropeAnchor();
   pushHist(P.hist, P.x, P.y);
-  const me = { x: P.x, y: P.y, vx: P.vx, vy: P.vy, base: COLORS[save.color], eq: save.eq, anchor: A, flash: P.inv > 0 && Math.floor(gt * 14) % 2 === 0, label: (peerState.size || mode === 'pvp') ? (save.name || 'You') : '', face: P.face, hist: P.hist, trailAcc: P.trailAcc, alpha: ab.active.invis > 0 ? 0.35 : 1, sc: ab.active.shrink > 0 ? 0.55 : 1 };
+  const me = { x: P.x, y: P.y, vx: P.vx, vy: P.vy, base: COLORS[save.color], eq: save.eq, anchor: A, flash: P.inv > 0 && Math.floor(gt * 14) % 2 === 0, label: (peerState.size || mode === 'pvp') ? (save.name || 'You') : '', face: P.face, hist: P.hist, trailAcc: P.trailAcc, alpha: ab.active.invis > 0 ? 0.35 : 1, sc: ab.active.shrink > 0 ? 0.55 : 1, title: hasTitle() ? TITLE : '' };
   if (state === 'play') {
     emitTrail(me, dt, particles); P.trailAcc = me.trailAcc;
     if (ab.active.fly > 0 && Math.random() < 0.7) particles.push({ k: 'dot', x: P.x + (Math.random() - 0.5) * 10, y: P.y + 18, vx: (Math.random() - 0.5) * 40, vy: 140, life: 0.4, color: '#8fd3ff' });
   }
   if (mode === 'pvp' && pvp) pvpRender(dt);
+  if (mode === 'trial' && trial) trialRender(dt);
   if (mode !== 'pvp' || (pvp && pvp.me.alive)) {
     if (A) drawRope(P.x, P.y, A.x, A.y, rope.L, save.eq.rope);
     drawClimber(me);
@@ -3425,7 +3477,8 @@ function worldFrame(dt) {
     wAim = worldAim();
     acc += dt;
     while (acc >= STEP) { stepWorld(STEP); acc -= STEP; }
-    if (mode !== 'pvp') { updateEnemies(dt); exploreTick(dt); }
+    if (mode === 'world') { updateEnemies(dt); exploreTick(dt); }
+    else if (mode === 'trial' && trial) trialTick(dt);
   } else { acc = 0; wAim = null; gt += dt; }
   if (mode === 'pvp' && pvp && (state === 'play' || (pvp.online && state !== 'menu'))) pvpTick(dt);
   sendPresence(dt);
@@ -3568,14 +3621,14 @@ function kbFrom(arr) {
 }
 function pvpViews() {
   const out = [], now = Date.now(), m = pvp.me;
-  out.push({ id: selfId(), me: true, name: save.name || 'Climber', x: P.x, y: P.y, vx: P.vx, vy: P.vy, team: m.team, alive: m.alive, lives: m.lives, hp: m.hp, invis: ab.active.invis > 0, kb: m.kb, c: COLORS[save.color] });
+  out.push({ id: selfId(), me: true, name: tn(save.name || 'Climber', hasTitle()), x: P.x, y: P.y, vx: P.vx, vy: P.vy, team: m.team, alive: m.alive, lives: m.lives, hp: m.hp, invis: ab.active.invis > 0, kb: m.kb, c: COLORS[save.color] });
   for (const b of pvp.bots) out.push({ id: b.id, bot: b, name: b.name, x: b.x, y: b.y, vx: b.vx, vy: b.vy, team: b.team, alive: b.alive, lives: b.lives, hp: b.hp, invis: b.invisUntil > now, kb: b.kb, c: b.base });
   if (pvp.online) {
     for (const b of pvp.rbots) if (b) out.push({ id: b.id, rbot: b, name: b.name, x: b.rx, y: b.ry, vx: b.vx, vy: b.vy, team: b.team, alive: b.alive, lives: b.lives, hp: b.hp, invis: b.invis, kb: b.kb, c: b.base });
     for (const s of peerState.values()) {
       const v = s.raw && s.raw.pv;
       if (!v || typeof v !== 'object' || v.id !== pvp.id) continue;
-      out.push({ id: s.id, peer: s, name: s.n, x: s.rx, y: s.ry, vx: s.vx || 0, vy: s.vy || 0, team: num(v.tm) != null ? clampInt(v.tm, 0, 99) : 99, alive: v.al === 1, lives: clampInt(v.lv, 0, 9), hp: clampInt(v.hp, 0, P_HP), invis: (s.fx & 1) === 1, kb: kbFrom(v.kb), c: s.c });
+      out.push({ id: s.id, peer: s, name: tn(s.n, s.ti), x: s.rx, y: s.ry, vx: s.vx || 0, vy: s.vy || 0, team: num(v.tm) != null ? clampInt(v.tm, 0, 99) : 99, alive: v.al === 1, lives: clampInt(v.lv, 0, 9), hp: clampInt(v.hp, 0, P_HP), invis: (s.fx & 1) === 1, kb: kbFrom(v.kb), c: s.c });
     }
   }
   return out;
@@ -4116,8 +4169,8 @@ function renderPvpLobby() {
   const h = pvpHost ? null : hostPvpPeer(), pm = pvpHost ? pvpPm : (h && parsePm(h.raw.pm));
   $('p-lset').textContent = pm ? pmText(pm) : 'Waiting to hear from the host…';
   const list = $('p-llist'); list.textContent = '';
-  const rows = [{ n: (save.name || 'Climber') + (pvpHost ? ' (you, host)' : ' (you)'), c: COLORS[save.color] }];
-  for (const s of peerState.values()) rows.push({ n: s.n + (s.raw && s.raw.pm ? ' (host)' : ''), c: s.c });
+  const rows = [{ n: tn(save.name || 'Climber', hasTitle()) + (pvpHost ? ' (you, host)' : ' (you)'), c: COLORS[save.color] }];
+  for (const s of peerState.values()) rows.push({ n: tn(s.n, s.ti) + (s.raw && s.raw.pm ? ' (host)' : ''), c: s.c });
   for (const r of rows) {
     const row = document.createElement('div'); row.className = 'team-row'; row.style.justifyContent = 'flex-start';
     const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = r.c;
@@ -4382,7 +4435,6 @@ function unlockAch(id) {
   const A = ACH_BY[id], s = achState();
   if (!A || s.u[id]) return;
   s.u[id] = Date.now();
-  for (const iid of Object.values(skinEq(A.sk))) save.owned[iid] = (save.owned[iid] || 0) + 1;
   addTokens(achTok(A));
   writeSave();
   queueToast(A);
@@ -4409,7 +4461,7 @@ function achTick(dt) {
 }
 function setIcon(el, A) {
   el.className = 'achico';
-  el.style.background = 'linear-gradient(135deg, ' + SKIN_BY[A.sk].cols.join(', ') + ')';
+  el.style.background = 'linear-gradient(135deg, ' + PAL_BY[A.sk].cols.join(', ') + ')';
   el.textContent = CAT_GLYPH[A.cat] || '★';
 }
 function queueToast(A) { toastQ.push(A); if (!toastBusy) nextToast(); }
@@ -4419,7 +4471,7 @@ function nextToast() {
   toastBusy = true;
   setIcon($('at-ico'), A);
   $('at-name').textContent = A.n;
-  $('at-sub').textContent = SKIN_BY[A.sk].n + ' skin unlocked · +' + achTok(A) + ' tokens';
+  $('at-sub').textContent = (A.id === 'legend' ? 'Title unlocked: ' + TITLE + ' · +' : '+') + achTok(A) + ' tokens';
   el.hidden = false;
   requestAnimationFrame(() => el.classList.remove('hide'));
   setTimeout(nextToast, 4200);
@@ -4440,13 +4492,13 @@ function renderAch() {
   const rows = ACH.filter(a => achFilter === 'all' || (achFilter === 'done') === !!s.u[a.id]);
   rows.sort((a, b) => (s.u[b.id] ? 1 : 0) - (s.u[a.id] ? 1 : 0) || (s.u[b.id] || 0) - (s.u[a.id] || 0));
   for (const A of rows) {
-    const done = !!s.u[A.id], hidden = A.secret && !done, T = TIER[A.tier], skin = SKIN_BY[A.sk];
+    const done = !!s.u[A.id], hidden = A.secret && !done, T = TIER[A.tier];
     const li = document.createElement('li'); li.className = 'achrow' + (done ? '' : ' locked');
     const ico = document.createElement('span'); setIcon(ico, A); if (hidden) ico.textContent = '?';
     const t = document.createElement('div'); t.className = 't';
     const nm = document.createElement('b'); nm.textContent = hidden ? 'Secret achievement' : A.n;
     const ds = document.createElement('span'); ds.textContent = hidden ? 'Keep playing to discover this one.' : A.d;
-    const rw = document.createElement('span'); rw.className = 'rw'; rw.textContent = 'Reward: ' + (hidden ? 'a secret skin' : skin.n + ' skin') + ' + ' + achTok(A) + ' tokens';
+    const rw = document.createElement('span'); rw.className = 'rw'; rw.textContent = 'Reward: ' + (A.id === 'legend' ? 'the ' + TITLE + ' title + ' : '') + achTok(A) + ' tokens';
     t.append(nm, ds, rw);
     const side = document.createElement('div'); side.className = 'side';
     const tier = document.createElement('span'); tier.className = 'tier'; tier.style.color = A.secret ? '#c79bff' : T.c; tier.textContent = A.secret ? 'Secret · ' + T.n : T.n;
@@ -4463,15 +4515,15 @@ function renderAch() {
 }
 function renderSkins() {
   const s = achState(), owned = SKINS.filter(k => ownsSkin(k.id)).length;
-  $('l-count').textContent = 'You own ' + owned + ' of ' + SKINS.length + ' skins. Tap a skin to preview it.';
+  $('l-count').textContent = 'You own ' + owned + ' of ' + SKINS.length + ' skins. Earn them with gold medals in Time Trials. Tap one to preview it.';
   const grid = $('l-items'); grid.textContent = '';
   for (const k of SKINS) {
-    const A = ACH.find(a => a.sk === k.id), own = ownsSkin(k.id), hidden = A.secret && !s.u[A.id];
+    const need = SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
     const eq = skinEq(k.id), wearing = own && Object.keys(eq).every(c => save.eq[c] === eq[c]);
     const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = k.cols[0];
     const t = document.createElement('b'); t.textContent = hidden && !own ? 'Secret skin' : k.n;
     const sm = document.createElement('small'); sm.style.color = own ? 'var(--mint)' : 'var(--dim)';
-    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : 'Unlock: ' + (hidden ? 'secret achievement' : A.n);
+    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : 'Unlock: ' + need + ' gold medals';
     const strip = document.createElement('span'); strip.className = 'strip'; strip.style.background = 'linear-gradient(90deg, ' + k.cols.join(', ') + ')';
     b.append(t, sm, strip);
     b.setAttribute('aria-pressed', String(wearing));
@@ -4484,11 +4536,330 @@ function renderSkins() {
   }
 }
 function openAch() { renderAch(); show('scr-ach'); }
-achRefresh = () => { const s = achState(); $('s-ach').textContent = ACH.filter(a => s.u[a.id]).length + '/' + ACH.length; };
+const TITLE = 'Legend of Hookspire';
+achRefresh = () => {
+  const s = achState();
+  $('s-ach').textContent = ACH.filter(a => s.u[a.id]).length + '/' + ACH.length;
+  const t = $('m-title'); t.hidden = !hasTitle(); t.textContent = 'Title: ' + TITLE;
+};
+function hasTitle() { return !!achState().u.legend; }
+function tn(name, has) { return has ? name + ' · ' + TITLE : name; }
 $('m-ach').addEventListener('click', openAch);
 $('b-ach-back').addEventListener('click', () => { refreshMenu(); show('scr-menu'); });
 $('b-ach-skins').addEventListener('click', () => { lCat = 'skins'; lockerPreview = null; openLocker(); });
 achRefresh();
+
+// =================================================================
+// ---------- Time Trials ----------
+// =================================================================
+const TRIAL_NAMES = ['First Swing', 'Ring Road', 'Overhang', 'Long Reach', 'Up and Down', 'Steel Gate', 'Under and Over', 'Pillar Hop', 'The Gap', 'Iron Maze',
+  'Sawdust', 'Grinder Alley', 'Blade Runner', 'Spin Cycle', 'Buzzsaw Bridge', 'Red Line', 'Laser Grid', 'Beam Dancer', 'Flicker', 'Timing Is Everything',
+  'Crosswind', 'Gale Force', 'Tunnel Vision', 'Squeeze', 'Storm Front', 'Gauntlet I', 'Gauntlet II', 'Deadline', 'Clockwork', 'Final Swing'];
+const TSPIKE = 6;
+const MEDAL = [{ n: 'No medal', c: '#a8a1bd' }, { n: 'Bronze', c: '#d08a4a' }, { n: 'Silver', c: '#c8d0e0' }, { n: 'Gold', c: '#ffd34d' }];
+const MEDAL_TOK = [0, 2, 5, 10];
+const TRIAL_PAL = [
+  { top: '#8fd36b', rock: '#7a6a58', deep: '#574b3f' }, { top: '#a7aebd', rock: '#5d5a66', deep: '#45414c' }, { top: '#f0b073', rock: '#a3563a', deep: '#7a3f2b' },
+  { top: '#ff8a9a', rock: '#6a3a4a', deep: '#4a2a35' }, { top: '#bff3ff', rock: '#5a6c8c', deep: '#3a4a66' }, { top: '#d8b4ff', rock: '#4d4166', deep: '#2e2645' },
+];
+const SKIN_GOLDS = (id) => (SKIN_ORDER.indexOf(id) + 1) * 2;
+const courseCache = {};
+let trial = null;
+
+function buildCourse(n) {
+  if (courseCache[n]) return courseCache[n];
+  const tier = Math.min(5, Math.floor((n - 1) / 5));
+  const wt = 100 + n * 4, ht = 36;
+  const g = new Uint8Array(wt * ht);
+  const r = mulberry(n * 104729 + 7);
+  const rr = (a, b) => a + r() * (b - a), ri = (a, b) => Math.floor(rr(a, b + 1));
+  const inb = (x, y) => x >= 0 && y >= 0 && x < wt && y < ht;
+  const set = (x, y, v) => { if (inb(x, y)) g[y * wt + x] = v; };
+  const get = (x, y) => inb(x, y) ? g[y * wt + x] : TMETAL;
+  const fill = (x0, y0, w, h, v) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) set(x, y, v); };
+  const rings = [], saws = [], lasers = [], winds = [], cps = [];
+  const ring = (tx, ty) => { if (get(tx, ty) === TAIR) rings.push({ x: tx * TS + TS / 2, y: ty * TS + TS / 2 }); };
+  fill(0, 0, wt, 2, TROCK);
+  fill(0, ht - 3, wt, 1, TSPIKE); fill(0, ht - 2, wt, 2, TMETAL);
+  fill(0, 0, 1, ht, TMETAL); fill(wt - 1, 0, 1, ht, TMETAL);
+  fill(1, 24, 8, ht - 27, TROCK);
+  fill(wt - 10, 24, 9, ht - 27, TROCK);
+  const start = { x: 4.5 * TS, y: 24 * TS - PR - 2 };
+  // each new tier of 5 courses brings a new kind of obstacle
+  const tiers = [['rings', 'overhang', 'climb'], ['wallOver', 'wallUnder'], ['saws'], ['laser'], ['wind', 'tunnel'], []];
+  const pool = tiers.slice(0, tier + 1).flat();
+  const fresh = tiers[tier].length ? tiers[tier] : pool;
+  let x = 10, py = 19, lastCp = 8;
+  ring(9, 19);
+  while (x < wt - 18) {
+    if (x - lastCp > 34 && x < wt - 30) {
+      fill(x + 1, py + 5, 4, 1, TROCK); cps.push({ x: (x + 3) * TS, y: (py + 5) * TS - PR - 2 }); ring(x + 3, py - 1);
+      lastCp = x; x += 6; continue;
+    }
+    const kind = r() < 0.45 ? fresh[Math.floor(r() * fresh.length)] : pool[Math.floor(r() * pool.length)];
+    if (kind === 'rings') { const k = ri(3, 5); for (let i = 0; i < k; i++) ring(x + 3 + i * 6, py + ri(-2, 2)); x += 3 + k * 6; }
+    else if (kind === 'climb') { const d = py > 14 ? -1 : 1; for (let i = 0; i < 4; i++) { py = clamp(py + d * 3, 9, 22); ring(x + 3 + i * 6, py); } x += 27; }
+    else if (kind === 'overhang') { fill(x + 1, py - 5, 14, 2, TROCK); ring(x + 17, py); x += 19; }
+    else if (kind === 'wallOver') { ring(x + 2, py - 2); fill(x + 6, py + 6, 2, ht - 3 - (py + 6), TMETAL); ring(x + 10, py - 2); x += 13; }
+    else if (kind === 'wallUnder') { ring(x + 2, py); fill(x + 6, 2, 2, py - 6, TMETAL); ring(x + 10, py); x += 13; }
+    else if (kind === 'saws') {
+      const k = 3;
+      for (let i = 0; i < k; i++) {
+        ring(x + 3 + i * 7, py);
+        saws.push({ x: (x + 6.5 + i * 7) * TS, y: (py + 4) * TS, rad: 26, amp: tier >= 3 ? 50 : 0, per: rr(2.2, 3.2), ph: r() * 6.283 });
+      }
+      x += 3 + k * 7 + 2;
+    } else if (kind === 'laser') {
+      ring(x + 3, py); ring(x + 10, py); ring(x + 17, py);
+      lasers.push({ x: (x + 7) * TS, y1: 2 * TS, y2: (ht - 3) * TS, per: rr(2.4, 3.2), on: 0.42, ph: r() * 3 });
+      x += 20;
+    } else if (kind === 'wind') {
+      for (let i = 0; i < 4; i++) ring(x + 3 + i * 6, py + ri(-1, 1));
+      const up = r() < 0.5;
+      winds.push({ x0: x * TS, x1: (x + 27) * TS, y0: 2 * TS, y1: (ht - 3) * TS, fx: up ? 0 : -520, fy: up ? -520 : 0 });
+      x += 28;
+    } else if (kind === 'tunnel') {
+      fill(x + 1, py - 4, 16, 2, TROCK); fill(x + 1, py + 4, 16, 2, TMETAL); ring(x + 19, py); x += 21;
+    }
+    if (tier >= 5 && r() < 0.35) saws.push({ x: (x - 2) * TS, y: (py + 5) * TS, rad: 22, amp: 40, per: 2.6, ph: r() * 6.283 });
+  }
+  while (x < wt - 12) { ring(x + 3, py); x += 6; }
+  ring(wt - 11, 20);
+  // make sure every hook point has another one ahead of it within about 7 blocks
+  const clearAt = (tx, ty) => get(tx, ty) === TAIR && get(tx, ty + 1) === TAIR && get(tx, ty - 1) === TAIR && !lasers.some(l => Math.abs(l.x - (tx * TS + 20)) < 60);
+  const unders = [];
+  for (let xx = 0; xx < wt; xx++) for (let yy = 3; yy < ht - 3; yy++) if (get(xx, yy) === TROCK && get(xx, yy + 1) === TAIR) unders.push({ x: xx * TS + 20, y: (yy + 1) * TS });
+  const goal = { x: (wt - 9) * TS, y: 20 * TS };
+  const skip = new Set();
+  for (let pass = 0; pass < 200; pass++) {
+    const hooks = rings.concat(unders, [goal]);
+    let fix = null;
+    for (const a of [{ x: start.x, y: start.y - 160 }].concat(rings, unders)) {
+      if (a.x > goal.x - 40 || skip.has(a.x + ',' + a.y)) continue;
+      let best = null, bd = 1e9;
+      for (const q of hooks) if (q.x > a.x + 40) { const d = Math.hypot(q.x - a.x, q.y - a.y); if (d < bd) { bd = d; best = q; } }
+      if (best && bd > 280) { fix = [a, best, bd]; break; }
+    }
+    if (!fix) break;
+    const [a, q, d] = fix;
+    let placed = false;
+    for (const f of [240, 200, 160, 120]) {
+      for (const oy of [0, -1, 1, -2, 2, 3]) {
+        const tx = Math.floor((a.x + (q.x - a.x) * f / d) / TS), ty = Math.floor((a.y + (q.y - a.y) * f / d) / TS) + oy;
+        if (tx * TS + 20 > a.x + 60 && clearAt(tx, ty)) { rings.push({ x: tx * TS + TS / 2, y: ty * TS + TS / 2 }); placed = true; break; }
+      }
+      if (placed) break;
+    }
+    if (!placed) skip.add(a.x + ',' + a.y);
+  }
+  const speed = [520, 500, 480, 460, 440, 420][tier];
+  const gold = Math.round((wt * TS / speed + 1.5) * 2) / 2;
+  const c = { name: '#' + n + ' ' + TRIAL_NAMES[n - 1], n, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(Object.assign({ n: TRIAL_NAMES[n - 1] }, TRIAL_PAL[tier])),
+    rings, saws, lasers, winds, cps, start, finishX: (wt - 7) * TS,
+    gold, silver: Math.round(gold * 1.35 * 2) / 2, bronze: Math.round(gold * 1.8 * 2) / 2,
+    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
+  courseCache[n] = c;
+  return c;
+}
+function trState() {
+  if (!save.trials || typeof save.trials !== 'object') save.trials = {};
+  const t = save.trials;
+  if (!t._ok) {
+    const best = {}, medal = {};
+    for (let n = 1; n <= 30; n++) {
+      const b = t.best && num(t.best[n]); if (b != null && b > 0) best[n] = b;
+      const m = t.medal && clampInt(t.medal[n], 0, 3); if (m) medal[n] = m;
+    }
+    t.best = best; t.medal = medal;
+    Object.defineProperty(t, '_ok', { value: true, enumerable: false });
+  }
+  return t;
+}
+const goldCount = () => Object.values(trState().medal).filter(m => m === 3).length;
+function grantTrialSkins() {
+  const golds = goldCount(), got = [];
+  for (const id of SKIN_ORDER) if (golds >= SKIN_GOLDS(id) && !ownsSkin(id)) { for (const iid of Object.values(skinEq(id))) save.owned[iid] = 1; got.push(PAL_BY[id].n); }
+  return got;
+}
+function loadGhost(n) {
+  try {
+    const s = localStorage.getItem('hookspire.ghost.' + n);
+    if (!s) return null;
+    const a = s.split(',').slice(0, 40000).map(Number);
+    return a.every(Number.isFinite) && a.length >= 4 ? a : null;
+  } catch (e) { return null; }
+}
+function saveGhost(n, rec) { try { localStorage.setItem('hookspire.ghost.' + n, rec.join(',')); } catch (e) {} }
+const trialSawPos = (s) => ({ x: s.x, y: s.y + (s.amp ? Math.sin(trial.time * 6.283 / s.per + s.ph) * s.amp : 0) });
+const trialLaserOn = (l) => ((trial.time + l.ph) % l.per) / l.per < l.on;
+function startTrial(n) {
+  const c = buildCourse(n);
+  hw = c; mode = 'trial';
+  ab.active = {}; ab.cd = {};
+  trial = { n, time: 0, count: 1.6, recT: 0, rec: [], cp: c.start, deaths: 0, done: false, ghost: loadGhost(n), got: new Set(), res: null };
+  detach(); P.x = c.start.x; P.y = c.start.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.inv = 0; P.stun = 0;
+  particles.length = 0; runHeight = 0;
+  const sc = wScale();
+  wcamX = clamp(P.x - cw / sc / 2, 0, Math.max(0, c.wt * TS - cw / sc)); wcamY = clamp(P.y - ch / sc * 0.55, 0, Math.max(0, c.ht * TS - ch / sc));
+  wRegion = c.name; $('w-region').textContent = c.name; regionT = gt;
+  state = 'play'; show(null);
+  $('hud').hidden = true; $('whud').hidden = false;
+  $('w-ult').hidden = true; $('w-mini').hidden = true; $('w-hint').hidden = true; $('p-hint').hidden = true;
+  $('t-hint').hidden = false; $('t-timer').hidden = false; $('w-hp').hidden = true; $('w-slots').hidden = true;
+  banner('Time Trial ' + n, TRIAL_NAMES[n - 1], 'Gold ' + fmtTime(c.gold) + ' · Silver ' + fmtTime(c.silver) + ' · Bronze ' + fmtTime(c.bronze));
+  canvas.focus();
+}
+function trialDie() {
+  burst(P.x, P.y, '#ff5a6e', 16, 240);
+  if (!reduceMotion) shake = 0.2;
+  detach(); P.x = trial.cp.x; P.y = trial.cp.y; P.vx = 0; P.vy = 0; P.hist.length = 0;
+  trial.deaths++;
+}
+function trialTick(dt) {
+  if (trial.done) return;
+  if (trial.count > 0) { trial.count -= dt; if (trial.count <= 0) banner(hw.name, 'Go!'); return; }
+  trial.time += dt;
+  trial.recT += dt;
+  while (trial.recT >= 0.05) { trial.recT -= 0.05; if (trial.rec.length < 40000) trial.rec.push(Math.round(P.x), Math.round(P.y)); }
+  for (const w of hw.winds) if (P.x > w.x0 && P.x < w.x1 && P.y > w.y0 && P.y < w.y1) { P.vx += w.fx * dt; P.vy += w.fy * dt; }
+  let dead = false;
+  const r = curR() + 2, x0 = Math.floor((P.x - r) / TS), x1 = Math.floor((P.x + r) / TS), y0 = Math.floor((P.y - r) / TS), y1 = Math.floor((P.y + r) / TS);
+  for (let ty = y0; ty <= y1 && !dead; ty++) for (let tx = x0; tx <= x1; tx++) if (hw.get(tx, ty) === TSPIKE && circleRect(P.x, P.y, r, tx * TS, ty * TS, TS, TS)) { dead = true; break; }
+  for (const s of hw.saws) { const q = trialSawPos(s); if (Math.hypot(P.x - q.x, P.y - q.y) < PR + s.rad - 4) dead = true; }
+  for (const l of hw.lasers) if (trialLaserOn(l) && Math.abs(P.x - l.x) < PR - 2 && P.y > l.y1 && P.y < l.y2) dead = true;
+  if (dead) { trialDie(); return; }
+  for (const cp of hw.cps) if (!trial.got.has(cp) && Math.abs(P.x - cp.x) < 90 && P.y < cp.y + 20 && P.y > cp.y - 160) {
+    trial.got.add(cp); trial.cp = cp; burst(cp.x, cp.y, '#5ee6c1', 14, 180); banner('Checkpoint', fmtTime(trial.time));
+  }
+  if (P.x >= hw.finishX) trialFinish();
+}
+function trialFinish() {
+  trial.done = true;
+  const n = trial.n, c = hw, t = trial.time, ts = trState();
+  const prevBest = ts.best[n] || 0, prevMedal = ts.medal[n] || 0;
+  const medal = t <= c.gold ? 3 : t <= c.silver ? 2 : t <= c.bronze ? 1 : 0;
+  const newBest = !prevBest || t < prevBest;
+  if (newBest) { ts.best[n] = Math.round(t * 100) / 100; saveGhost(n, trial.rec); }
+  let tok = 0;
+  for (let m = prevMedal + 1; m <= medal; m++) tok += MEDAL_TOK[m];
+  if (medal > prevMedal) ts.medal[n] = medal;
+  if (tok) addTokens(tok, P.x, P.y);
+  const newSkins = grantTrialSkins();
+  writeSave();
+  trial.res = { t, medal, prevBest, newBest, tok, newSkins };
+  burst(P.x, P.y, MEDAL[medal].c, 40, 320);
+  banner(medal ? MEDAL[medal].n + ' medal' : 'Finished', fmtTime(t));
+  detach(); for (const k in keys) keys[k] = false;
+  state = 'over';
+  setTimeout(() => { if (mode === 'trial' && trial && trial.done && state === 'over') showTrialResult(); }, 1200);
+}
+function showTrialResult() {
+  const R = trial.res, c = hw, n = trial.n, ts = trState();
+  $('trr-title').textContent = R.medal ? MEDAL[R.medal].n + ' medal!' : 'Finished';
+  $('trr-title').style.color = MEDAL[R.medal].c;
+  $('trr-sub').textContent = c.name + (R.newBest && R.prevBest ? ' · New best!' : '');
+  $('trr-time').textContent = fmtTime(R.t);
+  $('trr-best').textContent = fmtTime(ts.best[n] || R.t);
+  $('trr-deaths').textContent = String(trial.deaths);
+  const ul = $('trr-targets'); ul.textContent = '';
+  for (const [m, tt] of [[3, c.gold], [2, c.silver], [1, c.bronze]]) {
+    const li = document.createElement('li');
+    const a = document.createElement('span'); a.textContent = MEDAL[m].n + (R.t <= tt ? ' · made it' : ''); a.style.color = MEDAL[m].c;
+    const b = document.createElement('span'); b.textContent = fmtTime(tt);
+    li.append(a, b); ul.append(li);
+  }
+  const msg = [];
+  if (R.tok) msg.push('+' + R.tok + ' tokens.');
+  if (R.newSkins.length) msg.push('New skin: ' + R.newSkins.join(', ') + '! Wear it from the Skins tab in the locker.');
+  const next = SKIN_ORDER.find(id => !ownsSkin(id));
+  if (next) msg.push(goldCount() + ' gold medals. ' + PAL_BY[next].n + ' unlocks at ' + SKIN_GOLDS(next) + '.');
+  $('trr-msg').textContent = msg.join(' ');
+  $('b-trr-next').hidden = n >= 30;
+  show('scr-trial-res');
+}
+function trialRender(dt) {
+  const t = trial.time;
+  for (const w of hw.winds) {
+    ctx.fillStyle = 'rgba(190,220,255,0.06)'; ctx.fillRect(w.x0, w.y0, w.x1 - w.x0, w.y1 - w.y0);
+    ctx.strokeStyle = 'rgba(200,225,255,0.3)'; ctx.lineWidth = 2; ctx.beginPath();
+    for (let k = 0; k < 18; k++) {
+      const bx = w.x0 + ((k * 137.3) % (w.x1 - w.x0)), by = w.y0 + ((k * 211.7) % (w.y1 - w.y0));
+      const off = (gt * 180 + k * 40) % 120;
+      if (w.fx) { const x = bx + (w.fx < 0 ? -off : off); ctx.moveTo(x, by); ctx.lineTo(x + (w.fx < 0 ? 30 : -30), by); }
+      else { const y = by - off; ctx.moveTo(bx, y); ctx.lineTo(bx, y + 30); }
+    }
+    ctx.stroke();
+  }
+  for (const cp of hw.cps) {
+    const got = trial.got.has(cp);
+    ctx.fillStyle = '#d8d2e6'; ctx.fillRect(cp.x + 50, cp.y - 40, 3, 57);
+    ctx.fillStyle = got ? '#5ee6c1' : '#ffb347'; ctx.beginPath(); ctx.moveTo(cp.x + 53, cp.y - 40); ctx.lineTo(cp.x + 80, cp.y - 32); ctx.lineTo(cp.x + 53, cp.y - 24); ctx.fill();
+  }
+  { const fx = hw.finishX, top = 2 * TS, bot = (hw.ht - 3) * TS;
+    for (let y = top, k = 0; y < bot; y += 20, k++) { ctx.fillStyle = k % 2 ? '#ffffff' : '#1b1631'; ctx.fillRect(fx - 6, y, 6, 20); ctx.fillStyle = k % 2 ? '#1b1631' : '#ffffff'; ctx.fillRect(fx, y, 6, 20); } }
+  for (const s of hw.saws) {
+    const q = trialSawPos(s);
+    if (s.amp) { ctx.strokeStyle = 'rgba(255,90,110,0.2)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(s.x, s.y - s.amp); ctx.lineTo(s.x, s.y + s.amp); ctx.stroke(); }
+    ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(t * 9);
+    ctx.fillStyle = '#c9ccd6'; ctx.beginPath();
+    for (let k = 0; k < 24; k++) { const rr2 = k % 2 ? s.rad * 0.78 : s.rad, a = k / 24 * 6.283; ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); }
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#3a3550'; ctx.beginPath(); ctx.arc(0, 0, s.rad * 0.3, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
+  for (const l of hw.lasers) {
+    const on = trialLaserOn(l), ph = ((t + l.ph) % l.per) / l.per, warn = !on && ph > 0.86;
+    ctx.fillStyle = '#5a3346'; ctx.fillRect(l.x - 9, l.y1, 18, 10); ctx.fillRect(l.x - 9, l.y2 - 10, 18, 10);
+    if (on) {
+      ctx.strokeStyle = 'rgba(255,59,92,0.35)'; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(l.x, l.y1); ctx.lineTo(l.x, l.y2); ctx.stroke();
+      ctx.strokeStyle = '#ff3b5c'; ctx.lineWidth = 5; ctx.stroke(); ctx.strokeStyle = '#ffe3e8'; ctx.lineWidth = 1.5; ctx.stroke();
+    } else if (warn && Math.floor(gt * 16) % 2 === 0) {
+      ctx.strokeStyle = 'rgba(255,90,110,0.6)'; ctx.lineWidth = 1; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.moveTo(l.x, l.y1); ctx.lineTo(l.x, l.y2); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+  const gh = trial.ghost;
+  if (gh && trial.count <= 0) {
+    const f = t / 0.05, i = Math.floor(f), k = i * 2;
+    if (k + 3 < gh.length) {
+      const u = f - i, x = gh[k] + (gh[k + 2] - gh[k]) * u, y = gh[k + 1] + (gh[k + 3] - gh[k + 1]) * u;
+      drawClimber({ x, y, vx: (gh[k + 2] - gh[k]) * 20, vy: (gh[k + 3] - gh[k + 1]) * 20, base: '#ffffff', eq: NOEQ, alpha: 0.35, label: 'Best run', face: gh[k + 2] >= gh[k] ? 1 : -1 });
+    }
+  }
+}
+function trialHudFast() {
+  const el = $('t-timer'), c = hw;
+  let txt;
+  if (trial.count > 0) txt = 'Get ready…';
+  else {
+    const t = trial.time, tgt = t <= c.gold ? ['Gold', c.gold] : t <= c.silver ? ['Silver', c.silver] : t <= c.bronze ? ['Bronze', c.bronze] : null;
+    txt = fmtTime(t) + (tgt ? ' · ' + tgt[0] + ' ' + fmtTime(tgt[1]) : ' · no medal');
+  }
+  if (el.textContent !== txt) el.textContent = txt;
+}
+function renderTrials() {
+  const ts = trState(), golds = goldCount();
+  $('tr-golds').textContent = String(golds);
+  const next = SKIN_ORDER.find(id => !ownsSkin(id));
+  $('tr-next').textContent = next ? 'Next skin: ' + PAL_BY[next].n + ' at ' + SKIN_GOLDS(next) + ' gold medals.' : 'You have every Time Trial skin.';
+  const list = $('tr-list'); list.textContent = '';
+  for (let n = 1; n <= 30; n++) {
+    const open = n === 1 || !!ts.best[n - 1], m = ts.medal[n] || 0, best = ts.best[n];
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = best ? MEDAL[m].c : 'var(--line)';
+    const t = document.createElement('b'); t.textContent = '#' + n + ' ' + TRIAL_NAMES[n - 1];
+    const s = document.createElement('small'); s.style.color = best ? MEDAL[m].c : 'var(--dim)';
+    s.textContent = !open ? 'Locked' : best ? MEDAL[m].n + ' · ' + fmtTime(best) : 'Not finished';
+    b.append(t, s); b.disabled = !open;
+    if (open) b.addEventListener('click', () => startTrial(n));
+    list.append(b);
+  }
+}
+function openTrials() { renderTrials(); show('scr-trials'); }
+$('m-trial').addEventListener('click', openTrials);
+$('b-tr-back').addEventListener('click', () => { refreshMenu(); show('scr-menu'); });
+$('b-trr-next').addEventListener('click', () => { if (trial && trial.n < 30) startTrial(trial.n + 1); });
+$('b-trr-retry').addEventListener('click', () => { if (trial) startTrial(trial.n); });
+$('b-trr-list').addEventListener('click', () => { toMenu(); openTrials(); });
+grantTrialSkins();
 
 // ---------- loop ----------
 let last = performance.now(), acc = 0;
@@ -4497,7 +4868,7 @@ function frame(ts) {
   st = sharedTime();
   achTick(dt);
   syncPeers(dt);
-  if ((mode === 'world' || mode === 'pvp') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
   const camX = (W - viewW()) / 2;
   mouse.wx = camX + mouse.sx / scale; mouse.wy = camY + mouse.sy / scale;
   if (state === 'play') {
