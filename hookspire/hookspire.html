@@ -143,6 +143,11 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 .hp { display: flex; gap: 4px; align-items: center; }
 .hp i { width: 20px; height: 8px; border-radius: 4px; background: var(--danger); box-shadow: 0 1px 0 rgba(0,0,0,.35); }
 .hp i.off { background: rgba(255,255,255,.2); }
+.ult { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(132px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center; background: rgba(10,8,24,.72); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 14px; white-space: nowrap; }
+.ult .k { font-family: var(--display); color: var(--dim); }
+.ult .bar { width: 140px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; display: block; }
+.ult .bar i { display: block; height: 100%; background: var(--gold); }
+.ult.ready { border-color: var(--gold); box-shadow: 0 0 18px rgba(255,211,77,.35); }
 .ablist { display: grid; gap: 8px; }
 .abrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.04); }
 .abrow .txt { display: grid; gap: 2px; min-width: 0; flex: 1 1 240px; }
@@ -178,7 +183,9 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   </div>
   <div class="hud-tr"><div class="team" id="w-team"></div></div>
   <div id="wbanner"></div>
+  <div class="ult" id="w-ult" hidden><span class="k">Q</span><span id="w-ult-name"></span><span class="bar"><i id="w-ult-bar"></i></span></div>
   <div class="slots" id="w-slots"></div>
+  <div class="hint" id="p-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / yank a hooked player · <b>E</b> shoot · <b>Q</b> ultimate · <b>1–5</b> abilities · <b>Esc</b> pause</div>
   <div class="hint" id="w-hint"><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1–5</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
 </div>
 
@@ -199,6 +206,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <button class="mode" id="m-coop"><b>Co-op Climb</b><small>Climb with friends and hook onto each other.</small></button>
       <button class="mode" id="m-race"><b>Race</b><small>Race bots and friends to a height or against the clock.</small></button>
       <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
+      <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
     </div>
     <div class="modes two">
       <button class="mode shop" id="m-gacha"><b>Gacha</b><small>Spend 5 tokens to spin for hats, colors, ropes, trails and auras.</small></button>
@@ -411,6 +419,56 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <div class="row"><button class="btn primary" id="b-map-close">Close map</button></div>
   </section>
 
+  <section class="panel wide" id="scr-pvp" hidden>
+    <h2>PvP</h2>
+    <p>Hook, yank and shoot. Last one standing wins. <kbd>E</kbd> shoots, <kbd>Q</kbd> fires your ultimate when it's charged, and hooking a player then pressing <kbd>W</kbd> yanks them. Your Hookworld abilities work on keys 1–5.</p>
+    <div class="field"><span class="label">Arena</span><div class="seg" id="p-map"></div><p class="note" id="p-map-note"></p></div>
+    <div class="field"><span class="label">Lives</span><div class="seg" id="p-lives"></div></div>
+    <div class="field"><span class="label">Teams</span><div class="seg" id="p-teams"></div></div>
+    <div class="field"><span class="label">Bots</span><div class="seg" id="p-bots"></div></div>
+    <div class="field" id="p-diff-field"><span class="label">Bot difficulty</span><div class="seg" id="p-diff"></div></div>
+    <div class="field"><span class="label">Your ultimate</span><div class="items" id="p-ults"></div></div>
+    <div class="row">
+      <button class="btn primary" id="b-p-start">Start match</button>
+      <button class="btn" id="b-p-host">Host online match</button>
+    </div>
+    <div class="join" id="p-join">
+      <label for="p-code">Join a friend's match</label>
+      <input type="text" id="p-code" maxlength="6" placeholder="Match code" autocomplete="off" spellcheck="false">
+      <button class="btn" id="b-p-join">Join</button>
+    </div>
+    <p class="err" id="p-err" hidden></p>
+    <p class="note">Tokens: 2 for each knockout, 10 for winning.</p>
+    <button class="link" id="b-p-back">Back to menu</button>
+  </section>
+
+  <section class="panel" id="scr-pvp-lobby" hidden>
+    <h2>Online match</h2>
+    <div class="code-box">
+      <div><div class="label">Match code</div><div class="code" id="p-lcode"></div></div>
+      <button class="btn" id="b-p-copy">Copy code</button>
+    </div>
+    <p id="p-lset"></p>
+    <div class="label">Players</div>
+    <div class="team" id="p-llist"></div>
+    <p class="note" id="p-lmsg"></p>
+    <div class="row">
+      <button class="btn primary" id="b-p-lstart">Start match</button>
+      <button class="btn" id="b-p-leave">Leave</button>
+    </div>
+  </section>
+
+  <section class="panel" id="scr-pvp-res" hidden>
+    <h2 id="pr-title">Match over</h2>
+    <p id="pr-sub"></p>
+    <ol class="list" id="pr-list"></ol>
+    <p class="note" id="pr-msg"></p>
+    <div class="row">
+      <button class="btn primary" id="b-pr-again">Play again</button>
+      <button class="btn" id="b-pr-menu">Back to menu</button>
+    </div>
+  </section>
+
   <section class="panel" id="scr-help" hidden>
     <h2>How to climb</h2>
     <dl class="keys">
@@ -571,7 +629,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -592,6 +650,7 @@ try {
     save.raceWins = clampInt(s.raceWins, 0, 1e9);
     if (s.raceCfg && typeof s.raceCfg === 'object') save.raceCfg = s.raceCfg;
     if (s.hw && typeof s.hw === 'object') save.hw = s.hw;
+    if (s.pvpCfg && typeof s.pvpCfg === 'object') save.pvpCfg = s.pvpCfg;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
 const gotSet = new Set(save.got);
@@ -743,9 +802,10 @@ addEventListener('keydown', (e) => {
     if (GAME_KEYS.has(e.code) || (mode === 'world' && e.code === 'Tab')) e.preventDefault();
     keys[e.code] = true;
     if (e.code === 'Escape' || e.code === 'KeyP') pause();
-    else if (mode === 'world') {
+    else if (mode === 'world' || mode === 'pvp') {
       if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
       else if (e.code === 'Tab') openLoadout();
+      else if (mode === 'pvp') { if (e.code === 'KeyE') pvpShoot(); else if (e.code === 'KeyQ' && !e.repeat) pvpUltKey(); else if (e.code === 'KeyW' && !e.repeat) pvpYank(); }
       else if (e.code === 'KeyM') openMap();
       else if (e.code === 'KeyR' && !e.repeat) toCampfire();
     }
@@ -824,7 +884,7 @@ function computeAim() {
 function ropeAnchor() {
   if (!rope) return null;
   if (rope.kind === 'anchor') return rope.ref.broken > gt ? null : anchorPos(rope.ref, st);
-  if (rope.kind === 'peer') { const s = peerState.get(rope.ref); return s ? { x: s.rx, y: s.ry } : null; }
+  if (rope.kind === 'peer') return targetPos(rope.ref);
   return { x: rope.x, y: rope.y };
 }
 function attach(a) {
@@ -1133,7 +1193,7 @@ function syncPeers(dt) {
   try { list = team.peers(); } catch (e) { list = []; }
   const seen = new Set(), now = Date.now();
   for (const pe of list) {
-    if (pe.sameTab) continue;
+    if (pe.sameTab) { myPeerId = pe.peer; continue; }
     const pr = pe.presence || {};
     const x = num(pr.x), y = num(pr.y);
     if (x == null || y == null) continue;
@@ -1141,8 +1201,8 @@ function syncPeers(dt) {
     const age = Math.min(0.15, Math.max(0, (now - pe.updatedAt) / 1000));
     const vx = clamp(num(pr.vx) || 0, -MAXV, MAXV), vy = clamp(num(pr.vy) || 0, -MAXV, MAXV);
     let s = peerState.get(pe.peer);
-    const wb = teamKind === 'world';
-    const tx = clamp(x + vx * age, 0, wb ? WPX : W), ty = clamp(y + vy * age, wb ? 0 : SUMMIT_Y - 800, wb ? HPX : 10);
+    const wb = teamKind === 'world' || teamKind === 'pvp', WB = hw ? hw.wt * TS : WPX, HB = hw ? hw.ht * TS : HPX;
+    const tx = clamp(x + vx * age, 0, wb ? WB : W), ty = clamp(y + vy * age, wb ? 0 : SUMMIT_Y - 800, wb ? HB : 10);
     if (!s) { s = { id: pe.peer, rx: tx, ry: ty, hist: [], bots: [], trailAcc: 0 }; peerState.set(pe.peer, s); }
     s.tx = tx; s.ty = ty; s.vx = vx; s.vy = vy;
     s.n = cleanName(pr.n, 'Climber');
@@ -1152,7 +1212,8 @@ function syncPeers(dt) {
     s.cp = clampInt(pr.cp, 0, MAX_CP);
     s.playing = pr.s === 1;
     s.fx = clampInt(pr.fx, 0, 15);
-    s.a = Array.isArray(pr.a) && num(pr.a[0]) != null && num(pr.a[1]) != null ? [clamp(pr.a[0], 0, wb ? WPX : W), clamp(pr.a[1], wb ? 0 : SUMMIT_Y - 800, wb ? HPX : 10)] : null;
+    s.raw = pr;
+    s.a = Array.isArray(pr.a) && num(pr.a[0]) != null && num(pr.a[1]) != null ? [clamp(pr.a[0], 0, wb ? WB : W), clamp(pr.a[1], wb ? 0 : SUMMIT_Y - 800, wb ? HB : 10)] : null;
     s.host = pr.host === 1;
     s.rc = s.host ? parseRc(pr.rc) : null;
     s.rid = num(pr.rid);
@@ -1212,7 +1273,8 @@ function sendPresence(dt) {
       return [Math.round(b.x), Math.round(b.y), q ? Math.round(q.x) : -1, q ? Math.round(q.y) : 0, Math.round(b.mx * 10), b.fin];
     }) : null;
   }
-  if (teamKind === 'world') pr.fx = (ab.active.invis > 0 ? 1 : 0) | (ab.active.shrink > 0 ? 2 : 0) | (ab.active.fly > 0 ? 4 : 0) | (ab.active.shield > 0 ? 8 : 0);
+  if (teamKind === 'world' || teamKind === 'pvp') pr.fx = (ab.active.invis > 0 ? 1 : 0) | (ab.active.shrink > 0 ? 2 : 0) | (ab.active.fly > 0 ? 4 : 0) | (ab.active.shield > 0 ? 8 : 0);
+  if (teamKind === 'pvp') pvpPresence(pr);
   team.presence(pr).catch(() => {});
 }
 
@@ -1311,7 +1373,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -1378,7 +1440,7 @@ function pause() {
   detach();
   $('b-regroup').hidden = $('regroup-note').hidden = mode !== 'coop';
   $('pause-note').hidden = mode !== 'race';
-  $('b-cp').hidden = raceCountdown();
+  $('b-cp').hidden = raceCountdown() || mode === 'pvp';
   $('b-cp').textContent = mode === 'world' ? 'Back to campfire' : 'Back to checkpoint';
   show('scr-pause');
   writeSave();
@@ -1390,6 +1452,7 @@ function toMenu() {
   mode = 'solo'; race = null; raceHosting = false; hostRc = null;
   $('hud').hidden = true; $('h-race').hidden = true; $('whud').hidden = true;
   ab.active = {}; ab.cd = {};
+  pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true;
   toCheckpoint(0);
   runHeight = 0;
   refreshMenu(); show('scr-menu');
@@ -2238,6 +2301,7 @@ function updateHud(dt) {
   if (current === 'scr-start' && mode === 'coop') renderTeamList($('start-team-list'));
   if (current === 'scr-lobby') renderLobby();
   if (current === 'scr-world') renderWorldTeam($('w-team-list'));
+  if (current === 'scr-pvp-lobby') pvpLobbyTick();
   if (current === 'scr-results' && race) renderResults();
   followerCheck();
   if (saveDirty) writeSave();
@@ -2301,7 +2365,7 @@ const CAMPS = [
   { id: 'caves', n: 'Deep Camp', tx: 126, ty: 135 }, { id: 'sky', n: 'Sky Camp', tx: 150, ty: 37 },
 ];
 const CAMP_IDS = CAMPS.map(c => c.id);
-let hw = null, hsOk = false, explored = null, exploreT = 0, spotT = -99, regionT = -99, wRegion = '', wHudT = 0;
+let hw = null, hwWorld = null, hsOk = false, explored = null, exploreT = 0, spotT = -99, regionT = -99, wRegion = '', wHudT = 0;
 let wAim = null, wcamX = 0, wcamY = 0;
 const ab = { active: {}, cd: {} };
 const W_HP = 5;
@@ -2509,10 +2573,11 @@ function buildWorld() {
     const o = (y * WT + x) * 4; id.data[o] = c[0]; id.data[o + 1] = c[1]; id.data[o + 2] = c[2]; id.data[o + 3] = 255;
   }
   ic.putImageData(id, 0, 0);
-  return { g, get, surf, colB, shrines, bars, sentry, vault, treasure, trees, rings, towers, turrets, drones, chests, camps, img, shots: [] };
+  return { wt: WT, ht: HT, g, get, surf, colB, shrines, bars, sentry, vault, treasure, trees, rings, towers, turrets, drones, chests, camps, img, shots: [] };
 }
 function ensureWorld() {
-  if (!hw) hw = buildWorld();
+  if (!hwWorld) hwWorld = buildWorld();
+  hw = hwWorld;
   if (!explored) { explored = new Uint8Array(450); const e = hs().ex; for (let i = 0; i < e.length; i++) explored[i] = e[i] === '1' ? 1 : 0; }
 }
 
@@ -2522,8 +2587,8 @@ const curR = () => ab.active.shrink > 0 ? 8 : PR;
 const curRange = () => ab.active.longrope > 0 ? RANGE * 2 : RANGE;
 function extraRects() {
   const out = hw.bars.slice();
-  if (!(ab.active.invis > 0)) out.push(hw.sentry);
-  if (!vaultOpen()) out.push(hw.vault);
+  if (hw.sentry && !(ab.active.invis > 0)) out.push(hw.sentry);
+  if (hw.vault && !vaultOpen()) out.push(hw.vault);
   return out;
 }
 function circleFree(x, y, r) {
@@ -2566,10 +2631,9 @@ function worldAim() {
     const t = rayCircle(P.x, P.y, ux, uy, rg.x, rg.y, 16);
     if (t != null && t < bestT) { bestT = t; hit = { kind: 'ring', x: rg.x, y: rg.y }; }
   }
-  if (teamKind === 'world') for (const [id, s] of peerState) {
-    if (!s.playing) continue;
-    const t = rayCircle(P.x, P.y, ux, uy, s.rx, s.ry, 20);
-    if (t != null && t < bestT) { bestT = t; hit = { kind: 'peer', ref: id, x: s.rx, y: s.ry }; }
+  for (const tg of hookTargets()) {
+    const t = rayCircle(P.x, P.y, ux, uy, tg.x, tg.y, 20);
+    if (t != null && t < bestT) { bestT = t; hit = { kind: 'peer', ref: tg.id, x: tg.x, y: tg.y }; }
   }
   if (hit && hit.kind === 'surface') return { valid: true, kind: 'point', x: P.x + ux * bestT, y: P.y + uy * bestT };
   if (hit && hit.kind === 'ring') return { valid: true, kind: 'point', ring: true, x: hit.x, y: hit.y };
@@ -2607,6 +2671,7 @@ function knockedOut() {
   banner('Knocked out', 'Back to ' + (c ? c.n : 'camp'), 'Five hits and you\'re out. Campfires heal you.');
 }
 function pushOut(bx0, by0, bx1, by1, r, bounce, dt, raw) {
+  const P = PB; // the body being pushed: the player, or a PvP bot
   const cx = clamp(P.x, bx0, bx1), cy = clamp(P.y, by0, by1);
   const dx = P.x - cx, dy = P.y - cy, d2 = dx * dx + dy * dy;
   if (d2 >= r * r) return;
@@ -2649,6 +2714,7 @@ function tickAbilities(dt) {
 function stepWorld(dt) {
   gt += dt;
   tickAbilities(dt);
+  if (mode === 'pvp' && pvp && pvpGate(dt)) return;
   if (P.stun > 0) P.stun -= dt;
   if (P.inv > 0) P.inv -= dt;
   const r = curR(), range = curRange();
@@ -2656,12 +2722,12 @@ function stepWorld(dt) {
   if (dir) P.face = dir;
   const grabbing = !!keys.Space;
   if (rope && !grabbing) detach();
-  if (!rope && grabbing && P.stun <= 0 && wAim && wAim.valid) worldAttach(wAim);
+  if (!rope && grabbing && P.stun <= 0 && wAim && wAim.valid && !(mode === 'pvp' && pvp && Date.now() < pvp.me.netUntil)) worldAttach(wAim);
   if (rope && !ropeAnchor()) detach();
   const fly = ab.active.fly > 0, feather = ab.active.feather > 0;
   let ax = 0, ay = fly ? 0 : feather ? G * 0.3 : G;
   if (fly && !rope) { ax = dir * 1700; ay += ((held('KeyS', 'ArrowDown') ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0)) * 1700; }
-  else if (rope) ax = dir * SWING;
+  else if (rope) ax = dir * SWING * (mode === 'pvp' && pvp && pvp.me.od > Date.now() ? 1.6 : 1);
   else if (!P.ground) ax = dir * (feather ? 1000 : AIR);
   P.vx += ax * dt; P.vy += ay * dt;
   if (!rope && P.ground && !fly) P.vx += (dir * WALKMAX - P.vx) * Math.min(1, 12 * dt);
@@ -2702,7 +2768,7 @@ function worldPickups() {
     h.camp = c.id; if (!h.camps.includes(c.id)) h.camps.push(c.id);
     banner('Campfire lit', c.n, 'Press R to come back here.'); saveDirty = true;
   }
-  if (!h.vault && vaultOpen() && Math.hypot(P.x - hw.treasure.x, P.y - hw.treasure.y) < 56) claimVault();
+  if (hw.treasure && !h.vault && vaultOpen() && Math.hypot(P.x - hw.treasure.x, P.y - hw.treasure.y) < 56) claimVault();
 }
 function gainAbility(id) {
   const h = hs();
@@ -2728,6 +2794,7 @@ function toast(msg) { banner('Ability', msg); }
 function useAbility(i) {
   const h = hs(), id = h.slots[i];
   if (!id || state !== 'play') return;
+  if (mode === 'pvp' && pvp && (Date.now() < pvp.start || !pvp.me.alive || pvp.over || Date.now() < pvp.me.freezeUntil)) return;
   if (ab.cd[id] > 0 || ab.active[id] > 0) return;
   const A = ABIL[id];
   const dx = mouse.wx - P.x, dy = mouse.wy - P.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
@@ -2827,7 +2894,8 @@ function updateEnemies(dt) {
   }
 }
 function regionAt(x, y) {
-  const tx = clamp(Math.floor(x / TS), 0, WT - 1), ty = Math.floor(y / TS), s = hw.surf[tx];
+  if (hw.name) return hw.name;
+  const tx = clamp(Math.floor(x / TS), 0, hw.wt - 1), ty = Math.floor(y / TS), s = hw.surf[tx];
   if (ty > s + 6) return ty > 112 ? 'Crystal Caves' : 'The Underground';
   if (ty < s - 16 && ty < 66) return 'Sky Islands';
   return hw.colB[tx].n;
@@ -2893,6 +2961,7 @@ function startWorld() {
   state = 'play';
   show(null);
   $('hud').hidden = true; $('whud').hidden = false;
+  $('w-ult').hidden = true; $('w-hint').hidden = false; $('p-hint').hidden = true;
   $('w-hint').classList.remove('faded');
   setTimeout(() => $('w-hint').classList.add('faded'), 15000);
   buildSlots();
@@ -2972,11 +3041,18 @@ function updateWorldHud(dt) {
     el.setAttribute('aria-label', 'Health ' + wHP + ' of ' + W_HP);
   }
   updateSlots();
+  if (mode === 'pvp' && pvp) pvpHudFast();
   wHudT -= dt;
   if (wHudT > 0) return;
   wHudT = 0.4;
-  $('w-found').textContent = 'Abilities found: ' + h.ab.length;
-  if (teamKind === 'world') renderWorldTeam($('w-team')); else $('w-team').textContent = '';
+  if (mode === 'pvp' && pvp) {
+    $('w-found').textContent = 'Lives ' + Math.max(0, pvp.me.lives) + ' · KOs ' + kosOf(selfId());
+    renderPvpBoard($('w-team'));
+    pvpLobbyTick();
+  } else {
+    $('w-found').textContent = 'Abilities found: ' + h.ab.length;
+    if (teamKind === 'world') renderWorldTeam($('w-team')); else $('w-team').textContent = '';
+  }
   if (saveDirty) writeSave();
 }
 $('b-w-play').addEventListener('click', startWorld);
@@ -3040,14 +3116,15 @@ function shieldBubble(x, y, r) {
 function renderWorld(dt) {
   ctx = mainCtx;
   const sc = wScale(), vw = cw / sc, vh = ch / sc;
-  const tx = clamp(P.x - vw / 2, 0, WPX - vw), ty = clamp(P.y - vh * 0.55, 0, HPX - vh);
+  const fpos = camFocus(), WPw = hw.wt * TS, HPw = hw.ht * TS;
+  const tx = clamp(fpos.x - vw / 2, 0, Math.max(0, WPw - vw)), ty = clamp(fpos.y - vh * 0.55, 0, Math.max(0, HPw - vh));
   const k = Math.min(1, dt * 7);
   wcamX += (tx - wcamX) * k; wcamY += (ty - wcamY) * k;
   if (shake > 0) shake -= dt;
   const sx = shake > 0 ? (Math.random() - 0.5) * 10 : 0, sy = shake > 0 ? (Math.random() - 0.5) * 10 : 0;
   // sky, or cave darkness underground
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const col = clamp(Math.floor((wcamX + vw / 2) / TS), 0, WT - 1);
+  const col = clamp(Math.floor((wcamX + vw / 2) / TS), 0, hw.wt - 1);
   const under = clamp(((wcamY + vh / 2) / TS - hw.surf[col] - 3) / 8, 0, 1);
   const g = ctx.createLinearGradient(0, 0, 0, ch);
   g.addColorStop(0, mixRGB([86, 140, 214], [18, 13, 28], under)); g.addColorStop(1, mixRGB([200, 232, 255], [36, 27, 48], under));
@@ -3056,7 +3133,7 @@ function renderWorld(dt) {
     ctx.globalAlpha = 1 - under;
     for (const [c, par, amp, base, fr] of [['#b4d4ee', 0.12, 40, 0.55, 160], ['#9cc3e4', 0.25, 55, 0.68, 110]]) {
       ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(0, ch);
-      const yoff = (HPX * 0.6 - wcamY) * sc * par;
+      const yoff = (HPw * 0.6 - wcamY) * sc * par;
       for (let x = 0; x <= cw + 8; x += 8) ctx.lineTo(x, ch * base + yoff + Math.sin((x + wcamX * sc * par) / fr) * amp + Math.sin((x + wcamX * sc * par) / (fr * 0.37)) * amp * 0.3);
       ctx.lineTo(cw, ch); ctx.closePath(); ctx.fill();
     }
@@ -3068,10 +3145,10 @@ function renderWorld(dt) {
   ctx.fillStyle = '#5a4130';
   for (const t of hw.trees) if (t.x > L && t.x < R && t.y1 > U && t.y0 < D) ctx.fillRect(t.x - 7, t.y0, 14, t.y1 - t.y0);
   // tiles
-  const x0 = Math.max(0, Math.floor(wcamX / TS) - 1), x1 = Math.min(WT - 1, Math.floor((wcamX + vw) / TS) + 1);
-  const y0 = Math.max(0, Math.floor(wcamY / TS) - 1), y1 = Math.min(HT - 1, Math.floor((wcamY + vh) / TS) + 1);
+  const x0 = Math.max(0, Math.floor(wcamX / TS) - 1), x1 = Math.min(hw.wt - 1, Math.floor((wcamX + vw) / TS) + 1);
+  const y0 = Math.max(0, Math.floor(wcamY / TS) - 1), y1 = Math.min(hw.ht - 1, Math.floor((wcamY + vh) / TS) + 1);
   for (let yy = y0; yy <= y1; yy++) for (let xx = x0; xx <= x1; xx++) {
-    const v = hw.g[yy * WT + xx];
+    const v = hw.g[yy * hw.wt + xx];
     if (!v) { if (yy > hw.surf[xx] + 1) { ctx.fillStyle = '#1e1628'; ctx.fillRect(xx * TS, yy * TS, TS + 0.5, TS + 0.5); } continue; }
     const b = hw.colB[xx], px = xx * TS, py = yy * TS, deep = yy > hw.surf[xx] + 2, open = !wSolid(xx, yy - 1);
     switch (v) {
@@ -3092,16 +3169,16 @@ function renderWorld(dt) {
   const tRef = state === 'play' && !rope && wAim && wAim.valid && wAim.ring ? wAim : null;
   for (const rg of hw.rings) if (inView(rg.x, rg.y)) drawWRing(rg.x, rg.y, !!tRef && tRef.x === rg.x && tRef.y === rg.y);
   for (const b of hw.bars) if (inView(b.x, b.y)) { ctx.fillStyle = '#9aaccc'; ctx.fillRect(b.x, b.y, b.w, 5); for (let x = b.x + 3; x < b.x + b.w - 2; x += 9) ctx.fillRect(x, b.y, 4, b.h); }
-  { const s = hw.sentry; if (inView(s.x, s.y)) {
+  { const s = hw.sentry; if (s && inView(s.x, s.y)) {
     const inv = ab.active.invis > 0;
     ctx.fillStyle = inv ? 'rgba(199,155,255,0.14)' : 'rgba(255,90,110,0.38)'; ctx.fillRect(s.x, s.y, s.w, s.h);
     ctx.strokeStyle = inv ? 'rgba(199,155,255,0.4)' : 'rgba(255,200,210,0.85)'; ctx.lineWidth = 2; ctx.beginPath();
     for (let y = s.y + (gt * 40) % 12; y < s.y + s.h; y += 12) { ctx.moveTo(s.x + 4, y); ctx.lineTo(s.x + s.w - 4, y); }
     ctx.stroke(); } }
-  { const v = hw.vault; if (inView(v.x, v.y)) {
+  { const v = hw.vault; if (v && inView(v.x, v.y)) {
     if (!vaultOpen()) { ctx.fillStyle = '#3a3550'; ctx.fillRect(v.x, v.y, v.w, v.h); ctx.fillStyle = '#ffd34d'; ctx.beginPath(); ctx.arc(v.x + v.w / 2, v.y + v.h / 2 - 6, 6, 0, 6.283); ctx.fill(); ctx.fillRect(v.x + v.w / 2 - 2, v.y + v.h / 2 - 2, 4, 12); }
     else { ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 3; ctx.strokeRect(v.x + 2, v.y + 2, v.w - 4, v.h - 4); } } }
-  if (!h.vault && inView(hw.treasure.x, hw.treasure.y)) drawChest(hw.treasure.x, hw.treasure.y, false, true);
+  if (hw.treasure && !h.vault && inView(hw.treasure.x, hw.treasure.y)) drawChest(hw.treasure.x, hw.treasure.y, false, true);
   // enemies
   for (const w of hw.towers) {
     if (Math.abs(w.x - (wcamX + vw / 2)) > vw || Math.abs(w.y - (wcamY + vh / 2)) > vh) continue;
@@ -3130,10 +3207,10 @@ function renderWorld(dt) {
   ctx.fillStyle = '#ff5a6e';
   for (const s of hw.shots) if (inView(s.x, s.y)) { ctx.beginPath(); ctx.arc(s.x, s.y, 5, 0, 6.283); ctx.fill(); }
   // teammates
-  if (teamKind === 'world') for (const s of peerState.values()) {
-    if (!s.playing) continue;
+  if (teamKind === 'world' || teamKind === 'pvp') for (const s of peerState.values()) {
+    if (!s.playing || (mode === 'pvp' && !pvpPeerVisible(s))) continue;
     const fx = s.fx || 0;
-    const o = { x: s.rx, y: s.ry, vx: s.vx, vy: s.vy, base: s.c, eq: s.eq, anchor: s.a ? { x: s.a[0], y: s.a[1] } : null, label: s.n, face: (s.vx || 0) < 0 ? -1 : 1, hist: s.hist, trailAcc: s.trailAcc, alpha: fx & 1 ? 0.3 : 1, sc: fx & 2 ? 0.55 : 1 };
+    const o = { x: s.rx, y: s.ry, vx: s.vx, vy: s.vy, base: s.c, eq: s.eq, anchor: s.a ? { x: s.a[0], y: s.a[1] } : null, label: s.n, face: (s.vx || 0) < 0 ? -1 : 1, hist: s.hist, trailAcc: s.trailAcc, alpha: fx & 1 ? (mode === 'pvp' ? 0.12 : 0.3) : 1, sc: fx & 2 ? 0.55 : 1 };
     emitTrail(o, dt, particles); s.trailAcc = o.trailAcc;
     if (o.anchor) drawRope(o.x, o.y, o.anchor.x, o.anchor.y, 0, s.eq.rope, 0.85);
     drawClimber(o);
@@ -3159,14 +3236,18 @@ function renderWorld(dt) {
   // you
   const A = ropeAnchor();
   pushHist(P.hist, P.x, P.y);
-  const me = { x: P.x, y: P.y, vx: P.vx, vy: P.vy, base: COLORS[save.color], eq: save.eq, anchor: A, flash: P.inv > 0 && Math.floor(gt * 14) % 2 === 0, label: peerState.size ? (save.name || 'You') : '', face: P.face, hist: P.hist, trailAcc: P.trailAcc, alpha: ab.active.invis > 0 ? 0.35 : 1, sc: ab.active.shrink > 0 ? 0.55 : 1 };
+  const me = { x: P.x, y: P.y, vx: P.vx, vy: P.vy, base: COLORS[save.color], eq: save.eq, anchor: A, flash: P.inv > 0 && Math.floor(gt * 14) % 2 === 0, label: (peerState.size || mode === 'pvp') ? (save.name || 'You') : '', face: P.face, hist: P.hist, trailAcc: P.trailAcc, alpha: ab.active.invis > 0 ? 0.35 : 1, sc: ab.active.shrink > 0 ? 0.55 : 1 };
   if (state === 'play') {
     emitTrail(me, dt, particles); P.trailAcc = me.trailAcc;
     if (ab.active.fly > 0 && Math.random() < 0.7) particles.push({ k: 'dot', x: P.x + (Math.random() - 0.5) * 10, y: P.y + 18, vx: (Math.random() - 0.5) * 40, vy: 140, life: 0.4, color: '#8fd3ff' });
   }
-  if (A) drawRope(P.x, P.y, A.x, A.y, rope.L, save.eq.rope);
-  drawClimber(me);
-  if (ab.active.shield > 0) for (let k = 0; k < Math.max(1, ab.shieldHits || 1); k++) shieldBubble(P.x, P.y, curR() + k * 7);
+  if (mode === 'pvp' && pvp) pvpRender(dt);
+  if (mode !== 'pvp' || (pvp && pvp.me.alive)) {
+    if (A) drawRope(P.x, P.y, A.x, A.y, rope.L, save.eq.rope);
+    drawClimber(me);
+    if (ab.active.shield > 0) for (let k = 0; k < Math.max(1, ab.shieldHits || 1); k++) shieldBubble(P.x, P.y, curR() + k * 7);
+    if (mode === 'pvp' && pvp) pvpMeOverlay();
+  }
   updateParticles(particles, dt);
   drawParticles(particles);
 }
@@ -3177,13 +3258,823 @@ function worldFrame(dt) {
     wAim = worldAim();
     acc += dt;
     while (acc >= STEP) { stepWorld(STEP); acc -= STEP; }
-    updateEnemies(dt);
-    exploreTick(dt);
+    if (mode !== 'pvp') { updateEnemies(dt); exploreTick(dt); }
   } else { acc = 0; wAim = null; gt += dt; }
+  if (mode === 'pvp' && pvp && (state === 'play' || (pvp.online && state !== 'menu'))) pvpTick(dt);
   sendPresence(dt);
   renderWorld(dt);
   if (current === 'scr-map') drawMap();
   updateWorldHud(dt);
+}
+
+// =================================================================
+// ---------- PvP: arenas, shots, yanks and ultimates ----------
+// =================================================================
+const ULTS = {
+  storm: { n: 'Storm Ring', d: 'A ring of lightning around you for 4 seconds.', c: '#7fb2ff' },
+  net: { n: 'Grapple Net', d: 'Net everyone in front of you. They can\'t hook for 3 seconds.', c: '#9be15d' },
+  hole: { n: 'Black Hole', d: 'Pulls nearby players in, then pops.', c: '#b77cff' },
+  barrage: { n: 'Rocket Barrage', d: 'Six homing rockets.', c: '#ff8a3d' },
+  overdrive: { n: 'Overdrive', d: '6 seconds of faster swinging and double damage.', c: '#ff4fa3' },
+  decoy: { n: 'Decoy Swarm', d: 'Three fake copies of you scatter while you fade out.', c: '#f4f1de' },
+  wave: { n: 'Ground Pound Wave', d: 'A shockwave that launches everyone near you.', c: '#e3b45f' },
+  freeze: { n: 'Freeze Blast', d: 'Freeze everyone in front of you for 2 seconds.', c: '#bff3ff' },
+  totem: { n: 'Healing Totem', d: 'Heals you and nearby teammates for 8 seconds.', c: '#5ee6c1' },
+  laser: { n: 'Laser Beam', d: 'A long beam that follows your aim for 2 seconds.', c: '#ff5a6e' },
+  swap: { n: 'Swap Shot', d: 'A fast shot. Whoever it hits trades places with you.', c: '#ffd34d' },
+};
+const ULT_IDS = Object.keys(ULTS);
+const BOT_ULTS = ['storm', 'wave', 'freeze', 'barrage', 'laser', 'net', 'hole', 'overdrive'];
+const ARENAS = [
+  { id: 'pit', n: 'The Pit', d: 'A small bowl. Fights start fast.' },
+  { id: 'spires', n: 'Twin Spires', d: 'Two rock towers joined by a steel bridge.' },
+  { id: 'foundry', n: 'Foundry', d: 'Steel shelves under a rock ceiling.' },
+  { id: 'colossus', n: 'Colossus', d: 'The giant free-for-all map: islands, pillars and ruins.' },
+];
+const ARENA_IDS = ARENAS.map(a => a.id);
+const TEAM_COLORS = ['#ff6b8b', '#7fb2ff'], TEAM_NAMES = ['Red team', 'Blue team'];
+const PVP_BOT_NAMES = ['Bot Pip', 'Bot Juno', 'Bot Rook', 'Bot Vex', 'Bot Moss', 'Bot Zed'];
+const PDIFF = { easy: { rate: 1.7, err: 0.28, yank: false }, medium: { rate: 1.15, err: 0.13, yank: true }, hard: { rate: 0.8, err: 0.05, yank: true } };
+const SHOT_V = 900, SHOT_CD = 0.55, YANK_CD = 2, ULT_TIME = 40, P_HP = 5;
+let pvp = null, pvpHost = false, pvpPm = null, lastPvpId = 0, myPeerId = null, PB = P, claimN = 0;
+const pvpSid = Math.random().toString(36).slice(2, 8);
+const arenaCache = {};
+const pcfg = Object.assign({ map: 'pit', lives: 3, teams: false, nb: 3, diff: 'medium', ult: 'storm' }, save.pvpCfg || {});
+if (!ARENA_IDS.includes(pcfg.map)) pcfg.map = 'pit';
+if (![1, 3, 5].includes(pcfg.lives)) pcfg.lives = 3;
+pcfg.teams = pcfg.teams === true;
+pcfg.nb = clampInt(pcfg.nb, 0, 5);
+if (!PDIFF[pcfg.diff]) pcfg.diff = 'medium';
+if (!ULTS[pcfg.ult]) pcfg.ult = 'storm';
+const savePcfg = () => { save.pvpCfg = Object.assign({}, pcfg); writeSave(); };
+
+function buildArena(id) {
+  if (arenaCache[id]) return arenaCache[id];
+  const [wt, ht] = { pit: [64, 34], spires: [78, 42], foundry: [72, 38], colossus: [240, 110] }[id];
+  const g = new Uint8Array(wt * ht);
+  const r = mulberry({ pit: 11, spires: 22, foundry: 33, colossus: 44 }[id] * 7919);
+  const rr = (a, b) => a + r() * (b - a), ri = (a, b) => Math.floor(rr(a, b + 1));
+  const inb = (x, y) => x >= 0 && y >= 0 && x < wt && y < ht;
+  const set = (x, y, v) => { if (inb(x, y)) g[y * wt + x] = v; };
+  const get = (x, y) => inb(x, y) ? g[y * wt + x] : TMETAL;
+  const fill = (x0, y0, w, h, v) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) set(x, y, v); };
+  const blob = (cx, cy, rx, ry, v) => { for (let dy = -ry; dy <= ry; dy++) for (let dx = -rx; dx <= rx; dx++) if ((dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) <= 1) set(cx + dx, cy + dy, v); };
+  const rings = [], spawns = [];
+  const ring = (tx, ty) => { const px = tx * TS + TS / 2, py = ty * TS + TS / 2; if (get(tx, ty) === TAIR && get(tx, ty + 1) === TAIR && !rings.some(q => Math.abs(q.x - px) < 60 && Math.abs(q.y - py) < 60)) rings.push({ x: px, y: py }); };
+  const topAt = (x, from) => { for (let y = from; y < ht; y++) if (get(x, y) !== TAIR) return y; return ht; };
+  const spawnOn = (x, from) => { const t = topAt(x, from); if (t < ht - 1 && t > 2 && get(x, t - 1) === TAIR && get(x, t - 2) === TAIR) spawns.push({ x: x * TS + TS / 2, y: t * TS - PR - 2 }); };
+  const ceiling = (rows) => { fill(0, 0, wt, rows, TROCK); for (let x = 1; x < wt - 1; x++) { const d = Math.max(0, Math.round(Math.sin(x * 0.7) * 1.5 + r() * 2 - 0.5)); fill(x, rows, 1, d, TROCK); } };
+  let pal;
+  if (id === 'pit') {
+    pal = { n: 'The Pit', top: '#d8b4ff', rock: '#6a5a8a', deep: '#4d4166' };
+    ceiling(3);
+    for (let x = 0; x < wt; x++) { const t = (x - wt / 2) / (wt / 2), top = Math.round(24 + 6 * (1 - t * t)); fill(x, top, 1, ht - top, TROCK); }
+    for (const [x, y, w] of [[8, 17, 8], [48, 17, 8], [27, 11, 10], [18, 23, 6], [40, 23, 6]]) fill(x, y, w, 1, TROCK);
+    for (let x = 4; x < wt - 4; x += 5) ring(x, 7 + (x % 3));
+    for (const [x, y] of [[4, 14], [59, 14], [32, 18], [22, 15], [42, 15], [14, 21], [50, 21]]) ring(x, y);
+    for (const x of [11, 52, 31, 20, 43]) spawnOn(x, 6);
+    for (const x of [5, 58, 32]) spawnOn(x, 20);
+  } else if (id === 'spires') {
+    pal = { n: 'Twin Spires', top: '#9be15d', rock: '#7a6a58', deep: '#574b3f' };
+    ceiling(3);
+    fill(0, 38, wt, ht - 38, TROCK);
+    fill(16, 12, 6, 27, TROCK); fill(56, 12, 6, 27, TROCK);
+    fill(22, 20, 34, 1, TMETAL); fill(37, 20, 4, 1, TAIR);
+    for (const [x, y, w] of [[3, 28, 7], [68, 28, 7], [33, 30, 12]]) fill(x, y, w, 1, TROCK);
+    blob(39, 5, 5, 2, TROCK);
+    for (let x = 24; x <= 54; x += 6) { ring(x, 11); ring(x + 3, 26); }
+    for (const [x, y] of [[8, 12], [70, 12], [8, 20], [70, 20], [11, 33], [66, 33]]) ring(x, y);
+    for (const x of [18, 59, 6, 72, 28, 50, 36]) spawnOn(x, 6);
+    for (const x of [10, 26, 52]) spawnOn(x, 31);
+  } else if (id === 'foundry') {
+    pal = { n: 'Foundry', top: '#ffb347', rock: '#6b5a4c', deep: '#4c4038' };
+    ceiling(2);
+    fill(0, 34, wt, ht - 34, TMETAL);
+    for (const [x, y, w] of [[3, 26, 16], [53, 26, 16], [3, 16, 12], [57, 16, 12], [24, 19, 6], [42, 19, 6]]) fill(x, y, w, 1, TMETAL);
+    fill(30, 25, 12, 9, TMETAL); fill(30, 25, 12, 1, TROCK);
+    fill(20, 2, 2, 8, TROCK); fill(50, 2, 2, 8, TROCK); fill(33, 2, 6, 5, TROCK);
+    fill(1, 6, 3, 4, TROCK); fill(wt - 4, 6, 3, 4, TROCK);
+    for (let x = 6; x < wt - 4; x += 6) ring(x, 12);
+    for (const [x, y] of [[10, 22], [61, 22], [27, 26], [45, 26], [36, 16], [15, 30], [56, 30]]) ring(x, y);
+    for (const [x, f] of [[8, 3], [63, 3], [7, 18], [62, 18], [36, 8], [26, 3], [45, 3], [20, 27], [52, 27]]) spawnOn(x, f);
+  } else {
+    pal = { n: 'Colossus', top: '#8fd36b', rock: '#8a6d52', deep: '#58483a' };
+    ceiling(4);
+    for (let x = 0; x < wt; x++) { const top = 96 + Math.round(Math.sin(x / 13) * 4 + Math.sin(x / 5) * 1.5); fill(x, top, 1, ht - top, TROCK); }
+    for (let i = 0; i < 10; i++) { const x = ri(10, wt - 14), w = ri(3, 5), h = ri(16, 36); fill(x, 100 - h, w, h, TROCK); }
+    for (let i = 0; i < 34; i++) blob(ri(8, wt - 9), ri(16, 80), ri(4, 10), ri(1, 3), TROCK);
+    for (let i = 0; i < 8; i++) fill(ri(10, wt - 20), ri(20, 88), ri(6, 12), ri(2, 5), TMETAL);
+    for (let i = 0; i < 900 && rings.length < 230; i++) ring(ri(3, wt - 4), ri(8, 92));
+    for (let i = 0; i < 600 && spawns.length < 24; i++) spawnOn(ri(4, wt - 5), ri(6, 80));
+  }
+  fill(0, 0, 1, ht, TMETAL); fill(wt - 1, 0, 1, ht, TMETAL); fill(0, ht - 1, wt, 1, TMETAL);
+  const a = { name: pal.n, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings, spawns,
+    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
+  arenaCache[id] = a;
+  return a;
+}
+
+// ----- fighters -----
+function fighter(id, team, lives) {
+  return { id, team, hp: P_HP, lives, alive: true, respawnAt: 0, kb: Object.create(null), charge: 0, shotCd: 0, yankCd: 0, inv: 0, freezeUntil: 0, netUntil: 0, pull: null, od: 0, invisUntil: 0 };
+}
+function makePvpBot(k, team, pm) {
+  return Object.assign(fighter('b' + k, team, pm.lv), {
+    k, name: PVP_BOT_NAMES[k], x: 0, y: 0, vx: 0, vy: 0, rope: null, ropeT: 0, think: 0.3 + k * 0.1, ground: false, stuck: 0, dir: 1, wantUp: false, target: null,
+    diff: pm.df, ult: BOT_ULTS[(pm.id + k * 3) % BOT_ULTS.length], base: pm.teams ? TEAM_COLORS[team & 1] : botColor(k), eq: botEq(pm.id, k), hist: [], face: 1, trailAcc: 0, shotCd: 1.2 + k * 0.3, yankCd: 3,
+  });
+}
+const selfId = () => (pvp && pvp.online && myPeerId) ? myPeerId : 'me';
+function kbFrom(arr) {
+  const o = Object.create(null);
+  if (Array.isArray(arr)) for (const e of arr.slice(0, 16)) if (Array.isArray(e) && typeof e[0] === 'string' && num(e[1]) != null) o[e[0].slice(0, 40)] = clampInt(e[1], 0, 99);
+  return o;
+}
+function pvpViews() {
+  const out = [], now = Date.now(), m = pvp.me;
+  out.push({ id: selfId(), me: true, name: save.name || 'Climber', x: P.x, y: P.y, vx: P.vx, vy: P.vy, team: m.team, alive: m.alive, lives: m.lives, hp: m.hp, invis: ab.active.invis > 0, kb: m.kb, c: COLORS[save.color] });
+  for (const b of pvp.bots) out.push({ id: b.id, bot: b, name: b.name, x: b.x, y: b.y, vx: b.vx, vy: b.vy, team: b.team, alive: b.alive, lives: b.lives, hp: b.hp, invis: b.invisUntil > now, kb: b.kb, c: b.base });
+  if (pvp.online) {
+    for (const b of pvp.rbots) if (b) out.push({ id: b.id, rbot: b, name: b.name, x: b.rx, y: b.ry, vx: b.vx, vy: b.vy, team: b.team, alive: b.alive, lives: b.lives, hp: b.hp, invis: b.invis, kb: b.kb, c: b.base });
+    for (const s of peerState.values()) {
+      const v = s.raw && s.raw.pv;
+      if (!v || typeof v !== 'object' || v.id !== pvp.id) continue;
+      out.push({ id: s.id, peer: s, name: s.n, x: s.rx, y: s.ry, vx: s.vx || 0, vy: s.vy || 0, team: num(v.tm) != null ? clampInt(v.tm, 0, 99) : 99, alive: v.al === 1, lives: clampInt(v.lv, 0, 9), hp: clampInt(v.hp, 0, P_HP), invis: (s.fx & 1) === 1, kb: kbFrom(v.kb), c: s.c });
+    }
+  }
+  return out;
+}
+function kosOf(id, views) { let n = 0; for (const v of views || pvpViews()) n += (v.kb && v.kb[id]) || 0; return n; }
+function pvpPeerVisible(s) { const v = pvp && s.raw && s.raw.pv; return !!(v && typeof v === 'object' && v.id === pvp.id && v.al === 1); }
+function hookTargets() {
+  if (mode === 'pvp' && pvp) return pvpViews().filter(v => !v.me && v.alive).map(v => ({ id: v.id, x: v.x, y: v.y }));
+  if (teamKind === 'world') return [...peerState.values()].filter(s => s.playing).map(s => ({ id: s.id, x: s.rx, y: s.ry }));
+  return [];
+}
+function targetPos(id) {
+  if (mode === 'pvp' && pvp) { const v = pvpViews().find(w => w.id === id); return v && v.alive ? { x: v.x, y: v.y } : null; }
+  const s = peerState.get(id);
+  return s ? { x: s.rx, y: s.ry } : null;
+}
+function camFocus() {
+  if (mode === 'pvp' && pvp && !pvp.me.alive && pvp.me.lives <= 0) { const v = pvpViews().find(w => !w.me && w.alive); if (v) return v; }
+  return P;
+}
+function respawnSpot(team) {
+  const foes = pvpViews().filter(v => v.alive && v.team !== team);
+  let best = hw.spawns[0], bs = -1;
+  for (const s of hw.spawns) {
+    const d = foes.length ? Math.min(...foes.map(v => Math.hypot(v.x - s.x, v.y - s.y))) : Math.random() * 1000;
+    if (d > bs) { bs = d; best = s; }
+  }
+  return best;
+}
+function respawnFighter(f, isMe) {
+  const s = respawnSpot(f.team);
+  f.hp = P_HP; f.alive = true; f.respawnAt = 0; f.inv = Date.now() + 2000; f.freezeUntil = 0; f.netUntil = 0; f.pull = null;
+  if (isMe) { detach(); P.x = s.x; P.y = s.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.inv = 2; banner('Back in', hw.name); }
+  else { f.x = s.x; f.y = s.y; f.vx = 0; f.vy = 0; f.rope = null; f.hist.length = 0; }
+}
+
+// ----- hits: applied here for you and your bots, sent as claims for everyone else -----
+function applyFighter(f, kind, a, b, c, src, isMe) {
+  const now = Date.now();
+  if (!f.alive) return;
+  if (kind === 'h') { f.hp = Math.min(P_HP, f.hp + clamp(a, 0, 2)); burst(isMe ? P.x : f.x, isMe ? P.y : f.y, '#5ee6c1', 8, 120); return; }
+  if (now < f.inv || now < pvp.start) return;
+  if (kind === 'p') { f.pull = { x: a, y: b, until: now + clamp(c, 0, 4000) }; return; }
+  if (isMe && ab.active.shield > 0) { ab.shieldHits = (ab.shieldHits || 1) - 1; if (ab.shieldHits <= 0) delete ab.active.shield; burst(P.x, P.y, '#ffd34d', 14, 200); return; }
+  const body = isMe ? P : f;
+  let dmg = 1;
+  if (kind === 'd') { dmg = a; body.vx += b; body.vy += c; }
+  else if (kind === 'y' || kind === 'l') { dmg = a; body.vx = b; body.vy = c; }
+  else if (kind === 'f') f.freezeUntil = now + clamp(a, 0, 4000);
+  else if (kind === 'n') f.netUntil = now + clamp(a, 0, 4000);
+  else if (kind === 's') { body.x = a; body.y = b; body.vx = 0; body.vy = 0; if (isMe) P.hist.length = 0; }
+  dmg = clamp(Math.round(dmg), 0, 3);
+  if (isMe) { detach(); P.stun = 0.2; if (!reduceMotion) shake = 0.2; } else f.rope = null;
+  f.hp -= dmg;
+  burst(body.x, body.y, '#ff5a6e', 10, 220);
+  if (f.hp <= 0) {
+    f.hp = 0; f.lives = Math.max(0, f.lives - 1); f.alive = false;
+    f.kb[src] = (f.kb[src] || 0) + 1;
+    f.respawnAt = f.lives > 0 ? now + 3000 : 0;
+    burst(body.x, body.y, '#ffd34d', 26, 300);
+    if (isMe) { detach(); banner(f.lives > 0 ? 'Knocked out' : 'Out of lives', f.lives > 0 ? 'Back in 3' : 'Spectating', f.lives > 0 ? f.lives + (f.lives === 1 ? ' life' : ' lives') + ' left.' : 'Last one standing wins.'); }
+  }
+}
+function deal(src, tid, kind, a, b, c) {
+  a = a || 0; b = b || 0; c = c || 0;
+  if (!pvp) return;
+  if (kind !== 'h' && kind !== 'p') { const f = src === selfId() ? pvp.me : pvp.bots.find(x => x.id === src); if (f) f.charge = Math.min(100, f.charge + 10); }
+  if (tid === selfId()) return applyFighter(pvp.me, kind, a, b, c, src, true);
+  const lb = pvp.bots.find(x => x.id === tid);
+  if (lb) return applyFighter(lb, kind, a, b, c, src, false);
+  if (pvp.online) pvp.claims.push([pvpSid + '.' + (++claimN), tid, kind, Math.round(a), Math.round(b), Math.round(c), src, Date.now()]);
+}
+function readClaims() {
+  const WP = hw.wt * TS, HP = hw.ht * TS;
+  for (const s of peerState.values()) {
+    const raw = s.raw;
+    if (!raw || !raw.pv || raw.pv.id !== pvp.id || !Array.isArray(raw.cl)) continue;
+    for (const c of raw.cl.slice(-30)) {
+      if (!Array.isArray(c) || typeof c[0] !== 'string' || typeof c[1] !== 'string' || typeof c[2] !== 'string' || c[2].length !== 1 || !'dylfnsph'.includes(c[2])) continue;
+      if (pvp.seen.has(c[0])) continue;
+      const mine = c[1] === myPeerId, lb = pvpHost ? pvp.bots.find(b => b.id === c[1]) : null;
+      if (!mine && !lb) continue;
+      pvp.seen.add(c[0]);
+      const k = c[2], src = typeof c[6] === 'string' ? c[6].slice(0, 40) : '?';
+      let a = num(c[3]) || 0, b = num(c[4]) || 0, cc = num(c[5]) || 0;
+      if (k === 's' || k === 'p') { a = clamp(a, 0, WP); b = clamp(b, 0, HP); }
+      else if (k === 'd' || k === 'y' || k === 'l') { a = clamp(a, 0, 3); b = clamp(b, -1500, 1500); cc = clamp(cc, -1500, 1500); }
+      applyFighter(mine ? pvp.me : lb, k, a, b, clamp(cc, -4000, 4000), src, mine);
+    }
+  }
+  if (pvp.seen.size > 3000) pvp.seen = new Set([...pvp.seen].slice(-1500));
+}
+
+// ----- shots -----
+function spawnShot(owner, team, x, y, ux, uy, o) {
+  o = o || {};
+  const v = o.speed || SHOT_V;
+  pvp.shots.push({ owner, team, x: x + ux * 22, y: y + uy * 22, vx: ux * v, vy: uy * v, life: o.life || 1.2, dmg: o.dmg || 1, homing: !!o.homing, swap: !!o.swap });
+}
+function moveFighter(id, x, y) {
+  if (id === selfId()) { detach(); P.x = x; P.y = y; P.vx = 0; P.vy = 0; P.hist.length = 0; return; }
+  const b = pvp.bots.find(q => q.id === id);
+  if (b) { b.x = x; b.y = y; b.vx = 0; b.vy = 0; b.rope = null; }
+}
+function updateShots(dt) {
+  if (!pvp.shots.length) return;
+  const views = pvpViews();
+  for (let i = pvp.shots.length - 1; i >= 0; i--) {
+    const s = pvp.shots[i];
+    const sdt = dt * (ab.active.slow > 0 && s.team !== pvp.me.team ? 0.35 : 1);
+    if (s.homing) {
+      let best = null, bd = 700;
+      for (const v of views) { if (!v.alive || v.team === s.team || v.invis) continue; const d = Math.hypot(v.x - s.x, v.y - s.y); if (d < bd) { bd = d; best = v; } }
+      if (best) { const sp = Math.hypot(s.vx, s.vy), dx = best.x - s.x, dy = best.y - s.y, d = Math.hypot(dx, dy) || 1; s.vx += (dx / d * sp - s.vx) * Math.min(1, 5 * sdt); s.vy += (dy / d * sp - s.vy) * Math.min(1, 5 * sdt); }
+    }
+    const n = Math.max(1, Math.ceil(Math.hypot(s.vx, s.vy) * sdt / 16));
+    let gone = false;
+    for (let k = 0; k < n && !gone; k++) {
+      s.x += s.vx * sdt / n; s.y += s.vy * sdt / n;
+      if (wSolid(Math.floor(s.x / TS), Math.floor(s.y / TS))) { gone = true; burst(s.x, s.y, '#ffd34d', 4, 90); break; }
+      for (const v of views) {
+        if (!v.alive || v.team === s.team || v.id === s.owner) continue;
+        if (Math.hypot(v.x - s.x, v.y - s.y) < 22) {
+          const sp = Math.hypot(s.vx, s.vy) || 1;
+          if (s.swap) { const ov = views.find(w => w.id === s.owner); if (ov) { deal(s.owner, v.id, 's', ov.x, ov.y); moveFighter(s.owner, v.x, v.y); } }
+          else deal(s.owner, v.id, 'd', s.dmg, s.vx / sp * 320, s.vy / sp * 320 - 120);
+          gone = true; break;
+        }
+      }
+    }
+    s.life -= sdt;
+    if (gone || s.life <= 0) pvp.shots.splice(i, 1);
+  }
+}
+
+// ----- ultimates -----
+function useUlt(src, f, body, id, ax, ay) {
+  if (!ULTS[id]) return;
+  f.charge = 0;
+  const now = Date.now(), dx = ax - body.x, dy = ay - body.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, ang = Math.atan2(uy, ux);
+  const isMe = src === selfId();
+  const fx = { kind: id, src, team: f.team, x: body.x, y: body.y, ang, t0: now, dur: 600, hit: {}, next: now };
+  const foes = () => pvpViews().filter(t => t.alive && t.team !== f.team && t.id !== src);
+  const inCone = (t, range, half) => {
+    const tx = t.x - body.x, ty = t.y - body.y, td = Math.hypot(tx, ty);
+    if (td > range) return false;
+    const da = Math.atan2(Math.sin(Math.atan2(ty, tx) - ang), Math.cos(Math.atan2(ty, tx) - ang));
+    return Math.abs(da) < half && wLos(body.x, body.y, t.x, t.y);
+  };
+  switch (id) {
+    case 'storm': fx.dur = 4000; fx.next = now + 200; break;
+    case 'net': fx.dur = 500; for (const t of foes()) if (inCone(t, 340, 0.6)) deal(src, t.id, 'n', 3000); break;
+    case 'freeze': fx.dur = 500; for (const t of foes()) if (inCone(t, 340, 0.7)) deal(src, t.id, 'f', 2000); break;
+    case 'hole': { const rr = Math.min(300, d); fx.x = body.x + ux * rr; fx.y = body.y + uy * rr; fx.dur = 2500; for (const t of foes()) if (Math.hypot(t.x - fx.x, t.y - fx.y) < 320) deal(src, t.id, 'p', fx.x, fx.y, 2500); break; }
+    case 'barrage': fx.dur = 1400; fx.left = 6; break;
+    case 'overdrive': fx.dur = 6000; f.od = now + 6000; break;
+    case 'decoy':
+      fx.dur = 5000; fx.decoys = [0, 1, 2].map(k => ({ x: body.x, y: body.y, vx: Math.cos(k * 2.1 + 0.4) * 520, vy: -350 - k * 120 }));
+      fx.base = isMe ? COLORS[save.color] : f.base; fx.eq = isMe ? save.eq : f.eq; fx.label = isMe ? (save.name || 'You') : f.name;
+      if (isMe) ab.active.invis = 2.5; else f.invisUntil = now + 2500;
+      break;
+    case 'wave': fx.dur = 700; for (const t of foes()) if (Math.abs(t.x - body.x) < 440 && Math.abs(t.y - body.y) < 170) deal(src, t.id, 'l', 2, Math.sign(t.x - body.x || 1) * 450, -950); break;
+    case 'totem': fx.dur = 8000; break;
+    case 'laser': fx.dur = 2000; break;
+    case 'swap': fx.dur = 300; spawnShot(src, f.team, body.x, body.y, ux, uy, { speed: 1300, swap: true }); break;
+  }
+  pvp.fx.push(fx);
+  burst(body.x, body.y, ULTS[id].c, 24, 260);
+  if (isMe) banner('Ultimate', ULTS[id].n);
+}
+function updateFx(now, dt) {
+  for (let i = pvp.fx.length - 1; i >= 0; i--) {
+    const f = pvp.fx[i], age = now - f.t0, isMe = f.src === selfId();
+    const owner = isMe ? pvp.me : pvp.bots.find(b => b.id === f.src);
+    const body = isMe ? P : owner;
+    if (!owner) { pvp.fx.splice(i, 1); continue; }
+    if (!owner.alive && f.kind !== 'hole' && f.kind !== 'totem') { pvp.fx.splice(i, 1); continue; }
+    if (f.kind === 'storm' || f.kind === 'laser' || f.kind === 'overdrive') { f.x = body.x; f.y = body.y; }
+    const foes = () => pvpViews().filter(t => t.alive && t.team !== f.team && t.id !== f.src);
+    if (f.kind === 'storm' && now >= f.next) {
+      f.next = now + 800;
+      for (const t of foes()) { const dx = t.x - f.x, dy = t.y - f.y, d = Math.hypot(dx, dy) || 1; if (d < 150) deal(f.src, t.id, 'd', 1, dx / d * 420, dy / d * 420 - 100); }
+    } else if (f.kind === 'barrage') {
+      while (f.left > 0 && now >= f.next) { f.left--; f.next += 200; const a = f.ang + (Math.random() - 0.5) * 0.8; spawnShot(f.src, f.team, body.x, body.y, Math.cos(a), Math.sin(a), { homing: true, speed: 650, life: 2 }); }
+    } else if (f.kind === 'totem' && now >= f.next) {
+      f.next = now + 1500;
+      if (owner.alive) deal(f.src, f.src, 'h', 1);
+      for (const t of pvpViews()) if (t.alive && t.team === f.team && t.id !== f.src && Math.hypot(t.x - f.x, t.y - f.y) < 240) deal(f.src, t.id, 'h', 1);
+    } else if (f.kind === 'laser') {
+      if (isMe) f.ang = Math.atan2(mouse.wy - P.y, mouse.wx - P.x);
+      else if (owner.target) f.ang = Math.atan2(owner.target.y - f.y, owner.target.x - f.x);
+      if (now >= f.next) {
+        f.next = now + 100;
+        const ux = Math.cos(f.ang), uy = Math.sin(f.ang), hit = gridRay(f.x, f.y, ux, uy, 700), L = hit ? hit.t : 700;
+        for (const t of foes()) {
+          const px = t.x - f.x, py = t.y - f.y, along = px * ux + py * uy;
+          if (along < 0 || along > L || Math.abs(px * uy - py * ux) > 22 || f.hit[t.id] > now) continue;
+          f.hit[t.id] = now + 400; deal(f.src, t.id, 'd', 1, ux * 260, uy * 260 - 80);
+        }
+      }
+    } else if (f.kind === 'decoy') {
+      for (const d of f.decoys) { d.vy += 900 * dt; d.vx *= 1 - 0.6 * dt; d.x += d.vx * dt; d.y += d.vy * dt; if (wSolid(Math.floor(d.x / TS), Math.floor((d.y + 15) / TS))) { d.y -= d.vy * dt; d.vy = -Math.abs(d.vy) * 0.5 - 200; } if (wSolid(Math.floor(d.x / TS), Math.floor(d.y / TS))) { d.x -= d.vx * dt; d.vx = -d.vx; } }
+    }
+    if (age > f.dur) {
+      if (f.kind === 'hole') for (const t of foes()) { const dx = t.x - f.x, dy = t.y - f.y, d = Math.hypot(dx, dy) || 1; if (d < 130) deal(f.src, t.id, 'd', 2, dx / d * 700, dy / d * 700 - 200); }
+      pvp.fx.splice(i, 1);
+    }
+  }
+}
+
+// ----- your controls -----
+function pvpGate(dt) {
+  const m = pvp.me, now = Date.now();
+  if (!m.alive || now < pvp.start || pvp.over || now < m.freezeUntil) { P.vx = 0; P.vy = 0; detach(); return true; }
+  if (now < m.netUntil && rope) detach();
+  if (m.pull && now < m.pull.until) { const dx = m.pull.x - P.x, dy = m.pull.y - P.y, d = Math.hypot(dx, dy) || 1; P.vx += dx / d * 1600 * dt; P.vy += dy / d * 1600 * dt; }
+  return false;
+}
+function pvpReady() { const m = pvp && pvp.me, now = Date.now(); return !!(m && m.alive && now >= pvp.start && !pvp.over && now >= m.freezeUntil && state === 'play'); }
+function pvpShoot() {
+  if (!pvpReady() || pvp.me.shotCd > 0) return;
+  const m = pvp.me, dx = mouse.wx - P.x, dy = mouse.wy - P.y, d = Math.hypot(dx, dy) || 1, od = m.od > Date.now();
+  spawnShot(selfId(), m.team, P.x, P.y, dx / d, dy / d, { dmg: od ? 2 : 1 });
+  m.shotCd = SHOT_CD * (od ? 0.5 : 1);
+}
+function pvpUltKey() { if (pvpReady() && pvp.me.charge >= 100) useUlt(selfId(), pvp.me, P, pvp.me.ult, mouse.wx, mouse.wy); }
+function pvpYank() {
+  if (!pvpReady() || !rope || rope.kind !== 'peer' || pvp.me.yankCd > 0) return;
+  const t = pvpViews().find(v => v.id === rope.ref);
+  if (!t || !t.alive || t.team === pvp.me.team) return;
+  const dx = P.x - t.x, dy = P.y - t.y, d = Math.hypot(dx, dy) || 1;
+  deal(selfId(), t.id, 'y', 1, dx / d * 950, dy / d * 950 - 250);
+  pvp.me.yankCd = YANK_CD;
+  pvp.lines.push({ x1: P.x, y1: P.y, x2: t.x, y2: t.y, until: Date.now() + 250 });
+  detach();
+}
+
+// ----- bots -----
+function collideBody(b, r, dt) {
+  PB = b; b.ground = false;
+  if (b.y < r) { b.y = r; if (b.vy < 0) b.vy = 0; }
+  const x0 = Math.floor((b.x - r) / TS), x1 = Math.floor((b.x + r) / TS), y0 = Math.floor((b.y - r) / TS), y1 = Math.floor((b.y + r) / TS);
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+    if (!wSolid(tx, ty)) continue;
+    const L = wSolid(tx - 1, ty) ? -Infinity : tx * TS, R = wSolid(tx + 1, ty) ? Infinity : (tx + 1) * TS;
+    const U = wSolid(tx, ty - 1) ? -Infinity : ty * TS, D = wSolid(tx, ty + 1) ? Infinity : (ty + 1) * TS;
+    pushOut(L, U, R, D, r, false, dt, [tx * TS, ty * TS, (tx + 1) * TS, (ty + 1) * TS]);
+  }
+  PB = P;
+}
+function botFindHook(b, dir, ty) {
+  let best = null, bs = -1e9;
+  for (const rg of hw.rings) {
+    const dx = rg.x - b.x, dy = rg.y - b.y;
+    if (Math.abs(dx) > RANGE || dy > -30 || dy < -RANGE) continue;
+    const d = Math.hypot(dx, dy);
+    if (d > RANGE * 0.95 || d < 60) continue;
+    const s = dx * dir * 0.6 - Math.abs(rg.y - ty) * 0.25 - dy * 0.2 + Math.random() * 40;
+    if (s > bs && wLos(b.x, b.y, rg.x, rg.y)) { bs = s; best = rg; }
+  }
+  if (best) return best;
+  for (let k = 0; k < 7; k++) {
+    const a = -Math.PI / 2 + dir * (0.15 + k * 0.17), ux = Math.cos(a), uy = Math.sin(a), hit = gridRay(b.x, b.y, ux, uy, RANGE);
+    if (hit && hit.t > 60 && HOOKABLE[hit.v]) return { x: b.x + ux * hit.t, y: b.y + uy * hit.t };
+  }
+  return null;
+}
+function botBrain(b, tgt, dt, now) {
+  const tx = tgt ? tgt.x : b.x + Math.sin(now / 2000) * 300, ty = tgt ? tgt.y - 40 : b.y - 120;
+  b.dir = Math.sign(tx - b.x) || 1;
+  if (Math.hypot(b.vx, b.vy) < 30) b.stuck += dt; else b.stuck = 0;
+  if (b.stuck > 2.5) { b.stuck = 0; b.rope = null; b.vy = -800; b.vx = -b.dir * 300; }
+  if (b.rope) {
+    b.ropeT += dt;
+    if ((b.vx * b.dir > 250 && b.vy < -80) || b.ropeT > 2.4 || b.rope.y > b.y + 10) { b.rope = null; b.think = 0.15 + Math.random() * 0.3; }
+  } else {
+    b.think -= dt;
+    if (b.think <= 0) {
+      b.think = 0.25;
+      const hk = now < b.netUntil ? null : botFindHook(b, b.dir, ty);
+      if (hk) { b.rope = { x: hk.x, y: hk.y, L: Math.max(MINL, Math.hypot(hk.x - b.x, hk.y - b.y) * 0.92) }; b.ropeT = 0; }
+    }
+  }
+  b.wantUp = ty < b.y - 60;
+}
+function botPhysics(b, dt, now) {
+  let ax = 0, ay = G;
+  if (b.rope) { ax = b.dir * SWING * 0.9 * (b.od > now ? 1.5 : 1); if (b.wantUp && b.rope.L > MINL + 10) b.rope.L -= REEL_IN * dt * 0.6; }
+  else if (b.ground) { b.vx += (b.dir * WALKMAX - b.vx) * Math.min(1, 10 * dt); if (Math.random() < dt * 1.5) b.vy = -JUMP_V; }
+  else ax = b.dir * AIR;
+  if (b.pull && now < b.pull.until) { const dx = b.pull.x - b.x, dy = b.pull.y - b.y, d = Math.hypot(dx, dy) || 1; ax += dx / d * 1600; ay += dy / d * 1600; }
+  b.vx += ax * dt; b.vy += ay * dt;
+  b.vx *= 1 - 0.1 * dt; b.vy *= 1 - 0.1 * dt;
+  const sp = Math.hypot(b.vx, b.vy);
+  if (sp > MAXV) { b.vx *= MAXV / sp; b.vy *= MAXV / sp; }
+  b.x += b.vx * dt; b.y += b.vy * dt;
+  if (b.rope) {
+    const dx = b.x - b.rope.x, dy = b.y - b.rope.y, d = Math.hypot(dx, dy);
+    if (d > b.rope.L && d > 0) { const nx = dx / d, ny = dy / d; b.x = b.rope.x + nx * b.rope.L; b.y = b.rope.y + ny * b.rope.L; const vr = b.vx * nx + b.vy * ny; if (vr > 0) { b.vx -= nx * vr; b.vy -= ny * vr; } }
+  }
+  collideBody(b, PR, dt);
+  if (!Number.isFinite(b.x) || !Number.isFinite(b.y)) respawnFighter(b, false);
+}
+function botTick(b, dt, now) {
+  pushHist(b.hist, b.x, b.y);
+  if (!b.alive) { if (b.lives > 0 && b.respawnAt && now >= b.respawnAt) respawnFighter(b, false); return; }
+  if (now < pvp.start || pvp.over) return;
+  b.charge = Math.min(100, b.charge + dt * 100 / ULT_TIME);
+  b.shotCd -= dt; b.yankCd -= dt;
+  let tgt = null, td = 1e9;
+  for (const t of pvpViews()) { if (!t.alive || t.team === b.team || t.id === b.id || t.invis) continue; const d = Math.hypot(t.x - b.x, t.y - b.y); if (d < td) { td = d; tgt = t; } }
+  b.target = tgt;
+  if (now < b.freezeUntil) { b.vx = 0; b.vy = 0; b.rope = null; return; }
+  if (now < b.netUntil) b.rope = null;
+  botBrain(b, tgt, dt, now);
+  const n = Math.max(1, Math.ceil(dt / STEP)), h = dt / n;
+  for (let i = 0; i < n; i++) botPhysics(b, h, now);
+  if (Math.abs(b.vx) > 20) b.face = Math.sign(b.vx);
+  if (!tgt) return;
+  const D = PDIFF[b.diff] || PDIFF.medium;
+  const los = td < 700 && wLos(b.x, b.y, tgt.x, tgt.y);
+  if (los && td < 650 && b.shotCd <= 0) {
+    const lead = td / SHOT_V * 0.6, ax = tgt.x + (tgt.vx || 0) * lead, ay = tgt.y + (tgt.vy || 0) * lead;
+    const a = Math.atan2(ay - b.y, ax - b.x) + (Math.random() - 0.5) * 2 * D.err;
+    spawnShot(b.id, b.team, b.x, b.y, Math.cos(a), Math.sin(a), { dmg: b.od > now ? 2 : 1 });
+    b.shotCd = D.rate * (0.8 + Math.random() * 0.4) * (b.od > now ? 0.5 : 1);
+  }
+  if (D.yank && los && td < RANGE && b.yankCd <= 0 && Math.random() < dt * 0.5) {
+    const ux = (b.x - tgt.x) / td, uy = (b.y - tgt.y) / td;
+    deal(b.id, tgt.id, 'y', 1, ux * 950, uy * 950 - 250);
+    b.yankCd = 5; pvp.lines.push({ x1: b.x, y1: b.y, x2: tgt.x, y2: tgt.y, until: now + 250 });
+  }
+  if (b.charge >= 100 && los && td < 320) useUlt(b.id, b, b, b.ult, tgt.x, tgt.y);
+}
+
+// ----- match flow -----
+function startPvp(pm, online) {
+  hw = buildArena(pm.map); mode = 'pvp'; lastPvpId = pm.id;
+  ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0;
+  const tm = new Map(pm.tm || []), myId = online ? myPeerId : 'me';
+  const myTeam = online ? (tm.has(myId) ? tm.get(myId) : 99) : 0;
+  pvp = { id: pm.id, cfg: pm, online, start: pm.st, over: false, overAt: 0, me: fighter(myId || 'me', myTeam, pm.lv), bots: [], rbots: [], shots: [], fx: [], claims: [], lines: [], seen: new Set(),
+    roster: online ? pm.tm : null, size: online ? pm.tm.length : 1 + pm.nb, reward: 0, won: false, winTeam: null };
+  pvp.me.ult = pcfg.ult; pvp.me.inv = pm.st + 2000;
+  const sp = hw.spawns, off = pm.id % sp.length;
+  if (!online || pvpHost) for (let k = 0; k < pm.nb; k++) {
+    const id = 'b' + k, team = online ? (tm.has(id) ? tm.get(id) : k + 1) : (pm.teams ? (k % 2 === 0 ? 1 : 0) : k + 1);
+    const b = makePvpBot(k, team, pm), idx = online ? Math.max(0, pm.tm.findIndex(e => e[0] === id)) : k + 1, s = sp[(off + idx) % sp.length];
+    b.x = s.x; b.y = s.y; b.inv = pm.st + 2000; pvp.bots.push(b);
+  }
+  const myIdx = online ? Math.max(0, pm.tm.findIndex(e => e[0] === myId)) : 0, s = sp[(off + myIdx) % sp.length];
+  detach(); P.x = s.x; P.y = s.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.stun = 0; P.inv = 0;
+  particles.length = 0; runHeight = 0;
+  const sc = wScale();
+  wcamX = clamp(P.x - cw / sc / 2, 0, Math.max(0, hw.wt * TS - cw / sc)); wcamY = clamp(P.y - ch / sc * 0.55, 0, Math.max(0, hw.ht * TS - ch / sc));
+  wRegion = hw.name; $('w-region').textContent = hw.name; regionT = gt;
+  state = 'play'; show(null);
+  $('hud').hidden = true; $('whud').hidden = false; $('w-ult').hidden = false; $('w-hint').hidden = true; $('p-hint').hidden = false;
+  $('wbanner').dataset.cd = '';
+  buildSlots(); lastHP = -1; wHP = P_HP;
+  canvas.focus();
+}
+function startPvpOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: [] }, false); }
+function hostStartPvp() {
+  if (!myPeerId) return;
+  const ids = [myPeerId, ...[...peerState.values()].map(s => s.id).sort()];
+  for (let k = 0; k < pcfg.nb; k++) ids.push('b' + k);
+  pvpPm = { id: Date.now() % 1e9, st: Date.now() + 4500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: ids.slice(0, 16).map((id, i) => [id, pcfg.teams ? i % 2 : i]) };
+  presenceClock = 0;
+  startPvp(pvpPm, true);
+}
+function pvpTick(dt) {
+  const now = Date.now(), m = pvp.me;
+  if (pvp.online) { if (!pvpHost) syncRemoteBots(dt); readClaims(); }
+  if (!m.alive && m.lives > 0 && m.respawnAt && now >= m.respawnAt) respawnFighter(m, true);
+  m.shotCd -= dt; m.yankCd -= dt;
+  if (m.alive && now >= pvp.start && !pvp.over) m.charge = Math.min(100, m.charge + dt * 100 / ULT_TIME);
+  wHP = m.alive ? m.hp : 0;
+  for (const b of pvp.bots) botTick(b, dt * (ab.active.slow > 0 && b.team !== m.team ? 0.35 : 1), now);
+  updateShots(dt);
+  updateFx(now, dt);
+  pvp.lines = pvp.lines.filter(l => l.until > now);
+  pvp.claims = pvp.claims.filter(c => now - c[7] < 2500).slice(-24);
+  checkOver(now);
+}
+function checkOver(now) {
+  if (pvp.over || now < pvp.start + 1500 || pvp.size < 2) return;
+  const views = pvpViews(), live = new Set();
+  if (pvp.online && pvp.roster) {
+    for (const [id, team] of pvp.roster) {
+      const v = views.find(w => w.id === id);
+      if (v ? (v.alive || v.lives > 0) : now < pvp.start + 8000) live.add(v ? v.team : team);
+    }
+  } else for (const v of views) if (v.alive || v.lives > 0) live.add(v.team);
+  if (live.size <= 1) { if (!pvp.overAt) pvp.overAt = now + 700; else if (now >= pvp.overAt) finishPvp(live.size ? [...live][0] : null); }
+  else pvp.overAt = 0;
+}
+function winnerLabel(win) {
+  if (win == null) return 'Nobody left standing';
+  if (pvp.cfg.teams) return TEAM_NAMES[win & 1] + ' wins';
+  const v = pvpViews().find(w => w.team === win);
+  return (v ? (v.me ? 'You' : v.name) : 'Someone') + (v && v.me ? ' win' : ' wins');
+}
+function finishPvp(win) {
+  pvp.over = true; pvp.winTeam = win;
+  const won = win != null && win === pvp.me.team, tok = kosOf(selfId()) * 2 + (won ? 10 : 0);
+  if (tok) addTokens(tok, P.x, P.y);
+  pvp.reward = tok; pvp.won = won;
+  writeSave();
+  detach(); for (const k in keys) keys[k] = false;
+  state = 'over';
+  banner(won ? 'Victory' : win == null ? 'Draw' : 'Match over', won ? 'You win!' : winnerLabel(win));
+  setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1600);
+}
+function showPvpResults() {
+  $('pr-title').textContent = pvp.won ? 'You win!' : winnerLabel(pvp.winTeam);
+  const a = ARENAS.find(q => q.id === pvp.cfg.map);
+  $('pr-sub').textContent = (a ? a.n : '') + ' · ' + pvp.cfg.lv + (pvp.cfg.lv === 1 ? ' life' : ' lives') + ' · ' + (pvp.cfg.teams ? '2 teams' : 'Free-for-all') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '');
+  renderPvpResults();
+  const follower = pvp.online && !pvpHost;
+  $('b-pr-again').hidden = follower;
+  $('pr-msg').textContent = follower ? 'When the host starts the next match, you\'ll join it automatically.' : '';
+  show('scr-pvp-res');
+}
+function renderPvpResults() {
+  const list = $('pr-list'); list.textContent = '';
+  const views = pvpViews();
+  const rows = views.map(v => ({ v, k: kosOf(v.id, views), win: pvp.winTeam != null && v.team === pvp.winTeam }));
+  rows.sort((a, b) => (b.win - a.win) || (b.v.lives - a.v.lives) || (b.k - a.k));
+  rows.forEach((r, i) => {
+    const li = document.createElement('li'); if (r.v.me) li.className = 'me';
+    const pl = document.createElement('span'); pl.className = 'place'; pl.textContent = ORD[i] || String(i + 1);
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = pvp.cfg.teams ? TEAM_COLORS[r.v.team & 1] : r.v.c;
+    const nm = document.createElement('span'); nm.textContent = r.v.name + (r.v.me ? ' (you)' : '');
+    const res = document.createElement('span'); res.className = 'res'; res.textContent = (r.win ? 'Winner · ' : '') + r.k + (r.k === 1 ? ' KO' : ' KOs');
+    li.append(pl, dot, nm, res); list.append(li);
+  });
+}
+
+// ----- online sync -----
+function pvpPresence(pr) {
+  const now = Date.now(), R = Math.round;
+  if (pvpHost && pvpPm) pr.pm = pvpPm;
+  if (!pvp) { pr.pv = null; return; }
+  const m = pvp.me, sid = selfId();
+  pr.pv = { id: pvp.id, hp: m.hp, lv: m.lives, al: m.alive ? 1 : 0, tm: m.team, kb: Object.entries(m.kb).slice(0, 12), fr: now < m.freezeUntil ? 1 : 0, nt: now < m.netUntil ? 1 : 0 };
+  pr.sh = pvp.shots.filter(s => s.owner === sid).slice(-8).map(s => [R(s.x), R(s.y)]);
+  pr.u = pvp.fx.slice(-6).map(f => [f.kind, R(f.x), R(f.y), R(f.ang * 100) / 100, f.t0, f.dur]);
+  pr.dc = pvp.fx.filter(f => f.decoys && f.src === sid).flatMap(f => f.decoys.map(d => [R(d.x), R(d.y)])).slice(0, 6);
+  pr.cl = pvp.claims.slice(-24).map(c => c.slice(0, 7));
+  if (pvpHost) {
+    const ids = new Set(pvp.bots.map(b => b.id));
+    pr.pb = pvp.bots.map(b => [R(b.x), R(b.y), b.rope ? R(b.rope.x) : -1, b.rope ? R(b.rope.y) : 0, b.hp, b.lives, b.alive ? 1 : 0, b.team, b.invisUntil > now ? 1 : 0, Object.entries(b.kb).slice(0, 8), now < b.freezeUntil ? 1 : 0, now < b.netUntil ? 1 : 0]);
+    pr.pbs = pvp.shots.filter(s => ids.has(s.owner)).slice(-10).map(s => [R(s.x), R(s.y)]);
+    pr.bdc = pvp.fx.filter(f => f.decoys && ids.has(f.src)).flatMap(f => f.decoys.map(d => [R(d.x), R(d.y)])).slice(0, 6);
+  }
+}
+function hostPvpPeer() { let h = null; for (const s of peerState.values()) if (s.raw && s.raw.pm && typeof s.raw.pm === 'object' && (!h || s.id < h.id)) h = s; return h; }
+function parsePm(v) {
+  if (!v || typeof v !== 'object') return null;
+  const id = num(v.id), st = num(v.st);
+  if (id == null || st == null || !ARENA_IDS.includes(v.map) || ![1, 3, 5].includes(v.lv)) return null;
+  const tm = Array.isArray(v.tm) ? v.tm.slice(0, 16).filter(e => Array.isArray(e) && typeof e[0] === 'string' && num(e[1]) != null).map(e => [e[0].slice(0, 40), clampInt(e[1], 0, 99)]) : [];
+  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 5), df: PDIFF[v.df] ? v.df : 'medium', tm };
+}
+function syncRemoteBots(dt) {
+  const h = hostPvpPeer(), ok = h && h.raw.pv && h.raw.pv.id === pvp.id && Array.isArray(h.raw.pb);
+  const arr = ok ? h.raw.pb.slice(0, 6) : [];
+  const k2 = 1 - Math.pow(1e-6, dt), WP = hw.wt * TS, HP = hw.ht * TS;
+  pvp.rbots.length = arr.length;
+  arr.forEach((e, k) => {
+    if (!Array.isArray(e) || num(e[0]) == null || num(e[1]) == null) { pvp.rbots[k] = null; return; }
+    let o = pvp.rbots[k];
+    if (!o) o = pvp.rbots[k] = { id: 'b' + k, k, name: PVP_BOT_NAMES[k], rx: e[0], ry: e[1], hist: [], trailAcc: 0, eq: botEq(pvp.id, k), vx: 0, vy: 0 };
+    const x = clamp(e[0], 0, WP), y = clamp(e[1], 0, HP);
+    if (Math.hypot(x - o.rx, y - o.ry) > 300) { o.rx = x; o.ry = y; o.vx = 0; o.vy = 0; }
+    else { const px = o.rx, py = o.ry; o.rx += (x - o.rx) * k2; o.ry += (y - o.ry) * k2; o.vx = dt ? (o.rx - px) / dt : 0; o.vy = dt ? (o.ry - py) / dt : 0; }
+    o.a = num(e[2]) != null && e[2] >= 0 && num(e[3]) != null ? [clamp(e[2], 0, WP), clamp(e[3], 0, HP)] : null;
+    o.hp = clampInt(e[4], 0, P_HP); o.lives = clampInt(e[5], 0, 9); o.alive = e[6] === 1; o.team = num(e[7]) != null ? clampInt(e[7], 0, 99) : k + 1;
+    o.invis = e[8] === 1; o.kb = kbFrom(e[9]); o.fr = e[10] === 1; o.nt = e[11] === 1;
+    o.base = pvp.cfg.teams ? TEAM_COLORS[o.team & 1] : botColor(k);
+    pushHist(o.hist, o.rx, o.ry);
+  });
+}
+function pvpLobbyTick() {
+  if (teamKind !== 'pvp') return;
+  if (current === 'scr-pvp-lobby') renderPvpLobby();
+  if (current === 'scr-pvp-res' && pvp) renderPvpResults();
+  if (pvpHost) return;
+  const h = hostPvpPeer(), pm = h && parsePm(h.raw.pm);
+  if (!pm || !pm.st || pm.id === lastPvpId || pm.st < Date.now() - 15000) return;
+  if (mode === 'pvp' && pvp && !pvp.over && state === 'play') return;
+  startPvp(pm, true);
+}
+function pmText(pm) {
+  const a = ARENAS.find(q => q.id === pm.map);
+  return (a ? a.n : '') + ' · ' + pm.lv + (pm.lv === 1 ? ' life' : ' lives') + ' · ' + (pm.teams ? '2 teams' : 'Free-for-all') + ' · ' + (pm.nb ? pm.nb + ' ' + DIFF[pm.df].n.toLowerCase() + ' bot' + (pm.nb > 1 ? 's' : '') : 'no bots');
+}
+function renderPvpLobby() {
+  $('p-lcode').textContent = teamCode;
+  const h = pvpHost ? null : hostPvpPeer(), pm = pvpHost ? pvpPm : (h && parsePm(h.raw.pm));
+  $('p-lset').textContent = pm ? pmText(pm) : 'Waiting to hear from the host…';
+  const list = $('p-llist'); list.textContent = '';
+  const rows = [{ n: (save.name || 'Climber') + (pvpHost ? ' (you, host)' : ' (you)'), c: COLORS[save.color] }];
+  for (const s of peerState.values()) rows.push({ n: s.n + (s.raw && s.raw.pm ? ' (host)' : ''), c: s.c });
+  for (const r of rows) {
+    const row = document.createElement('div'); row.className = 'team-row'; row.style.justifyContent = 'flex-start';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = r.c;
+    const nm = document.createElement('span'); nm.textContent = r.n;
+    row.append(dot, nm); list.append(row);
+  }
+  $('b-p-lstart').hidden = !pvpHost; $('b-p-lstart').disabled = !myPeerId;
+  $('p-lmsg').textContent = (pvpHost ? 'Share the code, then start when everyone is here.' : 'Waiting for the host to start.') + ' Your ultimate: ' + ULTS[pcfg.ult].n + '.';
+}
+
+// ----- PvP screens -----
+function renderPvpSetup() {
+  const mk = (id, opts, get, set) => {
+    const el = $(id); el.textContent = '';
+    for (const [v, label] of opts) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+      b.setAttribute('aria-pressed', String(get() === v));
+      b.addEventListener('click', () => { set(v); savePcfg(); renderPvpSetup(); });
+      el.append(b);
+    }
+  };
+  mk('p-map', ARENAS.map(a => [a.id, a.n]), () => pcfg.map, v => { pcfg.map = v; });
+  mk('p-lives', [[1, '1 life'], [3, '3 lives'], [5, '5 lives']], () => pcfg.lives, v => { pcfg.lives = v; });
+  mk('p-teams', [[false, 'Free-for-all'], [true, '2 teams']], () => pcfg.teams, v => { pcfg.teams = v; });
+  mk('p-bots', [0, 1, 2, 3, 4, 5].map(n => [n, n ? String(n) : 'None']), () => pcfg.nb, v => { pcfg.nb = v; });
+  mk('p-diff', Object.keys(PDIFF).map(k => [k, DIFF[k].n]), () => pcfg.diff, v => { pcfg.diff = v; });
+  $('p-diff-field').hidden = pcfg.nb === 0;
+  const a = ARENAS.find(q => q.id === pcfg.map); $('p-map-note').textContent = a ? a.d : '';
+  const ul = $('p-ults'); ul.textContent = '';
+  for (const id of ULT_IDS) {
+    const U = ULTS[id];
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = U.c;
+    const t = document.createElement('b'); t.textContent = U.n; t.style.color = U.c;
+    const s = document.createElement('small'); s.textContent = U.d; s.style.textTransform = 'none'; s.style.letterSpacing = '0'; s.style.fontWeight = '500'; s.style.color = 'var(--dim)';
+    b.append(t, s); b.setAttribute('aria-pressed', String(pcfg.ult === id));
+    b.addEventListener('click', () => { pcfg.ult = id; savePcfg(); renderPvpSetup(); });
+    ul.append(b);
+  }
+  $('b-p-host').hidden = !roomApi; $('p-join').hidden = !roomApi;
+}
+$('m-pvp').addEventListener('click', () => { renderPvpSetup(); $('p-err').hidden = true; show('scr-pvp'); });
+$('b-p-back').addEventListener('click', () => show('scr-menu'));
+$('b-p-start').addEventListener('click', startPvpOffline);
+$('b-p-host').addEventListener('click', async () => {
+  const err = $('p-err'); err.hidden = true;
+  try { await joinRoom('pvp', newCode()); pvpHost = true; pvpPm = { id: 0, st: 0, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: [] }; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = 'Could not open an online match. Try again in a moment.'; err.hidden = false; }
+});
+const tryPvpJoin = async () => {
+  const err = $('p-err'); err.hidden = true;
+  const code = readCode($('p-code'));
+  if (code.length < 4) { err.textContent = 'Match codes are 5 letters and numbers.'; err.hidden = false; return; }
+  try { await joinRoom('pvp', code); pvpHost = false; lastPvpId = 0; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = 'Could not join match "' + code + '". Check the code and try again.'; err.hidden = false; }
+};
+$('b-p-join').addEventListener('click', tryPvpJoin);
+$('p-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryPvpJoin(); });
+$('b-p-copy').addEventListener('click', () => copyCode($('b-p-copy'), $('p-lcode')));
+$('b-p-lstart').addEventListener('click', hostStartPvp);
+$('b-p-leave').addEventListener('click', toMenu);
+$('b-pr-again').addEventListener('click', () => { if (pvp && pvp.online && pvpHost) hostStartPvp(); else startPvpOffline(); });
+$('b-pr-menu').addEventListener('click', toMenu);
+
+// ----- PvP drawing -----
+function drawTag(x, y, hp, teamCol) {
+  for (let i = 0; i < P_HP; i++) { ctx.fillStyle = i < hp ? '#ff5a6e' : 'rgba(255,255,255,0.25)'; ctx.fillRect(x - 24 + i * 10, y - 46, 8, 4); }
+  if (teamCol) { ctx.strokeStyle = teamCol; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, y + 24, 16, 5, 0, 0, 6.283); ctx.stroke(); }
+}
+function iceOverlay(x, y) { ctx.fillStyle = 'rgba(191,243,255,0.45)'; ctx.fillRect(x - 20, y - 32, 40, 56); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.strokeRect(x - 20, y - 32, 40, 56); }
+function netOverlay(x, y) {
+  ctx.strokeStyle = '#9be15d'; ctx.lineWidth = 2; ctx.beginPath();
+  for (let i = -2; i <= 2; i++) { ctx.moveTo(x - 22, y + i * 10); ctx.lineTo(x + 22, y + i * 10); ctx.moveTo(x + i * 10, y - 26); ctx.lineTo(x + i * 10, y + 24); }
+  ctx.stroke();
+}
+function drawUltFx(kind, x, y, ang, age, dur) {
+  const k = clamp(age / dur, 0, 1);
+  ctx.save();
+  switch (kind) {
+    case 'storm': {
+      ctx.fillStyle = 'rgba(127,178,255,0.10)'; ctx.beginPath(); ctx.arc(x, y, 145, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(160,200,255,0.9)'; ctx.lineWidth = 3; ctx.beginPath();
+      for (let i = 0; i <= 28; i++) { const a = i / 28 * 6.283, rr = 145 + (Math.random() - 0.5) * 18; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+      ctx.stroke(); break;
+    }
+    case 'net': case 'freeze': {
+      const half = kind === 'net' ? 0.6 : 0.7;
+      ctx.fillStyle = kind === 'net' ? `rgba(155,225,93,${0.35 * (1 - k)})` : `rgba(191,243,255,${0.45 * (1 - k)})`;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, 340, ang - half, ang + half); ctx.closePath(); ctx.fill(); break;
+    }
+    case 'hole': {
+      ctx.strokeStyle = 'rgba(183,124,255,0.25)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 320, 0, 6.283); ctx.stroke();
+      ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.beginPath(); ctx.arc(x, y, 28 + 8 * Math.sin(gt * 10), 0, 6.283); ctx.fill();
+      ctx.strokeStyle = '#b77cff'; ctx.lineWidth = 3;
+      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x, y, 55 + i * 28, gt * 4 + i, gt * 4 + i + 2); ctx.stroke(); }
+      break;
+    }
+    case 'overdrive': ctx.strokeStyle = 'rgba(255,79,163,0.75)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, 34 + Math.sin(gt * 12) * 4, 0, 6.283); ctx.stroke(); break;
+    case 'wave': ctx.strokeStyle = `rgba(227,180,95,${1 - k})`; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(x, y + 10, 440 * k + 10, 50 * (1 - k) + 10, 0, 0, 6.283); ctx.stroke(); break;
+    case 'totem': {
+      ctx.fillStyle = '#3f8f3f'; ctx.fillRect(x - 6, y - 30, 12, 45);
+      ctx.fillStyle = '#5ee6c1'; ctx.beginPath(); ctx.arc(x, y - 36, 9, 0, 6.283); ctx.fill();
+      const p = (gt % 1.5) / 1.5; ctx.strokeStyle = `rgba(94,230,193,${0.5 * (1 - p)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 240 * p, 0, 6.283); ctx.stroke(); break;
+    }
+    case 'laser': {
+      const ux = Math.cos(ang), uy = Math.sin(ang), hit = gridRay(x, y, ux, uy, 700), L = hit ? hit.t : 700;
+      ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,59,92,0.4)'; ctx.lineWidth = 16; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + ux * L, y + uy * L); ctx.stroke();
+      ctx.strokeStyle = '#ff3b5c'; ctx.lineWidth = 6; ctx.stroke(); ctx.strokeStyle = '#ffe3e8'; ctx.lineWidth = 2; ctx.stroke(); break;
+    }
+  }
+  ctx.restore();
+}
+function drawFighter(b, x, y, anchor, invis, prot, frozen, netted, dt) {
+  const o = { x, y, vx: b.vx || 0, vy: b.vy || 0, base: b.base, eq: b.eq, anchor, label: b.name, face: (b.vx || 0) < 0 ? -1 : 1, hist: b.hist, trailAcc: b.trailAcc, alpha: invis ? 0.12 : 1, flash: prot && Math.floor(gt * 14) % 2 === 0 };
+  emitTrail(o, dt, particles); b.trailAcc = o.trailAcc;
+  if (anchor) drawRope(x, y, anchor.x, anchor.y, 0, b.eq.rope, 0.85);
+  drawClimber(o);
+  drawTag(x, y, b.hp, pvp.cfg.teams ? TEAM_COLORS[b.team & 1] : null);
+  if (frozen) iceOverlay(x, y);
+  if (netted) netOverlay(x, y);
+}
+function pvpRender(dt) {
+  const now = Date.now(), teams = pvp.cfg.teams, ok = (v) => num(v) != null;
+  for (const s of peerState.values()) {
+    const raw = s.raw;
+    if (!raw || !raw.pv || raw.pv.id !== pvp.id) continue;
+    if (Array.isArray(raw.u)) for (const e of raw.u.slice(0, 8)) if (Array.isArray(e) && ULTS[e[0]] && ok(e[1]) && ok(e[2]) && ok(e[3]) && ok(e[4]) && ok(e[5])) { const age = now - e[4]; if (age >= 0 && age <= e[5] + 200) drawUltFx(e[0], e[1], e[2], e[3], age, e[5]); }
+    for (const key of ['dc', 'bdc']) if (Array.isArray(raw[key])) for (const d of raw[key].slice(0, 9)) if (Array.isArray(d) && ok(d[0]) && ok(d[1])) drawClimber({ x: d[0], y: d[1], vx: 0, vy: 0, base: key === 'dc' ? s.c : '#b8b5c4', eq: key === 'dc' ? s.eq : NOEQ, face: 1, label: key === 'dc' ? s.n : '' });
+    ctx.fillStyle = '#ffd34d';
+    for (const key of ['sh', 'pbs']) if (Array.isArray(raw[key])) for (const d of raw[key].slice(0, 12)) if (Array.isArray(d) && ok(d[0]) && ok(d[1])) { ctx.beginPath(); ctx.arc(d[0], d[1], 6, 0, 6.283); ctx.fill(); }
+    const v = raw.pv;
+    if (v.al === 1) { drawTag(s.rx, s.ry, clampInt(v.hp, 0, P_HP), teams ? TEAM_COLORS[clampInt(v.tm, 0, 99) & 1] : null); if (v.fr === 1) iceOverlay(s.rx, s.ry); if (v.nt === 1) netOverlay(s.rx, s.ry); }
+  }
+  for (const f of pvp.fx) {
+    drawUltFx(f.kind, f.x, f.y, f.ang, now - f.t0, f.dur);
+    if (f.decoys) for (const d of f.decoys) drawClimber({ x: d.x, y: d.y, vx: d.vx, vy: d.vy, base: f.base, eq: f.eq, face: d.vx < 0 ? -1 : 1, label: f.label });
+  }
+  for (const b of pvp.bots) if (b.alive) drawFighter(b, b.x, b.y, b.rope ? { x: b.rope.x, y: b.rope.y } : null, b.invisUntil > now, b.inv > now, now < b.freezeUntil, now < b.netUntil, dt);
+  for (const b of pvp.rbots) if (b && b.alive) drawFighter(b, b.rx, b.ry, b.a ? { x: b.a[0], y: b.a[1] } : null, b.invis, false, b.fr, b.nt, dt);
+  for (const s of pvp.shots) { ctx.fillStyle = s.swap ? '#ffd34d' : s.homing ? '#ff8a3d' : (s.team === pvp.me.team ? '#5ee6c1' : '#ff5a6e'); ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, 6.283); ctx.fill(); }
+  ctx.strokeStyle = 'rgba(255,179,71,0.9)'; ctx.lineWidth = 3;
+  for (const l of pvp.lines) { ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke(); }
+}
+function pvpMeOverlay() {
+  const m = pvp.me, now = Date.now();
+  if (now < m.freezeUntil) iceOverlay(P.x, P.y);
+  if (now < m.netUntil) netOverlay(P.x, P.y);
+  if (pvp.cfg.teams) { ctx.strokeStyle = TEAM_COLORS[m.team & 1]; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(P.x, P.y + 24, 16, 5, 0, 0, 6.283); ctx.stroke(); }
+}
+function renderPvpBoard(el) {
+  el.textContent = '';
+  const views = pvpViews().sort((a, b) => (a.team - b.team) || (b.lives - a.lives));
+  for (const v of views) {
+    const row = document.createElement('div'); row.className = 'team-row';
+    const name = document.createElement('span'); name.textContent = v.name + (v.me ? ' (you)' : '');
+    const st2 = document.createElement('span'); st2.className = 'muted';
+    st2.textContent = v.alive ? v.hp + ' hp · ' + v.lives + (v.lives === 1 ? ' life' : ' lives') : v.lives > 0 ? 'respawning' : 'out';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = pvp.cfg.teams ? TEAM_COLORS[v.team & 1] : v.c;
+    row.append(name, st2, dot); el.append(row);
+  }
+}
+function pvpHudFast() {
+  const m = pvp.me, now = Date.now(), U = ULTS[m.ult] || ULTS.storm;
+  const nm = $('w-ult-name'); if (nm.textContent !== U.n) nm.textContent = U.n;
+  $('w-ult-bar').style.width = m.charge.toFixed(0) + '%';
+  $('w-ult').classList.toggle('ready', m.charge >= 100);
+  const el = (now - pvp.start) / 1000, bn = $('wbanner');
+  if (el < 0 && el > -3.2) { const n = String(Math.ceil(-el)); if (bn.dataset.cd !== n) { bn.dataset.cd = n; banner('Get ready', n); } }
+  else if (el >= 0 && bn.dataset.cd && bn.dataset.cd !== 'go') { bn.dataset.cd = 'go'; banner(hw.name, 'Fight!'); }
+  const txt = !m.alive ? (m.lives > 0 ? 'Back in ' + Math.max(1, Math.ceil((m.respawnAt - now) / 1000)) : 'Out · spectating') : hw.name;
+  const reg = $('w-region'); if (reg.textContent !== txt) reg.textContent = txt;
 }
 
 // ---------- loop ----------
@@ -3192,7 +4083,7 @@ function frame(ts) {
   const dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
   st = sharedTime();
   syncPeers(dt);
-  if (mode === 'world' && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
+  if ((mode === 'world' || mode === 'pvp') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
   const camX = (W - viewW()) / 2;
   mouse.wx = camX + mouse.sx / scale; mouse.wy = camY + mouse.sy / scale;
   if (state === 'play') {
