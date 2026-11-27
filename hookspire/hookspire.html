@@ -162,6 +162,18 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 .adm-badge { position: fixed; left: 50%; transform: translateX(-50%); top: calc(58px + env(safe-area-inset-top, 0px)); z-index: 40; padding: 4px 12px; border-radius: 999px; background: rgba(140,10,30,.75); border: 1px solid #ff3d55; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; pointer-events: none; }
 .notice { position: fixed; top: calc(18px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 60; max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 12px; background: #2a1020; border: 1px solid #ff5a6e; color: var(--ink); font-weight: 600; box-shadow: 0 12px 30px rgba(0,0,0,.45); pointer-events: none; }
 #m-logo { cursor: default; user-select: none; }
+.kroster { position: absolute; left: calc(18px + env(safe-area-inset-left, 0px)); top: calc(150px + env(safe-area-inset-top, 0px)); display: grid; gap: 4px; pointer-events: auto; width: 236px; }
+.krow { display: grid; grid-template-columns: 16px 22px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 4px 8px; border-radius: 8px; background: rgba(10,8,24,.62); border: 1px solid var(--line); font-size: 13px; cursor: pointer; color: var(--ink); text-align: left; }
+.krow[aria-current=true] { border-color: var(--gold); background: rgba(60,45,10,.7); }
+.krow.dead { opacity: .35; cursor: default; }
+.krow .kg { font-size: 18px; line-height: 1; }
+.krow .khp { height: 4px; border-radius: 2px; background: rgba(255,255,255,.15); margin-top: 3px; overflow: hidden; }
+.krow .khp i { display: block; height: 100%; background: var(--mint); }
+.krow .kord { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.08); letter-spacing: .04em; }
+.krow .kord.attack { color: #ff8a9a; } .krow .kord.guard { color: #7fb2ff; } .krow .kord.follow { color: #ffd34d; }
+.ktable { display: grid; grid-template-columns: auto auto auto minmax(0, 1fr); gap: 6px 14px; font-size: 14px; align-items: baseline; }
+.ktable .kg { font-size: 20px; }
+@media (max-width: 640px) { .kroster { width: 190px; top: 130px; } .ktable { grid-template-columns: auto minmax(0, 1fr); } .ktable .kx { display: none; } }
 .adm-main { display: grid; gap: 14px; }
 .adm-main[hidden], #adm-lock[hidden] { display: none; }
 .achtoast .achico { width: 48px; height: 48px; font-size: 20px; }
@@ -230,6 +242,8 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   <div class="ult" id="w-ult" hidden><span class="k">Q</span><span id="w-ult-name"></span><span class="bar"><i id="w-ult-bar"></i></span></div>
   <div class="slots" id="w-slots"></div>
   <div class="hint" id="g-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>E</b> tag shot when you're IT · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
+  <div class="kroster" id="k-roster" hidden></div>
+  <div class="hint" id="k-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>E</b> attack · <b>Q</b> piece move · <b>1–8 / Tab</b> switch · <b>Z</b> attack · <b>X</b> guard · <b>C</b> follow · <b>M</b> map</div>
   <div class="hint" id="c-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump / yank a hooked enemy · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
   <div class="hint" id="p-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / yank a hooked player · <b>E</b> shoot · <b>Q</b> ultimate · <b>1–5</b> abilities · <b>Esc</b> pause</div>
   <div class="hint" id="w-hint"><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1–5</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
@@ -257,6 +271,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
       <button class="mode" id="m-tag"><b>Hook Tag</b><small>Tag or be tagged. Classic or Infection, with bots or friends.</small></button>
       <button class="mode" id="m-ctf"><b>Capture the Flag</b><small>Red vs Blue. Steal their flag and bring it home. First to 3.</small></button>
+      <button class="mode" id="m-chess"><b>Kingfall</b><small>Real-time chess battle. Command your pieces and take the enemy King.</small></button>
     </div>
     <div class="modes">
       <button class="mode shop" id="m-gacha"><b>Gacha</b><small>Spend 5 tokens to spin for hats, colors, ropes, trails and auras.</small></button>
@@ -537,6 +552,26 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <button class="link" id="b-c-back">Back to menu</button>
   </section>
 
+  <section class="panel wide" id="scr-chess" hidden>
+    <h2>Kingfall</h2>
+    <p>A real-time battle on a giant chess board. You have 8 pieces. Play as any of them and switch whenever you like, while the rest follow your orders. Take the enemy <b>King</b> to win.</p>
+    <div class="ktable" id="k-table"></div>
+    <p class="note"><b>E</b> attack · <b>Q</b> piece move · <b>1–8</b> or <b>Tab</b> switch piece · <b>Z</b> everyone attack · <b>X</b> everyone guard the King · <b>C</b> everyone follow you · click a piece's order to change just that one.</p>
+    <div class="field"><span class="label">Piece AI</span><div class="seg" id="k-diff"></div><p class="note">How well the pieces you aren't playing move and aim, on both sides.</p></div>
+    <div class="row">
+      <button class="btn primary" id="b-k-start">Play vs bot</button>
+      <button class="btn" id="b-k-host">Host 1 vs 1 online</button>
+    </div>
+    <div class="join" id="k-join">
+      <label for="k-code">Join a friend's game</label>
+      <input type="text" id="k-code" maxlength="6" placeholder="Game code" autocomplete="off" spellcheck="false">
+      <button class="btn" id="b-k-join">Join</button>
+    </div>
+    <p class="err" id="k-err" hidden></p>
+    <p class="note">Tokens: 2 for each enemy piece your side takes, 15 for winning.</p>
+    <button class="link" id="b-k-back">Back to menu</button>
+  </section>
+
   <section class="panel" id="scr-pvp-lobby" hidden>
     <h2>Online match</h2>
     <div class="code-box">
@@ -667,6 +702,8 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <div class="seg small" id="adm-tag"></div>
         <span class="label">Capture the Flag</span>
         <div class="seg small" id="adm-ctf"></div>
+        <span class="label">Kingfall</span>
+        <div class="seg small" id="adm-chess"></div>
         <label class="row" style="text-transform:none;letter-spacing:0;font-size:14px;font-weight:500"><input type="checkbox" id="adm-bots"> Bring bots (uses your PvP, Hook Tag or Capture the Flag settings)</label>
       </div>
       <div class="adm-sec">
@@ -884,7 +921,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium' };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -912,6 +949,7 @@ try {
     save.adm = s.adm === true;
     if (s.tagCfg && typeof s.tagCfg === 'object') save.tagCfg = s.tagCfg;
     if (s.ctfCfg && typeof s.ctfCfg === 'object') save.ctfCfg = s.ctfCfg;
+    if (typeof s.kfDiff === 'string') save.kfDiff = s.kfDiff;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
 const gotSet = new Set(save.got);
@@ -1060,12 +1098,13 @@ const typing = (e) => e.target && (e.target.tagName === 'INPUT' || e.target.tagN
 addEventListener('keydown', (e) => {
   if (typing(e)) return;
   if (state === 'play') {
-    if (GAME_KEYS.has(e.code) || (mode === 'world' && e.code === 'Tab')) e.preventDefault();
+    if (GAME_KEYS.has(e.code) || ((mode === 'world' || (mode === 'pvp' && pvp && pvp.chess)) && e.code === 'Tab')) e.preventDefault();
     keys[e.code] = true;
     if (save.adm && !e.repeat && (e.code === 'KeyG' || e.code === 'KeyF')) admToggle(e.code === 'KeyG' ? 'god' : 'fly');
     if (e.code === 'Escape' || e.code === 'KeyP') pause();
     else if (mode === 'world' || mode === 'pvp' || mode === 'trial') {
-      if (mode === 'trial') { if (e.code === 'KeyR' && !e.repeat && trial) startTrial(trial.n); }
+      if (mode === 'pvp' && pvp && pvp.chess) chessKey(e);
+      else if (mode === 'trial') { if (e.code === 'KeyR' && !e.repeat && trial) startTrial(trial.n); }
       else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
       else if (e.code === 'Tab') openLoadout();
       else if (mode === 'pvp') { if (e.code === 'KeyE') pvpShoot(); else if (e.code === 'KeyQ' && !e.repeat) pvpUltKey(); else if (e.code === 'KeyW' && !e.repeat) pvpYank(); else if (e.code === 'KeyM' && !e.repeat) openMap(); else if (!e.repeat && pvp && !pvp.me.alive && (e.code === 'KeyA' || e.code === 'KeyD' || e.code === 'ArrowLeft' || e.code === 'ArrowRight')) specCycle(e.code === 'KeyA' || e.code === 'ArrowLeft' ? -1 : 1); }
@@ -1651,7 +1690,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-chess'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -1732,7 +1771,7 @@ function toMenu() {
   mode = 'solo'; race = null; raceHosting = false; hostRc = null;
   $('hud').hidden = true; $('h-race').hidden = true; $('whud').hidden = true;
   ab.active = {}; ab.cd = {};
-  pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true;
+  pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true; $('k-hint').hidden = true; $('k-roster').hidden = true;
   trial = null; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false;
   toCheckpoint(0);
   runHeight = 0;
@@ -3152,13 +3191,13 @@ function stepWorld(dt) {
   if (rope && !grabbing) detach();
   if (!rope && grabbing && P.stun <= 0 && wAim && wAim.valid && !(mode === 'pvp' && pvp && Date.now() < pvp.me.netUntil)) worldAttach(wAim);
   if (rope && !ropeAnchor()) detach();
-  const fly = ab.active.fly > 0, feather = ab.active.feather > 0;
+  const fly = ab.active.fly > 0, feather = ab.active.feather > 0, km = chessSpeed();
   let ax = 0, ay = fly ? 0 : feather ? G * 0.3 : G;
   if (fly && !rope) { ax = dir * 1700; ay += ((held('KeyS', 'ArrowDown') ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0)) * 1700; }
-  else if (rope) ax = dir * SWING * (mode === 'pvp' && pvp && pvp.me.od > Date.now() ? 1.6 : 1);
-  else if (!P.ground) ax = dir * (feather ? 1000 : AIR);
+  else if (rope) ax = dir * SWING * km * (mode === 'pvp' && pvp && pvp.me.od > Date.now() ? 1.6 : 1);
+  else if (!P.ground) ax = dir * (feather ? 1000 : AIR) * km;
   P.vx += ax * dt; P.vy += ay * dt;
-  if (!rope && P.ground && !fly) P.vx += (dir * WALKMAX - P.vx) * Math.min(1, 12 * dt);
+  if (!rope && P.ground && !fly) P.vx += (dir * WALKMAX * km - P.vx) * Math.min(1, 12 * dt);
   P.jumpCd = (P.jumpCd || 0) - dt;
   if (!rope && P.ground && !fly && held('KeyW', 'ArrowUp') && P.jumpCd <= 0) { P.vy = -JUMP_V; P.ground = false; P.jumpCd = 0.3; }
   if (rope) {
@@ -3489,6 +3528,9 @@ function updateWorldHud(dt) {
   } else if (mode === 'pvp' && pvp && pvp.ctf) {
     ctfHudSlow();
     pvpLobbyTick();
+  } else if (mode === 'pvp' && pvp && pvp.chess) {
+    chessHudSlow();
+    pvpLobbyTick();
   } else if (mode === 'pvp' && pvp) {
     $('w-found').textContent = pvp.me.alive ? 'Lives ' + Math.max(0, pvp.me.lives) + ' · KOs ' + kosOf(selfId()) : (specTarget() ? 'Watching ' + specTarget().name + ' · A / D to switch' : 'Knocked out');
     renderPvpBoard($('w-team'));
@@ -3687,6 +3729,7 @@ function renderWorld(dt) {
   const A = ropeAnchor();
   pushHist(P.hist, P.x, P.y);
   const me = { x: P.x, y: P.y, vx: P.vx, vy: P.vy, base: COLORS[save.color], eq: save.eq, anchor: A, flash: P.inv > 0 && Math.floor(gt * 14) % 2 === 0, label: (peerState.size || mode === 'pvp') ? (save.name || 'You') : '', face: P.face, hist: P.hist, trailAcc: P.trailAcc, alpha: ab.active.invis > 0 ? 0.35 : 1, sc: ab.active.shrink > 0 ? 0.55 : 1, title: hasTitle() ? TITLE : '' };
+  if (mode === 'pvp' && pvp && pvp.chess) { const mt = chessMyType(); me.base = KF_COL[pvp.chess.mySide]; me.eq = NOEQ; me.label = KF_TYPES[mt].g[pvp.chess.mySide] + ' ' + KF_TYPES[mt].n + ' (you)'; me.title = ''; }
   if (state === 'play') {
     emitTrail(me, dt, particles); P.trailAcc = me.trailAcc;
     if (ab.active.fly > 0 && Math.random() < 0.7) particles.push({ k: 'dot', x: P.x + (Math.random() - 0.5) * 10, y: P.y + 18, vx: (Math.random() - 0.5) * 40, vy: 140, life: 0.4, color: '#8fd3ff' });
@@ -3852,6 +3895,7 @@ function kbFrom(arr) {
   return o;
 }
 function pvpViews() {
+  if (pvp.chess) return chessViews();
   const out = [], now = Date.now(), m = pvp.me;
   out.push({ id: selfId(), me: true, name: tn(save.name || 'Climber', hasTitle()), x: P.x, y: P.y, vx: P.vx, vy: P.vy, team: m.team, alive: m.alive, lives: m.lives, hp: m.hp, invis: ab.active.invis > 0, kb: m.kb, c: COLORS[save.color] });
   for (const b of pvp.bots) out.push({ id: b.id, bot: b, name: b.name, x: b.x, y: b.y, vx: b.vx, vy: b.vy, team: b.team, alive: b.alive, lives: b.lives, hp: b.hp, invis: b.invisUntil > now, kb: b.kb, c: b.base });
@@ -3866,7 +3910,7 @@ function pvpViews() {
   return out;
 }
 function kosOf(id, views) { let n = 0; for (const v of views || pvpViews()) n += (v.kb && v.kb[id]) || 0; return n; }
-function pvpPeerVisible(s) { const v = pvp && s.raw && s.raw.pv; return !!(v && typeof v === 'object' && v.id === pvp.id && v.al === 1); }
+function pvpPeerVisible(s) { if (pvp && pvp.chess) return false; const v = pvp && s.raw && s.raw.pv; return !!(v && typeof v === 'object' && v.id === pvp.id && v.al === 1); }
 function hookTargets() {
   if (mode === 'pvp' && pvp) return pvpViews().filter(v => !v.me && v.alive).map(v => ({ id: v.id, x: v.x, y: v.y }));
   if (teamKind === 'world') return [...peerState.values()].filter(s => s.playing).map(s => ({ id: s.id, x: s.rx, y: s.ry }));
@@ -3946,6 +3990,10 @@ function applyFighter(f, kind, a, b, c, src, isMe) {
 function deal(src, tid, kind, a, b, c) {
   a = a || 0; b = b || 0; c = c || 0;
   if (!pvp) return;
+  if (pvp.chess) {
+    if (kind === 'd') { if (!pvp.online || pvpHost) chessHit(tid, a, b, c, src); else pvp.claims.push([pvpSid + '.' + (++claimN), tid, 'd', Math.round(a), Math.round(b), Math.round(c), src, Date.now()]); }
+    return;
+  }
   if (kind === 't') {
     // tags are decided by the host (or by you, offline)
     if (!pvp.online || pvpHost) tagEvent(src, tid);
@@ -3966,6 +4014,7 @@ function readClaims() {
     for (const c of raw.cl.slice(-30)) {
       if (!Array.isArray(c) || typeof c[0] !== 'string' || typeof c[1] !== 'string' || typeof c[2] !== 'string' || c[2].length !== 1 || !'dylfnsphtk'.includes(c[2])) continue;
       if (pvp.seen.has(c[0])) continue;
+      if (pvp.chess) { if (pvpHost && c[2] === 'd') { pvp.seen.add(c[0]); chessHit(c[1].slice(0, 40), clamp(num(c[3]) || 0, 0, 3), clamp(num(c[4]) || 0, -1500, 1500), clamp(num(c[5]) || 0, -1500, 1500), typeof c[6] === 'string' ? c[6].slice(0, 40) : '?'); } continue; }
       if (c[2] === 'k') { if (pvpHost && pvp.ctf) { pvp.seen.add(c[0]); if (c[6] === s.id) ctfYanked(s.id, c[1].slice(0, 40)); } continue; }
       if (c[2] === 't') { if (pvpHost && pvp.tag) { pvp.seen.add(c[0]); if (c[6] === s.id) tagEvent(s.id, c[1].slice(0, 40)); } continue; }
       const mine = c[1] === myPeerId, lb = pvpHost ? pvp.bots.find(b => b.id === c[1]) : null;
@@ -3985,7 +4034,7 @@ function readClaims() {
 function spawnShot(owner, team, x, y, ux, uy, o) {
   o = o || {};
   const v = o.speed || SHOT_V;
-  pvp.shots.push({ owner, team, x: x + ux * 22, y: y + uy * 22, vx: ux * v, vy: uy * v, life: o.life || 1.2, dmg: o.dmg || 1, homing: !!o.homing, swap: !!o.swap, tag: !!o.tag });
+  pvp.shots.push({ owner, team, x: x + ux * 22, y: y + uy * 22, vx: ux * v, vy: uy * v, life: o.life || 1.2, dmg: o.dmg || 1, homing: !!o.homing, swap: !!o.swap, tag: !!o.tag, kb: o.kb || 320, big: !!o.big });
 }
 function moveFighter(id, x, y) {
   if (id === selfId()) { detach(); P.x = x; P.y = y; P.vx = 0; P.vy = 0; P.hist.length = 0; return; }
@@ -4015,7 +4064,7 @@ function updateShots(dt) {
           if (s.tag) { deal(s.owner, v.id, 't'); gone = true; break; }
           const sp = Math.hypot(s.vx, s.vy) || 1;
           if (s.swap) { const ov = views.find(w => w.id === s.owner); if (ov) { deal(s.owner, v.id, 's', ov.x, ov.y); moveFighter(s.owner, v.x, v.y); } }
-          else deal(s.owner, v.id, 'd', s.dmg, s.vx / sp * 320, s.vy / sp * 320 - 120);
+          else deal(s.owner, v.id, 'd', s.dmg, s.vx / sp * s.kb, s.vy / sp * s.kb - 120);
           gone = true; break;
         }
       }
@@ -4202,12 +4251,12 @@ function botPhysics(b, dt, now) {
   if (b.rope) {
     // pump with the swing to build it up, then the brain lets go toward the target
     const push = Math.abs(b.vx) > 40 ? Math.sign(b.vx) : b.dir;
-    ax = push * SWING * 0.95 * (PDIFF[b.diff] || PDIFF.medium).mv * (b.od > now ? 1.5 : 1);
+    ax = push * SWING * 0.95 * (PDIFF[b.diff] || PDIFF.medium).mv * (b.spd || 1) * (b.od > now ? 1.5 : 1);
     if (b.rope.L > 230) b.rope.L -= REEL_IN * dt * 0.5;
     else if (b.wantUp && b.rope.L > 130) b.rope.L -= REEL_IN * dt * 0.3;
   }
-  else if (b.ground) { b.vx += (b.dir * WALKMAX * (0.6 + 0.4 * (PDIFF[b.diff] || PDIFF.medium).mv) - b.vx) * Math.min(1, 10 * dt); if (Math.random() < dt * 1.5) b.vy = -JUMP_V; }
-  else ax = b.dir * AIR * (PDIFF[b.diff] || PDIFF.medium).mv;
+  else if (b.ground) { b.vx += (b.dir * WALKMAX * (b.spd || 1) * (0.6 + 0.4 * (PDIFF[b.diff] || PDIFF.medium).mv) - b.vx) * Math.min(1, 10 * dt); if (Math.random() < dt * 1.5) b.vy = -JUMP_V; }
+  else ax = b.dir * AIR * (b.spd || 1) * (PDIFF[b.diff] || PDIFF.medium).mv;
   if (b.pull && now < b.pull.until) { const dx = b.pull.x - b.x, dy = b.pull.y - b.y, d = Math.hypot(dx, dy) || 1; ax += dx / d * 1600; ay += dy / d * 1600; }
   b.vx += ax * dt; b.vy += ay * dt;
   b.vx *= 1 - 0.1 * dt; b.vy *= 1 - 0.1 * dt;
@@ -4226,6 +4275,7 @@ function botTick(b, dt, now) {
   if (!b.alive) { if (b.lives > 0 && b.respawnAt && now >= b.respawnAt) respawnFighter(b, false); return; }
   if (pvp.tag) { tagBotTick(b, dt, now); return; }
   if (pvp.ctf) { ctfBotTick(b, dt, now); return; }
+  if (pvp.chess) { chessBotTick(b, dt, now); return; }
   if (now < pvp.start || pvp.over) return;
   b.charge = Math.min(100, b.charge + dt * 100 / ULT_TIME);
   b.shotCd -= dt; b.yankCd -= dt;
@@ -4257,7 +4307,7 @@ function botTick(b, dt, now) {
 
 // ----- match flow -----
 function startPvp(pm, online) {
-  hw = pm.ctf ? buildCtf(pm.map) : buildArena(pm.map); mode = 'pvp'; lastPvpId = pm.id;
+  hw = pm.chess ? buildKingfall() : pm.ctf ? buildCtf(pm.map) : buildArena(pm.map); mode = 'pvp'; lastPvpId = pm.id;
   ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0;
   const tm = new Map(pm.tm || []), myId = online ? myPeerId : 'me';
   const myTeam = online ? (tm.has(myId) ? tm.get(myId) : 99) : 0;
@@ -4266,6 +4316,7 @@ function startPvp(pm, online) {
   pvp.me.ult = pcfg.ult; pvp.me.inv = pm.st + 2000;
   if (pm.tag) initTag(pm, online);
   if (pm.ctf) initCtf(pm);
+  if (pm.chess) initChess(pm, online);
   const sp = hw.spawns, off = pm.id % sp.length;
   if (!online || pvpHost) for (let k = 0; k < pm.nb; k++) {
     const id = 'b' + k, team = online ? (tm.has(id) ? tm.get(id) : k + 1) : (pm.teams ? (k % 2 === 0 ? 1 : 0) : k + 1);
@@ -4281,7 +4332,8 @@ function startPvp(pm, online) {
   state = 'play'; show(null);
   $('hud').hidden = true; $('whud').hidden = false; $('w-ult').hidden = false; $('w-hint').hidden = true; $('p-hint').hidden = false;
   { const mm = $('w-mini'); mm.width = 440; mm.height = Math.round(440 * hw.ht / hw.wt); mm.hidden = false; }
-  { const tg = !!pm.tag, cf = !!pm.ctf, alt = tg || cf; $('w-ult').hidden = alt; $('p-hint').hidden = alt; $('g-hint').hidden = !tg; $('c-hint').hidden = !cf; $('w-hp').hidden = alt; $('t-timer').hidden = !alt; $('t-timer').style.borderColor = ''; }
+  { const tg = !!pm.tag, cf = !!pm.ctf, kf = !!pm.chess, alt = tg || cf || kf; $('w-ult').hidden = alt; $('p-hint').hidden = alt; $('g-hint').hidden = !tg; $('c-hint').hidden = !cf; $('k-hint').hidden = !kf; $('k-roster').hidden = !kf; $('w-slots').hidden = kf; $('w-hp').hidden = alt; $('t-timer').hidden = !alt; $('t-timer').style.borderColor = ''; }
+  if (pm.chess) chessPlaceMe();
   $('wbanner').dataset.cd = '';
   buildSlots(); lastHP = -1; wHP = P_HP;
   canvas.focus();
@@ -4291,6 +4343,13 @@ function hostStartPvp() {
   if (!myPeerId) return;
   const tg = pvpPm && pvpPm.tag, cf = pvpPm && pvpPm.ctf;
   const ids = [myPeerId, ...[...peerState.values()].map(s => s.id).sort()];
+  if (pvpPm && pvpPm.chess) {
+    if (ids.length !== 2) return;
+    pvpPm = { id: Date.now() % 1e9, st: Date.now() + 4500, map: 'kingfall', lv: 1, teams: true, nb: 0, df: save.kfDiff, chess: {}, tm: [[ids[0], 0], [ids[1], 1]] };
+    presenceClock = 0;
+    startPvp(pvpPm, true);
+    return;
+  }
   const nb = cf ? clamp(ccfg.size * 2 - ids.length, 0, 8) : tg ? tcfg.nb : pcfg.nb;
   for (let k = 0; k < nb; k++) ids.push('b' + k);
   pvpPm = cf
@@ -4304,6 +4363,7 @@ function hostStartPvp() {
 function pvpTick(dt) {
   if (pvp.tag) { tagTick(dt); return; }
   if (pvp.ctf) { ctfTick(dt); return; }
+  if (pvp.chess) { chessTick(dt); return; }
   const now = Date.now(), m = pvp.me;
   if (pvp.online) { if (!pvpHost) syncRemoteBots(dt); readClaims(); }
   if (!m.alive && m.lives > 0 && m.respawnAt && now >= m.respawnAt) respawnFighter(m, true);
@@ -4348,9 +4408,9 @@ function finishPvp(win) {
   setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1600);
 }
 function showPvpResults() {
-  $('pr-title').textContent = pvp.won ? 'You win!' : pvp.ctf ? (pvp.ctf.win == null ? 'Draw' : TEAM_NAMES[pvp.ctf.win] + ' wins') : pvp.tag ? tagWinLabel(pvp.tag.win || []) : winnerLabel(pvp.winTeam);
+  $('pr-title').textContent = pvp.won ? 'You win!' : pvp.chess ? (pvp.chess.win == null ? 'Draw' : KF_SIDE[pvp.chess.win] + ' wins') : pvp.ctf ? (pvp.ctf.win == null ? 'Draw' : TEAM_NAMES[pvp.ctf.win] + ' wins') : pvp.tag ? tagWinLabel(pvp.tag.win || []) : winnerLabel(pvp.winTeam);
   const a = ARENAS.find(q => q.id === pvp.cfg.map);
-  $('pr-sub').textContent = pvp.ctf ? 'Capture the Flag · ' + ((CTF_MAPS.find(q => q.id === pvp.cfg.map) || {}).n || '') + ' · Red ' + pvp.ctf.score[0] + ' – ' + pvp.ctf.score[1] + ' Blue' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.tag ? 'Hook Tag · ' + TAGV[pvp.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pvp.tag.len / 60) + ' min' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : (a ? a.n : '') + ' · ' + pvp.cfg.lv + (pvp.cfg.lv === 1 ? ' life' : ' lives') + ' · ' + (pvp.cfg.teams ? '2 teams' : 'Free-for-all') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '');
+  $('pr-sub').textContent = pvp.chess ? 'Kingfall · White took ' + pvp.chess.kills[0] + ' · Black took ' + pvp.chess.kills[1] + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.ctf ? 'Capture the Flag · ' + ((CTF_MAPS.find(q => q.id === pvp.cfg.map) || {}).n || '') + ' · Red ' + pvp.ctf.score[0] + ' – ' + pvp.ctf.score[1] + ' Blue' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.tag ? 'Hook Tag · ' + TAGV[pvp.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pvp.tag.len / 60) + ' min' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : (a ? a.n : '') + ' · ' + pvp.cfg.lv + (pvp.cfg.lv === 1 ? ' life' : ' lives') + ' · ' + (pvp.cfg.teams ? '2 teams' : 'Free-for-all') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '');
   renderPvpResults();
   const follower = pvp.online && !pvpHost;
   $('b-pr-again').hidden = follower;
@@ -4360,6 +4420,7 @@ function showPvpResults() {
 function renderPvpResults() {
   if (pvp.tag) { renderTagResults(); return; }
   if (pvp.ctf) { renderCtfResults(); return; }
+  if (pvp.chess) { renderChessResults(); return; }
   const list = $('pr-list'); list.textContent = '';
   const views = pvpViews();
   const rows = views.map(v => ({ v, k: kosOf(v.id, views), win: pvp.winTeam != null && v.team === pvp.winTeam }));
@@ -4387,6 +4448,7 @@ function pvpPresence(pr) {
   pr.cl = pvp.claims.slice(-24).map(c => c.slice(0, 7));
   if (pvp.tag && pvpHost) pr.tg = tagPack(now);
   if (pvp.ctf && pvpHost) pr.cf = ctfPack(now);
+  if (pvp.chess) chessPresence(pr, now);
   if (pvpHost) {
     const ids = new Set(pvp.bots.map(b => b.id));
     pr.pb = pvp.bots.map(b => [R(b.x), R(b.y), b.rope ? R(b.rope.x) : -1, b.rope ? R(b.rope.y) : 0, b.hp, b.lives, b.alive ? 1 : 0, b.team, b.invisUntil > now ? 1 : 0, Object.entries(b.kb).slice(0, 8), now < b.freezeUntil ? 1 : 0, now < b.netUntil ? 1 : 0]);
@@ -4398,12 +4460,14 @@ function hostPvpPeer() { let h = null; for (const s of peerState.values()) if (s
 function parsePm(v) {
   if (!v || typeof v !== 'object') return null;
   const id = num(v.id), st = num(v.st);
-  if (id == null || st == null || !(ARENA_IDS.includes(v.map) || CTF_IDS.includes(v.map)) || ![1, 3, 5].includes(v.lv)) return null;
+  if (id == null || st == null || !(ARENA_IDS.includes(v.map) || CTF_IDS.includes(v.map) || v.map === 'kingfall') || ![1, 3, 5].includes(v.lv)) return null;
   const tm = Array.isArray(v.tm) ? v.tm.slice(0, 16).filter(e => Array.isArray(e) && typeof e[0] === 'string' && num(e[1]) != null).map(e => [e[0].slice(0, 40), clampInt(e[1], 0, 99)]) : [];
   const tag = v.tag && typeof v.tag === 'object' && TAGV[v.tag.v] && TAG_LENS.includes(v.tag.len) ? { v: v.tag.v, len: v.tag.len } : null;
   const ctf = v.ctf && typeof v.ctf === 'object' && CTF_SIZES.includes(v.ctf.size) && CTF_IDS.includes(v.map) ? { size: v.ctf.size } : null;
   if (CTF_IDS.includes(v.map) && !ctf) return null;
-  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 8), df: PDIFF[v.df] ? v.df : 'medium', tm, tag, ctf };
+  const chess = v.map === 'kingfall' && v.chess && typeof v.chess === 'object' ? {} : null;
+  if (v.map === 'kingfall' && !chess) return null;
+  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 8), df: PDIFF[v.df] ? v.df : 'medium', tm, tag, ctf, chess };
 }
 function syncRemoteBots(dt) {
   const h = hostPvpPeer(), ok = h && h.raw.pv && h.raw.pv.id === pvp.id && Array.isArray(h.raw.pb);
@@ -4436,6 +4500,7 @@ function pvpLobbyTick() {
 }
 function pmText(pm) {
   const a = ARENAS.find(q => q.id === pm.map);
+  if (pm.chess) return 'Kingfall · 1 vs 1 · ' + DIFF[pm.df].n.toLowerCase() + ' piece AI';
   if (pm.ctf) { const cm = CTF_MAPS.find(q => q.id === pm.map); return 'Capture the Flag · ' + (cm ? cm.n : '') + ' · ' + pm.ctf.size + ' vs ' + pm.ctf.size + ' · ' + DIFF[pm.df].n.toLowerCase() + ' bots fill empty spots'; }
   if (pm.tag) return 'Hook Tag · ' + TAGV[pm.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pm.tag.len / 60) + ' min · ' + (pm.nb ? pm.nb + ' ' + DIFF[pm.df].n.toLowerCase() + ' bot' + (pm.nb > 1 ? 's' : '') : 'no bots');
   return (a ? a.n : '') + ' · ' + pm.lv + (pm.lv === 1 ? ' life' : ' lives') + ' · ' + (pm.teams ? '2 teams' : 'Free-for-all') + ' · ' + (pm.nb ? pm.nb + ' ' + DIFF[pm.df].n.toLowerCase() + ' bot' + (pm.nb > 1 ? 's' : '') : 'no bots');
@@ -4453,8 +4518,8 @@ function renderPvpLobby() {
     const nm = document.createElement('span'); nm.textContent = r.n;
     row.append(dot, nm); if (r.id) addKick(row, r.id); list.append(row);
   }
-  $('b-p-lstart').hidden = !pvpHost; $('b-p-lstart').disabled = !myPeerId;
-  $('p-lmsg').textContent = (pvpHost ? 'Share the code, then start when everyone is here.' : 'Waiting for the host to start.') + (pm && pm.ctf ? ' First to 3 captures, 10 minute limit. Teams are picked when the match starts.' : pm && pm.tag ? ' ' + TAGV[pm.tag.v].d : ' Your ultimate: ' + ULTS[pcfg.ult].n + '.');
+  $('b-p-lstart').hidden = !pvpHost; $('b-p-lstart').disabled = !myPeerId || !!(pm && pm.chess && peerState.size !== 1);
+  $('p-lmsg').textContent = (pvpHost ? 'Share the code, then start when everyone is here.' : 'Waiting for the host to start.') + (pm && pm.chess ? ' Kingfall is 1 vs 1: the host plays White, the other player plays Black.' + (peerState.size !== 1 ? ' Waiting for exactly one other player.' : '') : pm && pm.ctf ? ' First to 3 captures, 10 minute limit. Teams are picked when the match starts.' : pm && pm.tag ? ' ' + TAGV[pm.tag.v].d : ' Your ultimate: ' + ULTS[pcfg.ult].n + '.');
 }
 
 // ----- PvP screens -----
@@ -4507,7 +4572,7 @@ $('p-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryPvpJo
 $('b-p-copy').addEventListener('click', () => copyCode($('b-p-copy'), $('p-lcode')));
 $('b-p-lstart').addEventListener('click', hostStartPvp);
 $('b-p-leave').addEventListener('click', toMenu);
-$('b-pr-again').addEventListener('click', () => { if (pvp && pvp.online && pvpHost) hostStartPvp(); else if (pvp && pvp.tag) startTagOffline(); else if (pvp && pvp.ctf) startCtfOffline(); else startPvpOffline(); });
+$('b-pr-again').addEventListener('click', () => { if (pvp && pvp.online && pvpHost) hostStartPvp(); else if (pvp && pvp.tag) startTagOffline(); else if (pvp && pvp.ctf) startCtfOffline(); else if (pvp && pvp.chess) startChessOffline(); else startPvpOffline(); });
 $('b-pr-menu').addEventListener('click', toMenu);
 
 // ----- PvP drawing -----
@@ -4570,6 +4635,7 @@ function drawFighter(b, x, y, anchor, invis, prot, frozen, netted, dt) {
   if (netted) netOverlay(x, y);
 }
 function pvpRender(dt) {
+  if (pvp.chess) { chessRender(dt); return; }
   const now = Date.now(), teams = pvp.cfg.teams, ok = (v) => num(v) != null;
   for (const s of peerState.values()) {
     const raw = s.raw;
@@ -4594,6 +4660,7 @@ function pvpRender(dt) {
   for (const l of pvp.lines) { ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke(); }
 }
 function pvpMeOverlay() {
+  if (pvp.chess) { chessMeOverlay(); return; }
   const m = pvp.me, now = Date.now();
   if (now < m.freezeUntil) iceOverlay(P.x, P.y);
   if (now < m.netUntil) netOverlay(P.x, P.y);
@@ -4620,12 +4687,14 @@ function pvpHudFast() {
   if (el < 0 && el > -3.2) { const n = String(Math.ceil(-el)); if (bn.dataset.cd !== n) { bn.dataset.cd = n; banner('Get ready', n); } }
   else if (el >= 0 && bn.dataset.cd && bn.dataset.cd !== 'go') {
     bn.dataset.cd = 'go';
-    if (pvp.ctf) banner('Capture the Flag', 'Go!', 'You\'re on the ' + TEAM_NAMES[pvp.me.team & 1] + '. Grab their flag and bring it home.');
+    if (pvp.chess) banner('Kingfall', 'Go!', 'You play ' + KF_SIDE[pvp.chess.mySide] + '. Take their King. 1–8 switches pieces.');
+    else if (pvp.ctf) banner('Capture the Flag', 'Go!', 'You\'re on the ' + TEAM_NAMES[pvp.me.team & 1] + '. Grab their flag and bring it home.');
     else if (pvp.tag) { if (pvp.tag.it.has(selfId())) banner(TAGV[pvp.tag.v].n, "You're IT!", 'Everyone else gets a 3 second head start. E fires a tag shot.'); else banner(TAGV[pvp.tag.v].n, 'Run!', 'Don\'t let IT touch you.'); }
     else banner(hw.name, 'Fight!');
   }
   if (pvp.tag) tagHudFast(now);
   if (pvp.ctf) ctfHudFast(now);
+  if (pvp.chess) chessHudFast(now);
   const sv = !m.alive ? specTarget() : null;
   const txt = !m.alive ? (m.lives > 0 ? 'Back in ' + Math.max(1, Math.ceil((m.respawnAt - now) / 1000)) : 'Watching ' + (sv ? sv.name : 'nobody')) : hw.name;
   const reg = $('w-region'); if (reg.textContent !== txt) reg.textContent = txt;
@@ -4647,7 +4716,7 @@ function drawArenaMap(cv, big) {
   c2.font = '600 22px "Chakra Petch", sans-serif'; c2.textAlign = 'center'; c2.textBaseline = 'bottom';
   for (const v of pvpViews()) {
     if (v.me || !v.alive || v.invis) continue;
-    const col = pvp.cfg.teams ? TEAM_COLORS[v.team & 1] : v.c;
+    const col = pvp.chess ? KF_COL[v.team & 1] : pvp.cfg.teams ? TEAM_COLORS[v.team & 1] : v.c;
     c2.fillStyle = col; c2.beginPath(); c2.arc(mx(v.x), my(v.y), r, 0, 6.283); c2.fill();
     c2.strokeStyle = 'rgba(0,0,0,0.65)'; c2.lineWidth = big ? 2.5 : 2; c2.stroke();
     if (pvp.tag && pvp.tag.it.has(v.id)) { c2.strokeStyle = '#ff3d55'; c2.lineWidth = big ? 4 : 3; c2.beginPath(); c2.arc(mx(v.x), my(v.y), r + 4, 0, 6.283); c2.stroke(); }
@@ -5300,6 +5369,456 @@ const tryCtfJoin = async () => {
 };
 $('b-c-join').addEventListener('click', tryCtfJoin);
 $('c-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryCtfJoin(); });
+
+// =================================================================
+// ---------- Kingfall: a real-time chess battle (runs on the PvP engine) ----------
+// =================================================================
+const KF_TYPES = {
+  K: { n: 'King', g: ['♔', '♚'], hp: 15, spd: 0.8, mv: 'Shield', mcd: 10, atk: 'Weak shot', d: 'Slow but sturdy. Q blocks all damage for 2 seconds.' },
+  Q: { n: 'Queen', g: ['♕', '♛'], hp: 10, spd: 1.0, mv: 'Royal dash', mcd: 4, atk: 'Strong shot', d: 'Q dashes toward your aim in any direction, hitting whoever you pass.' },
+  R: { n: 'Rook', g: ['♖', '♜'], hp: 12, spd: 0.85, mv: 'Charge', mcd: 5, atk: 'Heavy shot', d: 'Q charges straight sideways, smashing through enemies. Its shots are slow but hit hard.' },
+  B: { n: 'Bishop', g: ['♗', '♝'], hp: 6, spd: 1.15, mv: 'Diagonal dash', mcd: 3, atk: 'Rapid shots', d: 'Quick and fragile. Q dashes diagonally. Fires fast light shots.' },
+  N: { n: 'Knight', g: ['♘', '♞'], hp: 7, spd: 1.15, mv: 'L-leap', mcd: 3, atk: 'Burst', d: 'Quick. Q leaps high and over. Fires a short-range spread of 3.' },
+};
+const KF_ATK = {
+  K: { dmg: 1, v: 800, life: 0.8, cd: 0.9 },
+  Q: { dmg: 2, v: 950, life: 0.8, cd: 0.65 },
+  R: { dmg: 2, v: 620, life: 1.1, cd: 1.2, kb: 560, big: true },
+  B: { dmg: 1, v: 1250, life: 0.6, cd: 0.28 },
+  N: { dmg: 1, v: 950, life: 0.3, cd: 0.8, n: 3 },
+};
+const KF_SET = ['K', 'Q', 'R', 'R', 'B', 'B', 'N', 'N'];
+const KF_COL = ['#f4f1de', '#2b2740'], KF_SIDE = ['White', 'Black'];
+const KF_ORD = { attack: 'Attack', guard: 'Guard', follow: 'Follow' };
+const KF_ORD_NEXT = { attack: 'guard', guard: 'follow', follow: 'attack' };
+const kfId = (side, i) => 'c' + side + i;
+if (!PDIFF[save.kfDiff]) save.kfDiff = 'medium';
+
+function buildKingfall() {
+  if (arenaCache.kingfall) return arenaCache.kingfall;
+  const wt = 100, ht = 40, half = wt / 2, g = new Uint8Array(wt * ht), r = mulberry(8 * 7919);
+  const inb = (x, y) => x >= 0 && y >= 0 && x < wt && y < ht;
+  const set = (x, y, v) => { if (inb(x, y)) { g[y * wt + x] = v; g[y * wt + (wt - 1 - x)] = v; } };
+  const get = (x, y) => inb(x, y) ? g[y * wt + x] : TMETAL;
+  const fill = (x0, y0, w, h, v) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) set(x, y, v); };
+  const blob = (cx, cy, rx, ry, v) => { for (let dy = -ry; dy <= ry; dy++) for (let dx = -rx; dx <= rx; dx++) if ((dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) <= 1) set(cx + dx, cy + dy, v); };
+  for (let x = 0; x < half; x++) { fill(x, 0, 1, 3, TROCK); fill(x, 3, 1, Math.max(0, Math.round(Math.sin(x * 0.7) * 1.2 + r() * 1.6 - 0.3)), TROCK); }
+  fill(0, 32, half, ht - 32, TROCK);                  // the board
+  // the castle: two towers, a roof with battlements, and a door on the inner side
+  fill(1, 14, 3, 18, TROCK); fill(10, 14, 3, 11, TROCK);
+  fill(1, 13, 12, 2, TROCK);
+  for (let x = 1; x <= 12; x += 2) fill(x, 12, 1, 1, TROCK);
+  // pawn-shaped pillars, platforms and a bridge across the middle
+  fill(27, 27, 2, 5, TROCK); blob(27, 26, 2, 1, TROCK); fill(26, 31, 4, 1, TROCK);
+  fill(38, 25, 2, 7, TROCK); blob(38, 24, 2, 1, TROCK); fill(37, 31, 4, 1, TROCK);
+  fill(17, 22, 6, 1, TROCK); fill(31, 17, 6, 1, TROCK); fill(45, 21, 5, 1, TROCK);
+  fill(0, 0, 1, ht, TMETAL); fill(0, ht - 1, half, 1, TMETAL);
+  const rings = [];
+  const ring = (tx, ty) => { for (const x of [tx, wt - 1 - tx]) { const px = x * TS + TS / 2, py = ty * TS + TS / 2; if (get(x, ty) === TAIR && get(x, ty + 1) === TAIR && !rings.some(q => Math.abs(q.x - px) < 60 && Math.abs(q.y - py) < 60)) rings.push({ x: px, y: py }); } };
+  for (const [x, y] of [[6, 20], [6, 26], [15, 9], [8, 8]]) ring(x, y);
+  for (let x = 2; x < half; x += 4) for (const y of [9, 15, 21, 27]) ring(x + (y % 3), y);
+  const floorY = 32 * TS - PR - 2;
+  const kspawn = [[], []];
+  for (const x of [6, 15, 17, 19, 21, 23, 25, 14]) { kspawn[0].push({ x: x * TS + TS / 2, y: floorY }); kspawn[1].push({ x: (wt - 1 - x) * TS + TS / 2, y: floorY }); }
+  const pal = { n: 'Kingfall', top: '#e8e4dc', rock: '#8a8796', deep: '#5c5a68' };
+  const img = document.createElement('canvas'); img.width = wt; img.height = ht;
+  { const ic = img.getContext('2d'), id2 = ic.createImageData(wt, ht);
+    for (let y = 0; y < ht; y++) for (let x = 0; x < wt; x++) {
+      const v = g[y * wt + x], chk = ((x >> 1) + (y >> 1)) & 1;
+      const c = v === TAIR ? [150, 200, 240] : v === TMETAL ? [75, 91, 117] : chk ? [235, 232, 225] : [40, 38, 52];
+      const o = (y * wt + x) * 4; id2.data[o] = c[0]; id2.data[o + 1] = c[1]; id2.data[o + 2] = c[2]; id2.data[o + 3] = 255;
+    }
+    ic.putImageData(id2, 0, 0); }
+  const a = { name: 'Kingfall', img, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings, spawns: kspawn[0].concat(kspawn[1]), kspawn,
+    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
+  arenaCache.kingfall = a;
+  return a;
+}
+
+// ----- state -----
+function initChess(pm, online) {
+  const mySide = online ? ((pm.tm.find(e => e[0] === myPeerId) || [0, 0])[1] & 1) : 0;
+  const C = pvp.chess = { mySide, mine: kfId(mySide, 1), orders: [{}, {}], cdA: {}, cdM: {}, shieldUntil: 0, kn: [], knN: 0, knSeen: 0, ev: [], evN: 0, evSeen: 0, peerCp: null,
+    kills: [0, 0], over: false, win: null, rp: {}, cmdT: 0, offline: !online };
+  for (let side = 0; side < 2; side++) KF_SET.forEach((t, i) => { if (t !== 'K') C.orders[side][kfId(side, i)] = 'attack'; });
+  if (!online || pvpHost) {
+    for (let side = 0; side < 2; side++) KF_SET.forEach((t, i) => {
+      const T = KF_TYPES[t], sp = hw.kspawn[side][i];
+      pvp.bots.push(Object.assign(fighter(kfId(side, i), side, 1), {
+        k: i, name: KF_SIDE[side] + ' ' + T.n, type: t, side, hp: T.hp, maxhp: T.hp, spd: T.spd, home: { x: sp.x, y: sp.y },
+        x: sp.x, y: sp.y, vx: 0, vy: 0, rope: null, ropeT: 0, think: 0.3 + i * 0.05, ground: false, stuck: 0, dir: side ? -1 : 1, wantUp: false, target: null,
+        diff: pm.df, base: KF_COL[side], eq: NOEQ, hist: [], face: side ? -1 : 1, trailAcc: 0, shotCd: 1 + i * 0.15, mcd: 2 + i * 0.3, shieldUntil: 0, dash: null,
+      }));
+    });
+  }
+}
+const kfAuth = () => !pvp.online || pvpHost;
+function chessPieces() {
+  const C = pvp.chess;
+  if (kfAuth()) return pvp.bots;
+  return Object.values(C.rp);
+}
+function chessPiece(id) { return kfAuth() ? pvp.bots.find(b => b.id === id) : pvp.chess.rp[id]; }
+function chessMyType() { const p = chessPiece(pvp.chess.mine); return p ? p.type : KF_SET[+pvp.chess.mine.slice(2)] || 'Q'; }
+function chessSpeed() { return mode === 'pvp' && pvp && pvp.chess ? KF_TYPES[chessMyType()].spd : 1; }
+function chessPlaceMe() {
+  const C = pvp.chess, sp = hw.kspawn[C.mySide][1];
+  detach(); P.x = sp.x; P.y = sp.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.dash = null;
+  const sc = wScale();
+  wcamX = clamp(P.x - cw / sc / 2, 0, Math.max(0, hw.wt * TS - cw / sc)); wcamY = clamp(P.y - ch / sc * 0.55, 0, Math.max(0, hw.ht * TS - ch / sc));
+}
+function chessViews() {
+  const C = pvp.chess, out = [], auth = kfAuth(), now = Date.now();
+  for (const p of chessPieces()) {
+    const mine = p.id === C.mine;
+    const x = mine ? P.x : auth ? p.x : p.rx, y = mine ? P.y : auth ? p.y : p.ry;
+    out.push({ id: p.id, me: mine, piece: p, name: p.name, x, y, vx: mine ? P.vx : p.vx || 0, vy: mine ? P.vy : p.vy || 0, team: p.side, alive: p.alive, lives: p.alive ? 1 : 0, hp: p.hp, invis: false, kb: {}, c: KF_COL[p.side],
+      shield: mine ? C.shieldUntil > now : (p.shieldUntil || 0) > now, human: mine || p.id === C.peerCp || !!p.human });
+  }
+  return out;
+}
+function chessEvent(k, id, src) { const C = pvp.chess; C.ev.push([++C.evN, k, id, src || '']); if (C.ev.length > 10) C.ev.shift(); presenceClock = 0; }
+function chessHit(tid, dmg, kx, ky, src) {
+  const C = pvp.chess, now = Date.now(), p = pvp.bots.find(q => q.id === tid);
+  if (!p || !p.alive || C.over || pvp.over || now < pvp.start) return;
+  const mine = p.id === C.mine, peer = p.id === C.peerCp;
+  if ((mine ? C.shieldUntil : p.shieldUntil || 0) > now) { burst(mine ? P.x : p.x, mine ? P.y : p.y, '#ffd34d', 8, 160); return; }
+  if (mine && ADM.god) return;
+  if (mine) { P.vx += kx; P.vy += ky; detach(); P.stun = 0.15; if (!reduceMotion) shake = 0.15; }
+  else if (peer) { C.kn.push([++C.knN, p.id, Math.round(kx), Math.round(ky)]); if (C.kn.length > 10) C.kn.shift(); }
+  else { p.vx += kx; p.vy += ky; p.rope = null; p.dash = null; }
+  p.hp -= clamp(Math.round(dmg), 0, 3);
+  burst(mine ? P.x : p.x, mine ? P.y : p.y, '#ff5a6e', 10, 220);
+  if (p.hp <= 0) {
+    p.hp = 0; p.alive = false; p.rope = null; p.dash = null;
+    C.kills[1 - p.side]++;
+    burst(mine ? P.x : p.x, mine ? P.y : p.y, '#ffd34d', 26, 300);
+    chessEvent('take', p.id, src);
+    if (p.type === 'K') { C.over = true; C.win = 1 - p.side; presenceClock = 0; chessFinish(C.win); }
+  }
+  presenceClock = 0;
+}
+// ----- attacks and moves (yours and the AI's) -----
+function chessFire(owner, side, type, x, y, ang) {
+  const A = KF_ATK[type], n = A.n || 1;
+  for (let k = 0; k < n; k++) { const a = ang + (k - (n - 1) / 2) * 0.2; spawnShot(owner, side, x, y, Math.cos(a), Math.sin(a), { dmg: A.dmg, speed: A.v, life: A.life, kb: A.kb, big: A.big }); }
+}
+function chessMove(body, type, ax, ay, isMe, piece) {
+  const now = Date.now(), dx = ax - body.x, dy = ay - body.y, d = Math.hypot(dx, dy) || 1, sx = Math.sign(dx) || 1;
+  if (isMe) detach(); else body.rope = null;
+  if (type === 'K') { if (isMe) pvp.chess.shieldUntil = now + 2000; else piece.shieldUntil = now + 2000; }
+  else if (type === 'Q') body.dash = { until: now + 260, vx: dx / d * 1500, vy: dy / d * 1500, dmg: 2, kb: 520, hit: new Set() };
+  else if (type === 'R') body.dash = { until: now + 380, vx: sx * 1500, vy: -60, dmg: 2, kb: 720, hit: new Set() };
+  else if (type === 'B') body.dash = { until: now + 300, vx: sx * 1060, vy: (Math.sign(dy) || -1) * 1060, dmg: 1, kb: 420, hit: new Set() };
+  else if (type === 'N') { body.vx = sx * 640; body.vy = -1150; body.ground = false; }
+  burst(body.x, body.y, '#ffd34d', 12, 200);
+}
+function chessDash(body, id, side, now) {
+  const D = body.dash;
+  if (!D) return;
+  if (now > D.until) { body.dash = null; body.vx *= 0.35; body.vy *= 0.35; return; }
+  body.vx = D.vx; body.vy = D.vy;
+  for (const v of pvpViews()) {
+    if (!v.alive || v.team === side || D.hit.has(v.id)) continue;
+    if (Math.hypot(v.x - body.x, v.y - body.y) < 38) { D.hit.add(v.id); const sp = Math.hypot(D.vx, D.vy) || 1; deal(id, v.id, 'd', D.dmg, D.vx / sp * D.kb, D.vy / sp * D.kb - 150); }
+  }
+}
+// ----- your controls -----
+function chessKey(e) {
+  const C = pvp.chess, now = Date.now();
+  if (e.code === 'KeyM' && !e.repeat) { openMap(); return; }
+  if (!pvpReady() || C.over) return;
+  if (e.code === 'KeyE') {
+    const t = chessMyType();
+    if ((C.cdA[C.mine] || 0) > now) return;
+    chessFire(C.mine, C.mySide, t, P.x, P.y, Math.atan2(mouse.wy - P.y, mouse.wx - P.x));
+    C.cdA[C.mine] = now + KF_ATK[t].cd * 1000;
+  } else if (e.code === 'KeyQ' && !e.repeat) {
+    const t = chessMyType();
+    if ((C.cdM[C.mine] || 0) > now) return;
+    chessMove(P, t, mouse.wx, mouse.wy, true, null);
+    C.cdM[C.mine] = now + KF_TYPES[t].mcd * 1000;
+  } else if (!e.repeat && /^Digit[1-8]$/.test(e.code)) chessControl(kfId(C.mySide, +e.code.slice(5) - 1));
+  else if (e.code === 'Tab' && !e.repeat) {
+    const ids = KF_SET.map((t, i) => kfId(C.mySide, i)), at = ids.indexOf(C.mine);
+    for (let k = 1; k <= 8; k++) { const id = ids[(at + k) % 8], p = chessPiece(id); if (p && p.alive) { chessControl(id); break; } }
+  } else if (!e.repeat && (e.code === 'KeyZ' || e.code === 'KeyX' || e.code === 'KeyC')) {
+    const o = e.code === 'KeyZ' ? 'attack' : e.code === 'KeyX' ? 'guard' : 'follow';
+    for (const id of Object.keys(C.orders[C.mySide])) C.orders[C.mySide][id] = o;
+    banner('Orders', 'Everyone: ' + (o === 'attack' ? 'Attack' : o === 'guard' ? 'Guard the King' : 'Follow me'));
+    presenceClock = 0;
+  }
+}
+function chessControl(id) {
+  const C = pvp.chess, p = chessPiece(id);
+  if (!p || !p.alive || p.side !== C.mySide || id === C.mine) return;
+  if (kfAuth()) { const old = pvp.bots.find(b => b.id === C.mine); if (old && old.alive) { old.x = P.x; old.y = P.y; old.vx = P.vx * 0.5; old.vy = P.vy * 0.5; old.rope = null; old.dash = null; old.shieldUntil = C.shieldUntil; } }
+  detach();
+  P.x = kfAuth() ? p.x : p.rx; P.y = kfAuth() ? p.y : p.ry; P.vx = p.vx || 0; P.vy = p.vy || 0; P.hist.length = 0; P.dash = null;
+  C.mine = id; C.shieldUntil = 0; presenceClock = 0;
+}
+function chessAutoSwitch() {
+  const C = pvp.chess;
+  let best = null, bd = Infinity;
+  for (const p of chessPieces()) if (p.alive && p.side === C.mySide && p.id !== C.mine) { const d = Math.hypot((kfAuth() ? p.x : p.rx) - P.x, (kfAuth() ? p.y : p.ry) - P.y) + (p.type === 'K' ? 5000 : 0); if (d < bd) { bd = d; best = p; } }
+  if (!best) return;
+  const lost = KF_TYPES[chessMyType()].n;
+  C.mine = '_'; chessControl(best.id);
+  banner('Your ' + lost + ' was taken', 'Now playing ' + KF_TYPES[best.type].n, '1–8 switches pieces.');
+}
+// ----- the AI -----
+function chessBotTick(b, dt, now) {
+  if (now < pvp.start || pvp.over || !b.alive) return;
+  const C = pvp.chess, side = b.side;
+  b.shotCd -= dt; b.mcd -= dt;
+  const views = pvpViews();
+  let foe = null, fd = Infinity;
+  for (const v of views) if (v.alive && v.team !== side) { const d = Math.hypot(v.x - b.x, v.y - b.y); if (d < fd) { fd = d; foe = v; } }
+  const order = b.type === 'K' ? 'king' : (C.orders[side][b.id] || 'attack');
+  const king = views.find(v => v.team === side && v.piece.type === 'K' && v.alive);
+  let tgt = null;
+  if (order === 'king') tgt = foe && fd < 320 ? foe : b.home;
+  else if (order === 'attack') tgt = foe;
+  else {
+    const anchor = order === 'guard' ? (king || b) : (views.find(v => v.team === side && v.human && v.alive) || king || b);
+    let near = null, nd = order === 'guard' ? 520 : 400;
+    for (const v of views) if (v.alive && v.team !== side) { const d = Math.hypot(v.x - anchor.x, v.y - anchor.y); if (d < nd) { nd = d; near = v; } }
+    tgt = near || { x: anchor.x + (side ? 1 : -1) * (order === 'guard' ? -1 : 1) * (80 + b.k * 22), y: anchor.y - 40 };
+  }
+  b.target = tgt;
+  if (b.dash) chessDash(b, b.id, side, now);
+  else botBrain(b, tgt, dt, now);
+  const n = Math.max(1, Math.ceil(dt / STEP)), h = dt / n;
+  for (let i = 0; i < n; i++) botPhysics(b, h, now);
+  if (Math.abs(b.vx) > 20) b.face = Math.sign(b.vx);
+  if (!foe) return;
+  const D = PDIFF[b.diff] || PDIFF.medium, A = KF_ATK[b.type], range = A.v * A.life * 0.85;
+  const los = fd < 900 && wLos(b.x, b.y, foe.x, foe.y);
+  if (los && fd < range && b.shotCd <= 0) {
+    const lead = fd / A.v * 0.6, ang = Math.atan2(foe.y + (foe.vy || 0) * lead - b.y, foe.x + (foe.vx || 0) * lead - b.x) + (Math.random() - 0.5) * 2 * D.err;
+    chessFire(b.id, side, b.type, b.x, b.y, ang);
+    b.shotCd = A.cd * (D.rate / 1.15) * (0.9 + Math.random() * 0.5);
+  }
+  if (b.mcd <= 0 && !b.dash) {
+    let use = false;
+    if (b.type === 'K') use = b.hp < b.maxhp * 0.6 && fd < 420;
+    else if (b.type === 'Q' || b.type === 'B') use = los && fd < 360;
+    else if (b.type === 'R') use = Math.abs(foe.y - b.y) < 70 && fd < 460 && los;
+    else if (b.type === 'N') use = (foe.y < b.y - 160 && fd < 650) || (b.stuck > 1);
+    if (use) { chessMove(b, b.type, foe.x, foe.y, false, b); b.mcd = KF_TYPES[b.type].mcd * (1 + Math.random() * 0.6); }
+  }
+}
+function chessCommander(now) {
+  // the bot side changes orders: defend when its King is in danger, otherwise attack
+  const C = pvp.chess;
+  if (now < C.cmdT) return;
+  C.cmdT = now + 2500;
+  const side = 1 - C.mySide, views = pvpViews(), king = views.find(v => v.team === side && v.piece.type === 'K' && v.alive);
+  if (!king) return;
+  const threat = views.some(v => v.alive && v.team !== side && Math.hypot(v.x - king.x, v.y - king.y) < 750) || king.hp < KF_TYPES.K.hp * 0.6;
+  KF_SET.forEach((t, i) => { if (t === 'K') return; C.orders[side][kfId(side, i)] = threat && (t === 'R' || i === 4) ? 'guard' : 'attack'; });
+}
+// ----- the match tick -----
+function chessTick(dt) {
+  const C = pvp.chess, now = Date.now(), auth = kfAuth();
+  if (pvp.online) { if (!pvpHost) chessPull(now, dt); readClaims(); }
+  wHP = P_HP;
+  if (auth) {
+    if (pvp.online) {
+      // the other player's piece follows their position; their orders apply to their side
+      const s = [...peerState.values()].find(q => q.raw && q.raw.pv && q.raw.pv.id === pvp.id);
+      const os = 1 - C.mySide;
+      C.peerCp = null;
+      if (s) {
+        const cp = typeof s.raw.kc === 'string' ? s.raw.kc.slice(0, 8) : null, p = cp && pvp.bots.find(b => b.id === cp && b.side === os && b.alive);
+        if (p) { C.peerCp = p.id; p.x = s.rx; p.y = s.ry; p.vx = s.vx || 0; p.vy = s.vy || 0; p.rope = null; p.shieldUntil = now + clamp(num(s.raw.ksh) || 0, 0, 2000); p.anchorA = s.a; }
+        if (Array.isArray(s.raw.ko)) for (const e of s.raw.ko.slice(0, 8)) if (Array.isArray(e) && typeof e[0] === 'string' && KF_ORD[e[1]] && C.orders[os][e[0]] !== undefined) C.orders[os][e[0]] = e[1];
+      }
+    } else chessCommander(now);
+    const mine = pvp.bots.find(b => b.id === C.mine);
+    if (mine && mine.alive) { mine.x = P.x; mine.y = P.y; mine.vx = P.vx; mine.vy = P.vy; mine.shieldUntil = C.shieldUntil; }
+    for (const b of pvp.bots) if (b.id !== C.mine && b.id !== C.peerCp) botTick(b, dt, now);
+  }
+  const me = chessPiece(C.mine);
+  if (!pvp.over && now >= pvp.start && (!me || !me.alive)) chessAutoSwitch();
+  if (P.dash) chessDash(P, C.mine, C.mySide, now);
+  updateShots(dt);
+  pvp.claims = pvp.claims.filter(c => now - c[7] < 2500).slice(-24);
+  for (const e of C.ev) {
+    if (e[0] <= C.evSeen) continue;
+    C.evSeen = e[0];
+    const p = chessPiece(e[2]);
+    if (!p || e[1] !== 'take' || p.type === 'K') continue;
+    const T = KF_TYPES[p.type];
+    if (p.side === C.mySide) { if (e[2] !== C.mine) banner('Piece lost', 'Your ' + T.n + ' was taken'); }
+    else banner('Piece taken', 'You took their ' + T.n);
+  }
+}
+function chessPresence(pr, now) {
+  const C = pvp.chess, R = Math.round;
+  pr.pb = null; pr.bdc = null; pr.u = null; pr.dc = null;
+  if (kfAuth()) {
+    pr.kp = pvp.bots.map(b => { const mine = b.id === C.mine, x = mine ? P.x : b.x, y = mine ? P.y : b.y, a = mine ? ropeAnchor() : b.rope ? { x: b.rope.x, y: b.rope.y } : null;
+      return [R(x), R(y), a ? R(a.x) : -1, a ? R(a.y) : 0, b.hp, b.alive ? 1 : 0, (mine ? C.shieldUntil : b.shieldUntil || 0) > now ? 1 : 0, mine || b.id === C.peerCp ? 1 : 0]; });
+    pr.kn = C.kn.slice(-10); pr.kev = C.ev.slice(-10); pr.kk = C.kills; pr.kov = C.over ? 1 : 0; pr.kw = C.win == null ? -1 : C.win;
+    pr.pbs = pvp.shots.slice(-24).map(s => [R(s.x), R(s.y)]);
+  } else {
+    pr.kc = C.mine; pr.ksh = R(Math.max(0, C.shieldUntil - now));
+    pr.ko = Object.entries(C.orders[C.mySide]).slice(0, 8);
+    pr.sh = pvp.shots.slice(-12).map(s => [R(s.x), R(s.y)]);
+  }
+}
+function chessPull(now, dt) {
+  const C = pvp.chess, h = hostPvpPeer(), g = h && h.raw.pv && h.raw.pv.id === pvp.id ? h.raw : null;
+  if (!g || !Array.isArray(g.kp)) return;
+  const WP = hw.wt * TS, HP = hw.ht * TS, k2 = 1 - Math.pow(1e-6, dt);
+  g.kp.slice(0, 16).forEach((e, i) => {
+    if (!Array.isArray(e)) return;
+    const side = i >> 3, k = i & 7, id = kfId(side, k), t = KF_SET[k];
+    let p = C.rp[id];
+    if (!p) p = C.rp[id] = { id, side, k, type: t, name: KF_SIDE[side] + ' ' + KF_TYPES[t].n, maxhp: KF_TYPES[t].hp, rx: num(e[0]) || 0, ry: num(e[1]) || 0, vx: 0, vy: 0, hist: [], trailAcc: 0, face: 1 };
+    const x = clamp(num(e[0]) || 0, 0, WP), y = clamp(num(e[1]) || 0, 0, HP);
+    if (Math.hypot(x - p.rx, y - p.ry) > 300) { p.rx = x; p.ry = y; p.vx = 0; p.vy = 0; }
+    else { const px = p.rx, py = p.ry; p.rx += (x - p.rx) * k2; p.ry += (y - p.ry) * k2; p.vx = dt ? (p.rx - px) / dt : 0; p.vy = dt ? (p.ry - py) / dt : 0; }
+    if (Math.abs(p.vx) > 20) p.face = Math.sign(p.vx);
+    p.a = num(e[2]) != null && e[2] >= 0 ? [clamp(e[2], 0, WP), clamp(num(e[3]) || 0, 0, HP)] : null;
+    p.hp = clampInt(e[4], 0, 20); p.alive = e[5] === 1; p.shieldUntil = e[6] === 1 ? now + 200 : 0; p.human = e[7] === 1;
+    pushHist(p.hist, p.rx, p.ry);
+  });
+  if (Array.isArray(g.kn)) for (const e of g.kn.slice(-10)) if (Array.isArray(e) && num(e[0]) != null && e[0] > C.knSeen) { C.knSeen = e[0]; if (e[1] === C.mine) { P.vx += clamp(num(e[2]) || 0, -1500, 1500); P.vy += clamp(num(e[3]) || 0, -1500, 1500); detach(); P.stun = 0.15; } }
+  if (Array.isArray(g.kev)) C.ev = g.kev.slice(-10).filter(e => Array.isArray(e) && num(e[0]) != null && typeof e[2] === 'string').map(e => [e[0], String(e[1]).slice(0, 8), e[2].slice(0, 8), String(e[3] || '').slice(0, 40)]);
+  if (Array.isArray(g.kk)) C.kills = [clampInt(g.kk[0], 0, 8), clampInt(g.kk[1], 0, 8)];
+  if (g.kov === 1 && !pvp.over) chessFinish(g.kw === 0 || g.kw === 1 ? g.kw : null);
+}
+function chessFinish(win) {
+  const C = pvp.chess;
+  C.over = true; C.win = win; pvp.over = true; pvp.winTeam = win;
+  const won = win === C.mySide, tok = C.kills[C.mySide] * 2 + (won ? 15 : 0);
+  if (tok) addTokens(tok, P.x, P.y);
+  pvp.reward = tok; pvp.won = won;
+  writeSave();
+  detach(); for (const k in keys) keys[k] = false;
+  state = 'over';
+  banner(won ? 'Checkmate' : 'Your King fell', won ? 'You win!' : KF_SIDE[win] + ' wins');
+  setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1800);
+}
+function startChessOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: 'kingfall', lv: 1, teams: true, nb: 0, df: save.kfDiff, tm: [], chess: {} }, false); }
+// ----- drawing -----
+function chessRender(dt) {
+  const C = pvp.chess, now = Date.now(), sc = wScale();
+  // the checkered board
+  const x0 = Math.max(0, Math.floor(wcamX / TS)), x1 = Math.min(hw.wt - 1, Math.ceil((wcamX + cw / sc) / TS)), y0 = Math.max(0, Math.floor(wcamY / TS)), y1 = Math.min(hw.ht - 1, Math.ceil((wcamY + ch / sc) / TS));
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+    if (hw.get(tx, ty) !== TROCK) continue;
+    ctx.fillStyle = ((tx >> 1) + (ty >> 1)) & 1 ? 'rgba(245,242,235,0.72)' : 'rgba(22,20,32,0.72)';
+    ctx.fillRect(tx * TS, ty * TS, TS + 0.5, TS + 0.5);
+  }
+  for (const v of pvpViews()) {
+    if (v.me || !v.alive) continue;
+    const p = v.piece, T = KF_TYPES[p.type];
+    const anchor = kfAuth() ? (p.id === C.peerCp ? (p.anchorA ? { x: p.anchorA[0], y: p.anchorA[1] } : null) : p.rope ? { x: p.rope.x, y: p.rope.y } : null) : (p.a ? { x: p.a[0], y: p.a[1] } : null);
+    ctx.fillStyle = p.side ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.arc(v.x, v.y - 2, 22, 0, 6.283); ctx.fill();
+    if (anchor) drawRope(v.x, v.y, anchor.x, anchor.y, 0, null, 0.85);
+    drawClimber({ x: v.x, y: v.y, vx: v.vx, vy: v.vy, base: KF_COL[p.side], eq: NOEQ, anchor, label: T.g[p.side] + ' ' + T.n, face: p.face || 1, hist: p.hist });
+    chessBar(v.x, v.y, p.hp, p.maxhp, p.side);
+    if (v.human) { ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(v.x, v.y + 24, 18, 5, 0, 0, 6.283); ctx.stroke(); }
+    if (v.shield) shieldBubble(v.x, v.y, PR + 6);
+  }
+  for (const s of peerState.values()) for (const key of ['sh', 'pbs']) if (s.raw && s.raw.pv && s.raw.pv.id === pvp.id && Array.isArray(s.raw[key])) {
+    ctx.fillStyle = '#ffd34d';
+    for (const d of s.raw[key].slice(0, 24)) if (Array.isArray(d) && num(d[0]) != null && num(d[1]) != null) { ctx.beginPath(); ctx.arc(d[0], d[1], 6, 0, 6.283); ctx.fill(); }
+  }
+  for (const s of pvp.shots) { ctx.fillStyle = s.team === C.mySide ? '#5ee6c1' : '#ff5a6e'; ctx.beginPath(); ctx.arc(s.x, s.y, s.big ? 10 : 6, 0, 6.283); ctx.fill(); }
+}
+function chessBar(x, y, hp, mx, side) {
+  const w = 44, f = clamp(hp / mx, 0, 1);
+  ctx.fillStyle = 'rgba(10,8,24,0.7)'; ctx.fillRect(x - w / 2 - 1, y - 49, w + 2, 6);
+  ctx.fillStyle = f > 0.5 ? '#5ee6c1' : f > 0.25 ? '#ffd34d' : '#ff5a6e'; ctx.fillRect(x - w / 2, y - 48, w * f, 4);
+}
+function chessMeOverlay() {
+  const C = pvp.chess, p = chessPiece(C.mine);
+  if (p) chessBar(P.x, P.y, p.hp, p.maxhp || KF_TYPES[p.type].hp, C.mySide);
+  ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(P.x, P.y + 24, 18, 5, 0, 0, 6.283); ctx.stroke();
+  if (C.shieldUntil > Date.now()) shieldBubble(P.x, P.y, PR + 6);
+}
+// ----- HUD -----
+function chessHudFast(now) {
+  const C = pvp.chess, ks = [0, 1].map(s => chessPiece(kfId(s, 0)));
+  const txt = ks.map((k, s) => KF_TYPES.K.g[s] + ' ' + KF_SIDE[s] + ' King ' + (k ? Math.max(0, k.hp) : 0) + '/' + KF_TYPES.K.hp).join('  ·  ');
+  const el = $('t-timer'); if (el.textContent !== txt) el.textContent = txt;
+  const t = chessMyType(), T = KF_TYPES[t], mr = Math.max(0, ((C.cdM[C.mine] || 0) - now) / 1000);
+  const f = T.g[C.mySide] + ' ' + T.n + ' · E ' + T.atk + ' · Q ' + T.mv + (mr > 0 ? ' (' + mr.toFixed(1) + 's)' : ' (ready)');
+  const wf = $('w-found'); if (wf.textContent !== f) wf.textContent = f;
+}
+function chessHudSlow() {
+  const C = pvp.chess, el = $('k-roster');
+  $('w-team').textContent = '';
+  el.textContent = '';
+  KF_SET.forEach((t, i) => {
+    const id = kfId(C.mySide, i), p = chessPiece(id), T = KF_TYPES[t], alive = !!(p && p.alive);
+    const row = document.createElement('div'); row.className = 'krow' + (alive ? '' : ' dead'); row.setAttribute('aria-current', String(id === C.mine));
+    row.title = alive ? 'Play as this ' + T.n : T.n + ' was taken';
+    const key = document.createElement('span'); key.className = 'muted'; key.textContent = String(i + 1);
+    const gl = document.createElement('span'); gl.className = 'kg'; gl.textContent = T.g[C.mySide];
+    const mid = document.createElement('span'); mid.textContent = T.n;
+    const hpb = document.createElement('div'); hpb.className = 'khp'; const fill = document.createElement('i'); fill.style.width = (alive ? clamp(p.hp / (p.maxhp || T.hp), 0, 1) * 100 : 0) + '%'; hpb.append(fill); mid.append(hpb);
+    const ord = document.createElement('button'); ord.type = 'button';
+    if (t === 'K') { ord.className = 'kord'; ord.textContent = 'Hold'; ord.disabled = true; }
+    else { const o = C.orders[C.mySide][id]; ord.className = 'kord ' + o; ord.textContent = KF_ORD[o]; ord.title = 'Change this piece\'s order';
+      ord.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); C.orders[C.mySide][id] = KF_ORD_NEXT[C.orders[C.mySide][id]]; presenceClock = 0; chessHudSlow(); }); }
+    row.append(key, gl, mid, ord);
+    if (alive) row.addEventListener('pointerdown', (e) => { if (e.target === ord) return; e.preventDefault(); chessControl(id); canvas.focus(); chessHudSlow(); });
+    el.append(row);
+  });
+}
+function renderChessResults() {
+  const C = pvp.chess, list = $('pr-list'); list.textContent = '';
+  [0, 1].forEach((side, i) => {
+    const li = document.createElement('li'); if (side === C.mySide) li.className = 'me';
+    const pl = document.createElement('span'); pl.className = 'place'; pl.textContent = C.win === side ? '1st' : '2nd';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = KF_COL[side]; dot.style.boxShadow = '0 0 0 1px rgba(255,255,255,.5)';
+    const nm = document.createElement('span'); nm.textContent = KF_SIDE[side] + (side === C.mySide ? ' (you)' : pvp.online ? '' : ' (bot)');
+    const left = chessPieces().filter(p => p.side === side && p.alive).map(p => KF_TYPES[p.type].g[side]).join(' ');
+    const res = document.createElement('span'); res.className = 'res'; res.textContent = (C.win === side ? 'Winner · ' : '') + 'took ' + C.kills[side] + ' · left: ' + (left || 'none');
+    li.append(pl, dot, nm, res); list.append(li);
+  });
+}
+// ----- setup screen -----
+function renderChessSetup() {
+  const tb = $('k-table'); tb.textContent = '';
+  for (const t of ['K', 'Q', 'R', 'B', 'N']) {
+    const T = KF_TYPES[t];
+    const g = document.createElement('span'); g.className = 'kg'; g.textContent = T.g[0];
+    const n = document.createElement('b'); n.textContent = T.n + (t === 'R' || t === 'B' || t === 'N' ? ' ×2' : '');
+    const st = document.createElement('span'); st.className = 'kx muted'; st.textContent = T.hp + ' hp · ' + (T.spd > 1 ? 'fast' : T.spd < 0.9 ? 'slow' : 'normal speed');
+    const d = document.createElement('span'); d.className = 'muted'; d.textContent = T.d;
+    tb.append(g, n, st, d);
+  }
+  const el = $('k-diff'); el.textContent = '';
+  for (const k of Object.keys(PDIFF)) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = DIFF[k].n; b.setAttribute('aria-pressed', String(save.kfDiff === k));
+    b.addEventListener('click', () => { save.kfDiff = k; writeSave(); renderChessSetup(); });
+    el.append(b);
+  }
+  $('b-k-host').hidden = !roomApi; $('k-join').hidden = !roomApi;
+}
+$('m-chess').addEventListener('click', () => { renderChessSetup(); $('k-err').hidden = true; show('scr-chess'); });
+$('b-k-back').addEventListener('click', () => show('scr-menu'));
+$('b-k-start').addEventListener('click', startChessOffline);
+$('b-k-host').addEventListener('click', async () => {
+  const err = $('k-err'); err.hidden = true;
+  try { await joinRoom('pvp', newCode()); pvpHost = true; pvpPm = { id: 0, st: 0, map: 'kingfall', lv: 1, teams: true, nb: 0, df: save.kfDiff, tm: [], chess: {} }; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = 'Could not open an online game. Try again in a moment.'; err.hidden = false; }
+});
+const tryChessJoin = async () => {
+  const err = $('k-err'); err.hidden = true;
+  const code = readCode($('k-code'));
+  if (code.length < 4) { err.textContent = 'Game codes are 5 letters and numbers.'; err.hidden = false; return; }
+  try { await joinRoom('pvp', code); pvpHost = false; lastPvpId = 0; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join game "' + code + '". Check the code and try again.'); err.hidden = false; }
+};
+$('b-k-join').addEventListener('click', tryChessJoin);
+$('k-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryChessJoin(); });
 
 // =================================================================
 // ---------- Achievements and skins ----------
@@ -5959,6 +6478,8 @@ function buildAdmGoTo() {
   const ar = $('adm-arenas'); ar.textContent = '';
   for (const a of ARENAS) admBtn(ar, a.n, () => goArena(a.id));
   const tgEl = $('adm-tag'); tgEl.textContent = '';
+  const kfEl = $('adm-chess'); kfEl.textContent = '';
+  admBtn(kfEl, 'Kingfall vs bot', () => { toMenu(); startChessOffline(); });
   const cfEl = $('adm-ctf'); cfEl.textContent = '';
   for (const cm of CTF_MAPS) admBtn(cfEl, cm.n, () => { toMenu(); const bots = $('adm-bots').checked; startPvp({ id: Date.now() % 1e9, st: Date.now() + 1500, map: cm.id, lv: 1, teams: true, nb: bots ? ccfg.size * 2 - 1 : 0, df: ccfg.diff, tm: [], ctf: { size: ccfg.size } }, false); });
   for (const v of Object.keys(TAGV)) for (const a of ARENAS) admBtn(tgEl, TAGV[v].n + ' · ' + a.n, () => { toMenu(); const bots = $('adm-bots').checked; startPvp({ id: Date.now() % 1e9, st: Date.now() + 1500, map: a.id, lv: 1, teams: false, nb: bots ? tcfg.nb : 0, df: tcfg.diff, tm: [], tag: { v, len: tcfg.len } }, false); });
