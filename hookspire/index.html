@@ -2289,18 +2289,18 @@ const BIOMES = [
   { x1: 300, n: 'Ironworks', top: '#a7aebd', rock: '#66626f', deep: '#45414c' },
 ];
 const ABIL = {
-  dash: { n: 'Dash', d: 'Burst toward where you aim.', dur: 0, cd: 2.5, c: '#ffb347' },
-  feather: { n: 'Feather Fall', d: 'Fall gently for 8 seconds.', dur: 8, cd: 12, c: '#f4f1de' },
+  dash: { n: 'Dash', d: 'Two strong bursts toward where you aim, then a short recharge.', dur: 0, cd: 2.5, c: '#ffb347' },
+  feather: { n: 'Feather Fall', d: 'Fall gently and glide sideways for 14 seconds.', dur: 14, cd: 12, c: '#f4f1de' },
   jump: { n: 'Super Jump', d: 'Launch yourself high into the air.', dur: 0, cd: 4, c: '#9be15d' },
-  zip: { n: 'Zip', d: 'Yank yourself to your hook at high speed.', dur: 0, cd: 4, c: '#5ee6c1' },
-  bounce: { n: 'Super Bounce', d: 'Bounce off every surface for 6 seconds.', dur: 6, cd: 12, c: '#ff6b8b' },
+  zip: { n: 'Zip', d: 'Shoot toward where you aim, or yank yourself to your hook.', dur: 0, cd: 4, c: '#5ee6c1' },
+  bounce: { n: 'Super Bounce', d: 'Bounce off every surface for 10 seconds, picking up speed.', dur: 10, cd: 12, c: '#ff6b8b' },
   invis: { n: 'Invisible', d: 'Drones, turrets and watchtowers can\'t see you for 6 seconds.', dur: 6, cd: 16, c: '#c79bff' },
   shrink: { n: 'Shrink', d: 'Become tiny for 10 seconds and fit through small gaps.', dur: 10, cd: 15, c: '#7fb2ff' },
   longrope: { n: 'Long Rope', d: 'Double your hook range for 10 seconds.', dur: 10, cd: 15, c: '#ff8a3d' },
   fly: { n: 'Fly', d: 'Fly with W A S D for 5 seconds.', dur: 5, cd: 14, c: '#8fd3ff' },
-  slow: { n: 'Slow Time', d: 'Enemies and their shots slow down for 5 seconds.', dur: 5, cd: 16, c: '#bff3ff' },
+  slow: { n: 'Slow Time', d: 'Enemies and their shots slow way down for 8 seconds.', dur: 8, cd: 16, c: '#bff3ff' },
   blink: { n: 'Blink', d: 'Teleport a short way toward your aim, even through walls.', dur: 0, cd: 3, c: '#ff4fa3' },
-  shield: { n: 'Shield', d: 'Block the next hit within 8 seconds.', dur: 8, cd: 16, c: '#ffd34d' },
+  shield: { n: 'Shield', d: 'Block the next 3 hits within 12 seconds.', dur: 12, cd: 16, c: '#ffd34d' },
 };
 const ABIL_IDS = Object.keys(ABIL);
 const CAMPS = [
@@ -2599,7 +2599,7 @@ function worldAttach(a) {
 }
 function worldHurt(fx, fy) {
   if (P.inv > 0) return;
-  if (ab.active.shield > 0) { ab.active.shield = 0; P.inv = 0.8; burst(P.x, P.y, '#ffd34d', 18, 220); return; }
+  if (ab.active.shield > 0) { ab.shieldHits = (ab.shieldHits || 1) - 1; if (ab.shieldHits <= 0) delete ab.active.shield; P.inv = 0.8; burst(P.x, P.y, '#ffd34d', 18, 220); return; }
   wHP--;
   if (wHP <= 0) { knockedOut(); return; }
   hurt(fx, fy);
@@ -2627,7 +2627,7 @@ function pushOut(bx0, by0, bx1, by1, r, bounce, dt, raw) {
   } else { const d = Math.sqrt(d2); nx = dx / d; ny = dy / d; pen = r - d; }
   P.x += nx * pen; P.y += ny * pen;
   const vn = P.vx * nx + P.vy * ny;
-  if (vn < 0) { const k = bounce ? 1.92 : 1.2; P.vx -= nx * vn * k; P.vy -= ny * vn * k; }
+  if (vn < 0) { const k = bounce ? (vn < -150 ? 2.08 : 1.5) : 1.2; P.vx -= nx * vn * k; P.vy -= ny * vn * k; }
   if (ny < -0.7 && !bounce) { P.ground = true; P.vx *= 1 - Math.min(1, 6 * dt); }
 }
 function collideWorld(r, dt) {
@@ -2670,7 +2670,7 @@ function stepWorld(dt) {
   let ax = 0, ay = fly ? 0 : feather ? G * 0.3 : G;
   if (fly && !rope) { ax = dir * 1700; ay += ((held('KeyS', 'ArrowDown') ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0)) * 1700; }
   else if (rope) ax = dir * SWING;
-  else if (!P.ground) ax = dir * AIR;
+  else if (!P.ground) ax = dir * (feather ? 1000 : AIR);
   P.vx += ax * dt; P.vy += ay * dt;
   if (!rope && P.ground && !fly) P.vx += (dir * WALKMAX - P.vx) * Math.min(1, 12 * dt);
   P.jumpCd = (P.jumpCd || 0) - dt;
@@ -2740,17 +2740,21 @@ function useAbility(i) {
   const A = ABIL[id];
   const dx = mouse.wx - P.x, dy = mouse.wy - P.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
   switch (id) {
-    case 'dash': detach(); P.vx = ux * 950 + P.vx * 0.25; P.vy = uy * 950 + P.vy * 0.25; burst(P.x, P.y, A.c, 14, 220); break;
+    case 'dash': {
+      detach(); P.vx = ux * 1250 + P.vx * 0.2; P.vy = uy * 1250 + P.vy * 0.2; burst(P.x, P.y, A.c, 18, 260);
+      ab.dashLeft = (ab.dashLeft == null ? 2 : ab.dashLeft) - 1;
+      if (ab.dashLeft <= 0) { ab.dashLeft = 2; ab.cd.dash = A.cd; }
+      return;
+    }
     case 'jump': detach(); P.vy = Math.min(P.vy, 0) - 1300; burst(P.x, P.y + 10, A.c, 14, 200); break;
     case 'zip': {
       const q = ropeAnchor();
-      if (!q) { toast('Hook something first, then zip.'); return; }
-      const zx = q.x - P.x, zy = q.y - P.y, zd = Math.hypot(zx, zy) || 1;
-      P.vx = zx / zd * 1150; P.vy = zy / zd * 1150; rope.L = MINL; burst(P.x, P.y, A.c, 12, 200);
+      const zx = q ? q.x - P.x : ux, zy = q ? q.y - P.y : uy, zd = Math.hypot(zx, zy) || 1;
+      P.vx = zx / zd * 1150; P.vy = zy / zd * 1150; if (q) rope.L = MINL; burst(P.x, P.y, A.c, 12, 200);
       break;
     }
     case 'blink': {
-      const reach = Math.min(260, d);
+      const reach = Math.min(400, d);
       let ok = false;
       for (let k = 0; reach - k * 20 >= 30; k++) {
         const tx = P.x + ux * (reach - k * 20), ty = P.y + uy * (reach - k * 20);
@@ -2759,7 +2763,7 @@ function useAbility(i) {
       if (!ok) { toast('No room to blink there.'); return; }
       break;
     }
-    default: ab.active[id] = A.dur; burst(P.x, P.y, A.c, 16, 200);
+    default: ab.active[id] = A.dur; if (id === 'shield') ab.shieldHits = 3; burst(P.x, P.y, A.c, 16, 200);
   }
   ab.cd[id] = A.cd + A.dur;
 }
@@ -2773,7 +2777,7 @@ function moveDrone(dr, ux, uy, s, ghost) {
   else if (!wSolid(Math.floor(dr.x / TS), Math.floor(ny / TS))) dr.y = ny;
 }
 function updateEnemies(dt) {
-  const edt = dt * (ab.active.slow > 0 ? 0.35 : 1);
+  const edt = dt * (ab.active.slow > 0 ? 0.2 : 1);
   const vis = !(ab.active.invis > 0);
   const near = (x, y, d) => Math.abs(x - P.x) < d && Math.abs(y - P.y) < d;
   for (const w of hw.towers) {
@@ -2886,7 +2890,7 @@ function toCampfire() {
 function startWorld() {
   ensureWorld();
   mode = 'world';
-  ab.active = {}; ab.cd = {}; hw.shots.length = 0;
+  ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0; hw.shots.length = 0;
   wHP = W_HP; lastHP = -1;
   for (const dr of hw.drones) { dr.st = 'patrol'; dr.t = 0; dr.x = dr.ax; dr.y = dr.ay; }
   toCampfire();
@@ -2955,7 +2959,8 @@ function updateSlots() {
     const id = h.slots[i], nm = d.children[1], fi = d.children[2].firstChild;
     if (!id) { d.className = 'slot empty'; nm.textContent = 'Empty'; nm.style.color = ''; fi.style.width = '0%'; return; }
     const A = ABIL[id], act = ab.active[id] > 0, cd = ab.cd[id] > 0;
-    if (nm.textContent !== A.n) { nm.textContent = A.n; nm.style.color = A.c; }
+    const label = id === 'dash' ? A.n + ' ×' + (ab.dashLeft == null ? 2 : ab.dashLeft) : A.n;
+    if (nm.textContent !== label) { nm.textContent = label; nm.style.color = A.c; }
     d.className = 'slot' + (act ? ' active' : '');
     const w = act ? ab.active[id] / A.dur * 100 : cd ? (1 - ab.cd[id] / (A.cd + A.dur)) * 100 : 100;
     fi.style.width = w.toFixed(1) + '%';
@@ -3169,7 +3174,7 @@ function renderWorld(dt) {
   }
   if (A) drawRope(P.x, P.y, A.x, A.y, rope.L, save.eq.rope);
   drawClimber(me);
-  if (ab.active.shield > 0) shieldBubble(P.x, P.y, curR());
+  if (ab.active.shield > 0) for (let k = 0; k < Math.max(1, ab.shieldHits || 1); k++) shieldBubble(P.x, P.y, curR() + k * 7);
   updateParticles(particles, dt);
   drawParticles(particles);
 }
