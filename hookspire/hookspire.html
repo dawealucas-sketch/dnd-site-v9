@@ -133,7 +133,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 #whud { position: fixed; inset: 0; pointer-events: none; }
 .region { font-family: var(--display); font-size: 26px; line-height: 1.1; text-shadow: 0 2px 0 rgba(0,0,0,.35); }
 .slots { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(60px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; }
-.slot { width: 116px; padding: 8px 10px; border-radius: 12px; background: rgba(10,8,24,.72); border: 1px solid var(--line); display: grid; gap: 4px; }
+.slot { width: 108px; padding: 8px 10px; border-radius: 12px; background: rgba(10,8,24,.72); border: 1px solid var(--line); display: grid; gap: 4px; }
 .slot .k { font-family: var(--display); font-size: 13px; color: var(--dim); }
 .slot .nm { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .slot .bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; display: block; }
@@ -179,7 +179,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   <div class="hud-tr"><div class="team" id="w-team"></div></div>
   <div id="wbanner"></div>
   <div class="slots" id="w-slots"></div>
-  <div class="hint" id="w-hint"><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1 2 3</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
+  <div class="hint" id="w-hint"><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1–5</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
 </div>
 
 <div id="overlay">
@@ -393,13 +393,13 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <button class="btn" id="b-w-join">Join</button>
     </div>
     <p class="err" id="w-err" hidden></p>
-    <p class="note"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> use abilities · <kbd>Tab</kbd> equips them · <kbd>M</kbd> opens the map · <kbd>R</kbd> returns to your last campfire.</p>
+    <p class="note"><kbd>1</kbd>–<kbd>5</kbd> use abilities · <kbd>Tab</kbd> equips them · <kbd>M</kbd> opens the map · <kbd>R</kbd> returns to your last campfire.</p>
     <button class="link" id="b-w-back">Back to menu</button>
   </section>
 
   <section class="panel wide" id="scr-loadout" hidden>
     <div class="head-row"><h2>Abilities</h2><span class="note" id="lo-count"></span></div>
-    <p>Put up to three abilities on keys 1, 2 and 3. There may be more out there.</p>
+    <p>Put up to five abilities on keys 1 to 5. There may be more out there.</p>
     <div class="ablist" id="lo-list"></div>
     <div class="row"><button class="btn primary" id="b-lo-close">Back to the world</button></div>
   </section>
@@ -744,7 +744,7 @@ addEventListener('keydown', (e) => {
     keys[e.code] = true;
     if (e.code === 'Escape' || e.code === 'KeyP') pause();
     else if (mode === 'world') {
-      if (!e.repeat && (e.code === 'Digit1' || e.code === 'Digit2' || e.code === 'Digit3')) useAbility(+e.code.slice(5) - 1);
+      if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
       else if (e.code === 'Tab') openLoadout();
       else if (e.code === 'KeyM') openMap();
       else if (e.code === 'KeyR' && !e.repeat) toCampfire();
@@ -2313,7 +2313,8 @@ function hs() {
   const h = save.hw;
   if (!hsOk) {
     h.ab = Array.isArray(h.ab) ? h.ab.filter((id, i, a) => ABIL[id] && a.indexOf(id) === i) : [];
-    h.slots = [0, 1, 2].map(i => (Array.isArray(h.slots) && h.ab.includes(h.slots[i])) ? h.slots[i] : null);
+    h.slots = [0, 1, 2, 3, 4].map(i => (Array.isArray(h.slots) && h.ab.includes(h.slots[i])) ? h.slots[i] : null);
+    for (const id of h.ab) { if (h.slots.includes(id)) continue; const e = h.slots.indexOf(null); if (e < 0) break; h.slots[e] = id; }
     h.ch = Array.isArray(h.ch) ? h.ch.filter((n, i, a) => Number.isInteger(n) && n >= 0 && n < 1000 && a.indexOf(n) === i) : [];
     h.camps = Array.isArray(h.camps) ? h.camps.filter((c, i, a) => CAMP_IDS.includes(c) && a.indexOf(c) === i) : [];
     if (!h.camps.includes('meadow')) h.camps.push('meadow');
@@ -2909,7 +2910,7 @@ function renderLoadout() {
     const d = document.createElement('span'); d.textContent = A.d + (A.dur ? '' : ' Cooldown ' + A.cd + ' s.');
     txt.append(b, d);
     const seg2 = document.createElement('div'); seg2.className = 'seg';
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = 'Key ' + (i + 1);
       btn.setAttribute('aria-pressed', String(h.slots[i] === id));
       btn.addEventListener('click', () => { const prev = h.slots.indexOf(id), old = h.slots[i]; if (prev >= 0) h.slots[prev] = old; h.slots[i] = id; writeSave(); renderLoadout(); });
@@ -2932,7 +2933,7 @@ function drawMap() {
 }
 function buildSlots() {
   const el = $('w-slots'); el.textContent = '';
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     const d = document.createElement('div'); d.className = 'slot';
     const k = document.createElement('span'); k.className = 'k'; k.textContent = String(i + 1);
     const nm = document.createElement('span'); nm.className = 'nm';
