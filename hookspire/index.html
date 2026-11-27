@@ -188,6 +188,8 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 .abrow .txt b { font-size: 16px; }
 .abrow .txt span { color: var(--dim); font-size: 14px; }
 .map { width: 100%; height: auto; border-radius: 12px; display: block; background: #0d0a18; }
+.minimap { width: 220px; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #0d0a18; display: block; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+@media (max-width: 640px) { .minimap { width: 150px; } }
 @media (prefers-reduced-motion: reduce) { #banner, #wbanner, .hint, .mode { transition: none; } }
 </style>
 
@@ -215,7 +217,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <div class="tokline"><span class="coin"></span><span id="w-tok">0</span></div>
     <div class="sub" id="w-found">Abilities found: 0</div>
   </div>
-  <div class="hud-tr"><div class="team" id="w-team"></div></div>
+  <div class="hud-tr"><canvas class="minimap" id="w-mini" width="440" height="220" hidden aria-label="Arena minimap"></canvas><div class="team" id="w-team"></div></div>
   <div id="wbanner"></div>
   <div class="ult" id="w-ult" hidden><span class="k">Q</span><span id="w-ult-name"></span><span class="bar"><i id="w-ult-bar"></i></span></div>
   <div class="slots" id="w-slots"></div>
@@ -449,9 +451,9 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   </section>
 
   <section class="panel wide" id="scr-map" hidden>
-    <div class="head-row"><h2>Map</h2><span class="note">Places you haven't been stay dark.</span></div>
+    <div class="head-row"><h2>Map</h2><span class="note" id="map-note1">Places you haven't been stay dark.</span></div>
     <canvas class="map" id="w-map" width="1200" height="600"></canvas>
-    <p class="note">Gold ring: you · Orange: campfires you've lit · Colored dots: teammates</p>
+    <p class="note" id="map-note2">Gold ring: you · Orange: campfires you've lit · Colored dots: teammates</p>
     <div class="row"><button class="btn primary" id="b-map-close">Close map</button></div>
   </section>
 
@@ -902,7 +904,7 @@ addEventListener('keydown', (e) => {
     else if (mode === 'world' || mode === 'pvp') {
       if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
       else if (e.code === 'Tab') openLoadout();
-      else if (mode === 'pvp') { if (e.code === 'KeyE') pvpShoot(); else if (e.code === 'KeyQ' && !e.repeat) pvpUltKey(); else if (e.code === 'KeyW' && !e.repeat) pvpYank(); }
+      else if (mode === 'pvp') { if (e.code === 'KeyE') pvpShoot(); else if (e.code === 'KeyQ' && !e.repeat) pvpUltKey(); else if (e.code === 'KeyW' && !e.repeat) pvpYank(); else if (e.code === 'KeyM' && !e.repeat) openMap(); }
       else if (e.code === 'KeyM') openMap();
       else if (e.code === 'KeyR' && !e.repeat) toCampfire();
     }
@@ -3128,7 +3130,7 @@ function startWorld() {
   state = 'play';
   show(null);
   $('hud').hidden = true; $('whud').hidden = false;
-  $('w-ult').hidden = true; $('w-hint').hidden = false; $('p-hint').hidden = true;
+  $('w-ult').hidden = true; $('w-hint').hidden = false; $('p-hint').hidden = true; $('w-mini').hidden = true;
   $('w-hint').classList.remove('faded');
   setTimeout(() => $('w-hint').classList.add('faded'), 15000);
   buildSlots();
@@ -3136,7 +3138,12 @@ function startWorld() {
   canvas.focus();
 }
 function openLoadout() { state = 'paused'; for (const k in keys) keys[k] = false; detach(); renderLoadout(); show('scr-loadout'); }
-function openMap() { state = 'paused'; for (const k in keys) keys[k] = false; detach(); show('scr-map'); drawMap(); }
+function openMap() {
+  const pv = mode === 'pvp';
+  $('map-note1').textContent = pv ? hw.name + (pvp && pvp.online ? ' · the match keeps going while the map is open' : '') : 'Places you haven\'t been stay dark.';
+  $('map-note2').textContent = pv ? 'Gold ring: you · White box: your view · Dots: other players and bots' + (pvp && pvp.cfg.teams ? ' in their team color' : '') + '. Invisible players don\'t show.' : 'Gold ring: you · Orange: campfires you\'ve lit · Colored dots: teammates';
+  state = 'paused'; for (const k in keys) keys[k] = false; detach(); show('scr-map'); drawMap();
+}
 function renderLoadout() {
   const h = hs();
   $('lo-count').textContent = 'Abilities found: ' + h.ab.length;
@@ -3160,6 +3167,7 @@ function renderLoadout() {
   }
 }
 function drawMap() {
+  if (mode === 'pvp' && pvp) { drawArenaMap($('w-map'), true); return; }
   const cv = $('w-map'), c2 = cv.getContext('2d');
   const sx = cv.width / WT, sy = cv.height / HT;
   c2.imageSmoothingEnabled = false;
@@ -3535,7 +3543,16 @@ function buildArena(id) {
     for (let i = 0; i < 600 && spawns.length < 24; i++) spawnOn(ri(4, wt - 5), ri(6, 80));
   }
   fill(0, 0, 1, ht, TMETAL); fill(wt - 1, 0, 1, ht, TMETAL); fill(0, ht - 1, wt, 1, TMETAL);
-  const a = { name: pal.n, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings, spawns,
+  // small picture of the arena for the minimap and the M map
+  const img = document.createElement('canvas'); img.width = wt; img.height = ht;
+  { const ic = img.getContext('2d'), id2 = ic.createImageData(wt, ht), top = hexRGB(pal.top), rock = hexRGB(pal.rock);
+    for (let y = 0; y < ht; y++) for (let x = 0; x < wt; x++) {
+      const v = g[y * wt + x];
+      const c = v === TAIR ? [150, 200, 240] : v === TMETAL ? [75, 91, 117] : (y > 0 && g[(y - 1) * wt + x] === TAIR ? top : rock);
+      const o = (y * wt + x) * 4; id2.data[o] = c[0]; id2.data[o + 1] = c[1]; id2.data[o + 2] = c[2]; id2.data[o + 3] = 255;
+    }
+    ic.putImageData(id2, 0, 0); }
+  const a = { name: pal.n, img, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings, spawns,
     shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
   arenaCache[id] = a;
   return a;
@@ -3926,6 +3943,7 @@ function startPvp(pm, online) {
   wRegion = hw.name; $('w-region').textContent = hw.name; regionT = gt;
   state = 'play'; show(null);
   $('hud').hidden = true; $('whud').hidden = false; $('w-ult').hidden = false; $('w-hint').hidden = true; $('p-hint').hidden = false;
+  { const mm = $('w-mini'); mm.width = 440; mm.height = Math.round(440 * hw.ht / hw.wt); mm.hidden = false; }
   $('wbanner').dataset.cd = '';
   buildSlots(); lastHP = -1; wHP = P_HP;
   canvas.focus();
@@ -4244,6 +4262,33 @@ function pvpHudFast() {
   else if (el >= 0 && bn.dataset.cd && bn.dataset.cd !== 'go') { bn.dataset.cd = 'go'; banner(hw.name, 'Fight!'); }
   const txt = !m.alive ? (m.lives > 0 ? 'Back in ' + Math.max(1, Math.ceil((m.respawnAt - now) / 1000)) : 'Out · spectating') : hw.name;
   const reg = $('w-region'); if (reg.textContent !== txt) reg.textContent = txt;
+  drawArenaMap($('w-mini'), false);
+}
+function drawArenaMap(cv, big) {
+  if (!hw || !hw.img) return;
+  const c2 = cv.getContext('2d'), W2 = cv.width, H2 = cv.height;
+  const s = Math.min(W2 / hw.wt, H2 / hw.ht), ox = (W2 - hw.wt * s) / 2, oy = (H2 - hw.ht * s) / 2;
+  const mx = (x) => ox + x / TS * s, my = (y) => oy + y / TS * s;
+  c2.setTransform(1, 0, 0, 1, 0, 0);
+  c2.fillStyle = '#0d0a18'; c2.fillRect(0, 0, W2, H2);
+  c2.imageSmoothingEnabled = false;
+  c2.drawImage(hw.img, ox, oy, hw.wt * s, hw.ht * s);
+  const sc = wScale();
+  c2.strokeStyle = 'rgba(255,255,255,0.7)'; c2.lineWidth = big ? 3 : 2;
+  c2.strokeRect(mx(wcamX), my(wcamY), cw / sc / TS * s, ch / sc / TS * s);
+  const r = big ? 11 : Math.max(5, W2 / 60);
+  c2.font = '600 22px "Chakra Petch", sans-serif'; c2.textAlign = 'center'; c2.textBaseline = 'bottom';
+  for (const v of pvpViews()) {
+    if (v.me || !v.alive || v.invis) continue;
+    const col = pvp.cfg.teams ? TEAM_COLORS[v.team & 1] : v.c;
+    c2.fillStyle = col; c2.beginPath(); c2.arc(mx(v.x), my(v.y), r, 0, 6.283); c2.fill();
+    c2.strokeStyle = 'rgba(0,0,0,0.65)'; c2.lineWidth = big ? 2.5 : 2; c2.stroke();
+    if (big) { c2.fillStyle = '#ffffff'; c2.fillText(v.name, mx(v.x), my(v.y) - r - 4); }
+  }
+  if (pvp.me.alive) {
+    c2.fillStyle = COLORS[save.color]; c2.beginPath(); c2.arc(mx(P.x), my(P.y), r * 0.75, 0, 6.283); c2.fill();
+    c2.strokeStyle = '#ffd34d'; c2.lineWidth = big ? 4 : 3; c2.beginPath(); c2.arc(mx(P.x), my(P.y), r + 3, 0, 6.283); c2.stroke();
+  }
 }
 
 // =================================================================
