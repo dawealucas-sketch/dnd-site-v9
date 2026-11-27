@@ -81,6 +81,17 @@ button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
 .mode small { color: var(--dim); font-size: 13px; line-height: 1.35; }
 .mode:not(:disabled):hover { border-color: var(--mint); background: rgba(94,230,193,.08); }
 .mode.shop:not(:disabled):hover { border-color: var(--gold); background: rgba(255,211,77,.08); }
+.mode.soon { border-style: dashed; opacity: .6; cursor: default; position: relative; }
+.mode.soon .badge { justify-self: start; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: rgba(199,155,255,.18); color: #d9c2ff; border: 1px solid rgba(199,155,255,.4); }
+.links { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.setgrid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; align-items: center; }
+.setgrid input[type=range] { width: min(260px, 50vw); accent-color: var(--mint); }
+.keygrid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; align-items: center; }
+.keygrid .keybtn { min-width: 92px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.06); font-weight: 700; font-variant-numeric: tabular-nums; }
+.keygrid .keybtn.wait { border-color: var(--gold); color: var(--gold); }
+.keygrid .keybtn.changed { border-color: rgba(94,230,193,.6); }
+.mutepill { position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 45; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: rgba(10,8,24,.7); color: var(--ink); font-size: 17px; display: grid; place-items: center; cursor: pointer; }
+.mutepill:hover { border-color: var(--mint); }
 .stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0; }
 .stats div { display: grid; gap: 2px; }
 .stats dt { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
@@ -288,6 +299,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <button class="mode" id="m-tag"><b>Hook Tag</b><small>Tag or be tagged. Classic or Infection, with bots or friends.</small></button>
       <button class="mode" id="m-ctf"><b>Capture the Flag</b><small>Red vs Blue. Steal their flag and bring it home. First to 3.</small></button>
       <button class="mode" id="m-chess"><b>Kingfall</b><small>Real-time chess battle. Command your pieces and take the enemy King.</small></button>
+      <button class="mode soon" id="m-story" disabled aria-disabled="true"><b>Story Mode</b><small>A new adventure is on the way.</small><span class="badge">Coming soon</span></button>
     </div>
     <div class="modes">
       <button class="mode shop" id="m-gacha"><b>Gacha</b><small>Spend 5 tokens to spin for hats, colors, ropes, trails and auras.</small></button>
@@ -301,7 +313,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <div><dt>Race wins</dt><dd id="s-wins">0</dd></div>
       <div><dt>Achievements</dt><dd id="s-ach">0/30</dd></div>
     </dl>
-    <button class="link" id="b-help">Controls and tower guide</button>
+    <div class="links"><button class="link" id="b-help">Controls and tower guide</button><button class="link" id="b-settings">Settings</button></div>
     <p class="note">Progress, tokens and items save in this browser on this device. Needs a keyboard and mouse.</p>
   </section>
 
@@ -411,11 +423,44 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <button class="btn" id="b-regroup" hidden>Regroup with team</button>
     </div>
     <p class="note" id="regroup-note" hidden>Regroup takes you to the highest checkpoint anyone on your team has reached.</p>
+    <div class="row" id="pause-rs">
+      <button class="btn" id="b-restart">Restart</button>
+      <div class="seg" id="pause-diff" aria-label="Bot difficulty"></div>
+    </div>
+    <p class="note" id="pause-diff-note" hidden>Difficulty changes apply when you restart.</p>
+    <div class="field"><span class="label">Switch to another mode</span><div class="seg small" id="pause-modes"></div></div>
     <div class="row">
       <button class="btn" id="b-help2">Controls</button>
+      <button class="btn" id="b-settings2">Settings</button>
       <button class="btn" id="b-pause-adm" hidden>Admin</button>
       <button class="btn" id="b-quit">Quit to menu</button>
     </div>
+  </section>
+
+  <section class="panel wide" id="scr-settings" hidden>
+    <h2>Settings</h2>
+    <div class="adm-sec">
+      <h3 style="color:var(--mint)">Sound</h3>
+      <div class="setgrid">
+        <label for="set-sfx" style="text-transform:none;letter-spacing:0;font-size:15px">Sound effects</label><input type="range" id="set-sfx" min="0" max="100">
+        <label for="set-music" style="text-transform:none;letter-spacing:0;font-size:15px">Music</label><input type="range" id="set-music" min="0" max="100">
+        <span>Mute everything</span><div class="seg" id="set-mute"></div>
+      </div>
+    </div>
+    <div class="adm-sec">
+      <h3 style="color:var(--mint)">Effects</h3>
+      <div class="setgrid">
+        <span>Screen shake</span><div class="seg" id="set-shake"></div>
+        <span>Particles and trails</span><div class="seg" id="set-fx"></div>
+      </div>
+    </div>
+    <div class="adm-sec">
+      <h3 style="color:var(--mint)">Controls</h3>
+      <p class="note">Click a key, then press the new key. Esc cancels. If the key is already used, the two swap. Arrow keys and 1–8 always work too.</p>
+      <div class="keygrid" id="set-keys"></div>
+      <div class="row"><button class="btn" id="b-keys-reset">Reset controls</button></div>
+    </div>
+    <button class="btn primary" id="b-set-back" style="justify-self:start">Done</button>
   </section>
 
   <section class="panel wide" id="scr-gacha" hidden>
@@ -733,6 +778,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 </div>
 
 <div class="adm-badge" id="adm-badge" hidden></div>
+<button class="mutepill" id="mute-pill" type="button" aria-label="Mute sound" title="Mute (N)">🔊</button>
 <div class="notice" id="notice" hidden role="status" aria-live="polite"></div>
 
 <div class="achtoast hide" id="achtoast" hidden role="status" aria-live="polite">
@@ -937,7 +983,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium' };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -966,11 +1012,141 @@ try {
     if (s.tagCfg && typeof s.tagCfg === 'object') save.tagCfg = s.tagCfg;
     if (s.ctfCfg && typeof s.ctfCfg === 'object') save.ctfCfg = s.ctfCfg;
     if (typeof s.kfDiff === 'string') save.kfDiff = s.kfDiff;
+    if (s.set && typeof s.set === 'object') save.set = s.set;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
 const gotSet = new Set(save.got);
 let saveDirty = false;
 function writeSave() { saveDirty = false; save.got = [...gotSet]; try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+
+// ---------- settings ----------
+const BIND_ACTIONS = [
+  ['hook', 'Space', 'Hook (hold)'], ['up', 'KeyW', 'Reel in · jump · yank'], ['down', 'KeyS', 'Let rope out'],
+  ['left', 'KeyA', 'Swing left'], ['right', 'KeyD', 'Swing right'], ['attack', 'KeyE', 'Shoot · attack'],
+  ['special', 'KeyQ', 'Ultimate · piece move'], ['map', 'KeyM', 'Map'], ['equip', 'Tab', 'Equip abilities'],
+  ['reset', 'KeyR', 'Checkpoint · campfire · restart'], ['mute', 'KeyN', 'Mute sound'],
+];
+const SET = Object.assign({ sfx: 0.7, music: 0.4, mute: false, shake: 1, fx: 1, keys: {} }, save.set || {});
+SET.sfx = clamp(Number(SET.sfx) || 0, 0, 1); SET.music = clamp(Number(SET.music) || 0, 0, 1); SET.mute = SET.mute === true;
+if (![0, 0.4, 1].includes(SET.shake)) SET.shake = 1;
+if (![0, 0.4, 1].includes(SET.fx)) SET.fx = 1;
+if (!SET.keys || typeof SET.keys !== 'object') SET.keys = {};
+for (const k of Object.keys(SET.keys)) if (!BIND_ACTIONS.some(a => a[0] === k) || typeof SET.keys[k] !== 'string' || !/^[A-Za-z0-9]{1,20}$/.test(SET.keys[k])) delete SET.keys[k];
+save.set = SET;
+// your keys are translated to the game's built-in keys, so the rest of the game doesn't need to know about rebinding
+let keyMap = null, deadKeys = null;
+function buildKeyMap() {
+  keyMap = Object.create(null); deadKeys = new Set();
+  for (const [act, def] of BIND_ACTIONS) keyMap[SET.keys[act] || def] = def;
+  for (const [, def] of BIND_ACTIONS) if (!(def in keyMap)) deadKeys.add(def);
+}
+buildKeyMap();
+const vcode = (c) => keyMap[c] || (deadKeys.has(c) ? 'Unbound' : c);
+const keyOf = (act) => SET.keys[act] || BIND_ACTIONS.find(a => a[0] === act)[1];
+function keyLabel(c) {
+  if (c === 'Space') return 'Space';
+  if (/^Key[A-Z]$/.test(c)) return c.slice(3);
+  if (/^Digit\d$/.test(c)) return c.slice(5);
+  if (/^Numpad\d$/.test(c)) return 'Num ' + c.slice(6);
+  return { ShiftLeft: 'Shift', ShiftRight: 'R-Shift', ControlLeft: 'Ctrl', ControlRight: 'R-Ctrl', AltLeft: 'Alt', AltRight: 'R-Alt', Tab: 'Tab', Enter: 'Enter', Backspace: 'Backspace', CapsLock: 'Caps', Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/', Backslash: '\\' }[c] || c;
+}
+
+// ---------- sound: little retro blips made in code ----------
+let actx = null, master = null, sfxBus = null, musBus = null, noiseBuf = null;
+function audioInit() {
+  if (actx) { if (actx.state === 'suspended') actx.resume().catch(() => {}); return; }
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    actx = new AC();
+    master = actx.createGain(); master.connect(actx.destination);
+    sfxBus = actx.createGain(); sfxBus.connect(master);
+    musBus = actx.createGain(); musBus.connect(master);
+    noiseBuf = actx.createBuffer(1, actx.sampleRate * 0.5, actx.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    audioLevels();
+  } catch (e) { actx = null; }
+}
+function audioLevels() {
+  if (!actx) return;
+  master.gain.value = SET.mute ? 0 : 1;
+  sfxBus.gain.value = SET.sfx * 0.5;
+  musBus.gain.value = SET.music * 0.32;
+  const pill = document.getElementById('mute-pill'); if (pill) { pill.textContent = SET.mute ? '🔇' : '🔊'; pill.setAttribute('aria-label', SET.mute ? 'Unmute sound' : 'Mute sound'); }
+}
+addEventListener('pointerdown', audioInit, { capture: true });
+addEventListener('keydown', audioInit, { capture: true });
+// [wave, start Hz, end Hz, seconds, volume, delay]
+const SFX = {
+  hook: [['square', 620, 980, 0.06, 0.16]],
+  jump: [['square', 280, 640, 0.09, 0.12]],
+  token: [['square', 988, 988, 0.05, 0.13], ['square', 1319, 1319, 0.1, 0.13, 0.05]],
+  hit: [['noise', 0, 0, 0.1, 0.25], ['square', 200, 80, 0.12, 0.16]],
+  hurt: [['sawtooth', 460, 110, 0.22, 0.18], ['noise', 0, 0, 0.08, 0.15]],
+  shoot: [['square', 1100, 260, 0.08, 0.09]],
+  ult: [['sawtooth', 180, 1300, 0.35, 0.15], ['noise', 0, 0, 0.3, 0.1, 0.08]],
+  ability: [['triangle', 480, 1100, 0.13, 0.2]],
+  dash: [['noise', 0, 0, 0.14, 0.14], ['square', 380, 900, 0.1, 0.08]],
+  ko: [['noise', 0, 0, 0.4, 0.3], ['square', 240, 50, 0.4, 0.18]],
+  checkpoint: [['square', 523, 523, 0.08, 0.13], ['square', 659, 659, 0.08, 0.13, 0.08], ['square', 784, 784, 0.16, 0.13, 0.16]],
+  win: [['square', 523, 523, 0.1, 0.14], ['square', 659, 659, 0.1, 0.14, 0.11], ['square', 784, 784, 0.1, 0.14, 0.22], ['square', 1047, 1047, 0.35, 0.15, 0.33], ['triangle', 262, 262, 0.6, 0.18, 0.33]],
+  lose: [['triangle', 392, 392, 0.16, 0.2], ['triangle', 330, 330, 0.16, 0.2, 0.17], ['triangle', 262, 262, 0.16, 0.2, 0.34], ['triangle', 196, 180, 0.45, 0.22, 0.51]],
+  alert: [['square', 880, 880, 0.07, 0.12], ['square', 660, 660, 0.07, 0.12, 0.09], ['square', 880, 880, 0.07, 0.12, 0.18]],
+  capture: [['square', 659, 659, 0.08, 0.14], ['square', 784, 784, 0.08, 0.14, 0.08], ['square', 988, 988, 0.08, 0.14, 0.16], ['square', 1319, 1319, 0.3, 0.15, 0.24]],
+  pickup: [['square', 523, 1046, 0.12, 0.14]],
+  revive: [['triangle', 300, 1200, 0.4, 0.2], ['triangle', 1568, 1568, 0.08, 0.1, 0.3], ['triangle', 2093, 2093, 0.12, 0.1, 0.38]],
+  rare: [['triangle', 1319, 1319, 0.07, 0.12], ['triangle', 1568, 1568, 0.07, 0.12, 0.07], ['triangle', 2093, 2093, 0.2, 0.12, 0.14]],
+  click: [['square', 1250, 1250, 0.02, 0.05]],
+  spin: [['square', 720, 720, 0.025, 0.05]],
+  tag: [['square', 330, 660, 0.08, 0.16], ['noise', 0, 0, 0.06, 0.12]],
+};
+const sfxLast = Object.create(null);
+function sfx(name, vol) {
+  if (!actx || SET.mute || !SET.sfx) return;
+  const R = SFX[name]; if (!R) return;
+  const now = actx.currentTime;
+  if (sfxLast[name] && now - sfxLast[name] < 0.05) return;
+  sfxLast[name] = now;
+  for (const [w, f0, f1, dur, v0, delay] of R) {
+    const t0 = now + (delay || 0), g = actx.createGain(), v = v0 * (vol == null ? 1 : vol);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(v, t0 + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    g.connect(sfxBus);
+    let src;
+    if (w === 'noise') { src = actx.createBufferSource(); src.buffer = noiseBuf; const f = actx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 900; src.connect(f); f.connect(g); }
+    else { src = actx.createOscillator(); src.type = w; src.frequency.setValueAtTime(f0, t0); if (f1 !== f0) src.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + dur); src.connect(g); }
+    src.start(t0); src.stop(t0 + dur + 0.02);
+  }
+}
+// ---------- music: two short chip-tune loops ----------
+const TRACKS = {
+  menu: { bpm: 92, roots: [45, 41, 48, 43],
+    lead: [69, 0, 72, 0, 76, 0, 74, 72, 0, 0, 69, 0, 0, 0, 0, 0, 72, 0, 74, 0, 76, 0, 79, 76, 74, 0, 72, 0, 67, 0, 0, 0], hat: false },
+  game: { bpm: 140, roots: [45, 41, 43, 40],
+    lead: [76, 0, 76, 74, 72, 0, 69, 0, 72, 0, 72, 74, 76, 0, 79, 0, 81, 0, 79, 76, 74, 0, 72, 0, 74, 0, 72, 69, 68, 0, 69, 0], hat: true },
+};
+const mus = { want: null, track: null, step: 0, next: 0 };
+const mhz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+function note(type, m, t, dur, vol) {
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.value = mhz(m);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(musBus); o.start(t); o.stop(t + dur + 0.02);
+}
+function musicTick() {
+  if (!actx || SET.mute || !SET.music) { mus.track = null; return; }
+  const want = state === 'menu' ? 'menu' : 'game';
+  if (mus.track !== want) { mus.track = want; mus.step = 0; mus.next = actx.currentTime + 0.1; }
+  const T = TRACKS[mus.track], st = 60 / T.bpm / 2; // eighth notes
+  while (mus.next < actx.currentTime + 0.2) {
+    const i = mus.step % 32, bar = Math.floor(i / 8), t = mus.next, root = T.roots[bar];
+    if (T.hat) { if (i % 8 === 0 || i % 8 === 4) note('square', root - 12, t, st * 1.7, 0.18); note('square', root + (i % 2 ? 12 : 0), t, st * 0.8, 0.07); }
+    else if (i % 4 === 0) note('triangle', root, t, st * 3.6, 0.2);
+    if (T.lead[i]) note(T.hat ? 'square' : 'triangle', T.lead[i], t, st * (T.hat ? 0.9 : 1.8), T.hat ? 0.07 : 0.12);
+    if (T.hat && i % 2 === 1) { const s2 = actx.createBufferSource(), g = actx.createGain(), f = actx.createBiquadFilter(); s2.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = 6000; g.gain.setValueAtTime(0.05, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04); s2.connect(f); f.connect(g); g.connect(musBus); s2.start(t); s2.stop(t + 0.05); }
+    mus.step++; mus.next += st;
+  }
+}
+setInterval(musicTick, 60);
+function toggleMute() { SET.mute = !SET.mute; audioLevels(); writeSave(); }
 
 // ---------- tower generation ----------
 const chunks = new Map();
@@ -1111,8 +1287,11 @@ const canvas = $('game'), mainCtx = canvas.getContext('2d');
 let ctx = mainCtx;
 const GAME_KEYS = new Set(['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 const typing = (e) => e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
-addEventListener('keydown', (e) => {
-  if (typing(e)) return;
+addEventListener('keydown', (e0) => {
+  if (typing(e0)) return;
+  if (rebinding) return; // the settings screen is waiting for a new key
+  const e = { code: vcode(e0.code), repeat: e0.repeat, target: e0.target, key: e0.key, preventDefault: () => e0.preventDefault() };
+  if (e.code === 'KeyN' && !e.repeat) { toggleMute(); return; }
   if (state === 'play') {
     if (GAME_KEYS.has(e.code) || ((mode === 'world' || (mode === 'pvp' && pvp && pvp.chess)) && e.code === 'Tab')) e.preventDefault();
     keys[e.code] = true;
@@ -1129,13 +1308,14 @@ addEventListener('keydown', (e) => {
       else if (e.code === 'KeyR' && !e.repeat) toCampfire();
     }
     else if (e.code === 'KeyR' && !e.repeat && !raceCountdown()) toCheckpoint(reachedCp);
+  } else if (state === 'paused' && current === 'scr-settings' && e.code === 'Escape') { $('b-set-back').click();
   } else if (state === 'paused') {
     if (current === 'scr-loadout' && (e.code === 'Tab' || e.code === 'Escape')) { e.preventDefault(); resume(); }
     else if (current === 'scr-map' && (e.code === 'KeyM' || e.code === 'Escape')) resume();
     else if (current === 'scr-pause' && (e.code === 'Escape' || e.code === 'KeyP')) resume();
   }
 });
-addEventListener('keyup', (e) => { keys[e.code] = false; });
+addEventListener('keyup', (e) => { keys[vcode(e.code)] = false; keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (state === 'play') pause(); });
 canvas.addEventListener('pointermove', (e) => { mouse.sx = e.clientX; mouse.sy = e.clientY; mouse.inside = true; });
 canvas.addEventListener('pointerleave', () => { mouse.inside = false; });
@@ -1147,6 +1327,7 @@ canvas.addEventListener('pointerdown', (e) => {
   }
 });
 const held = (a, b) => !!(keys[a] || keys[b]);
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('button'); if (b && !b.disabled) sfx('click'); });
 
 // ---------- physics ----------
 function nearChunks() { return chunksBetween(P.y - CHUNK * 0.8, P.y + CHUNK * 0.8); }
@@ -1216,7 +1397,7 @@ function attach(a) {
   const L = Math.hypot(a.x - P.x, a.y - P.y);
   rope = { kind: a.kind, ref: a.ref, x: a.x, y: a.y, L: clamp(L, MINL, RANGE) };
   if (a.kind === 'anchor' && a.ref.kind === 'crumble' && a.ref.grab < 0) a.ref.grab = gt;
-  burst(a.x, a.y, '#ffb347', 6, 120);
+  burst(a.x, a.y, '#ffb347', 6, 120); sfx('hook');
 }
 function detach() { rope = null; }
 function hurt(fx, fy) {
@@ -1225,7 +1406,7 @@ function hurt(fx, fy) {
   let dx = P.x - fx, dy = P.y - fy, d = Math.hypot(dx, dy);
   if (d < 1) { dx = 0; dy = 1; d = 1; }
   P.vx = dx / d * 520; P.vy = dy / d * 520 + 60;
-  P.stun = 0.5; P.inv = 1.4; runHits++;
+  P.stun = 0.5; P.inv = 1.4; runHits++; sfx('hurt');
   if (!reduceMotion) shake = 0.3;
   burst(P.x, P.y, '#ff5a6e', 14, 260);
 }
@@ -1237,6 +1418,7 @@ function addTokens(n, x, y) {
   save.tokens += n; runTokens += n; saveDirty = true;
   achStat('earned', n);
   if (x != null) particles.push({ k: 'text', text: '+' + n, x, y: y - 30, vx: 0, vy: -50, life: 1.1, color: '#ffd34d' });
+  sfx('token');
 }
 
 function step(dt) {
@@ -1261,7 +1443,7 @@ function step(dt) {
   P.vy += G * dt;
   if (!rope && P.ground) P.vx += (dir * WALKMAX - P.vx) * Math.min(1, 12 * dt);
   P.jumpCd = (P.jumpCd || 0) - dt;
-  if (!rope && P.ground && held('KeyW', 'ArrowUp') && P.jumpCd <= 0) { P.vy = -JUMP_V; P.ground = false; P.jumpCd = 0.3; }
+  if (!rope && P.ground && held('KeyW', 'ArrowUp') && P.jumpCd <= 0) { P.vy = -JUMP_V; P.ground = false; P.jumpCd = 0.3; sfx('jump', 0.6); }
   if (rope) {
     if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL, rope.L - REEL_IN * dt);
     if (held('KeyS', 'ArrowDown')) rope.L = Math.min(RANGE, rope.L + REEL_OUT * dt);
@@ -1352,7 +1534,7 @@ function towerProgress() {
   }
 }
 function reachCheckpoint(pl) {
-  reachedCp = pl.n;
+  reachedCp = pl.n; sfx('checkpoint');
   if (mode === 'coop' && peerState.size > 0) unlockAch('coop');
   if (pl.n > save.cp && pl.n <= MAX_CP) { save.cp = pl.n; writeSave(); }
   if (secOf(pl.m) <= runTopSec) banner('Checkpoint', pl.m + ' m');
@@ -1360,7 +1542,7 @@ function reachCheckpoint(pl) {
 }
 function reachSummit() {
   if (summitDone) return;
-  summitDone = true;
+  summitDone = true; sfx('win');
   addTokens(SUMMIT_BONUS, P.x, P.y);
   save.summits++;
   const t = gt - runStartGt;
@@ -1383,6 +1565,7 @@ function toCheckpoint(n) {
 // ---------- particles & banner ----------
 function burst(x, y, color, n, spd) {
   if (reduceMotion) n = Math.min(n, 4);
+  n = Math.round(n * SET.fx);
   for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = spd * (0.3 + Math.random() * 0.7); particles.push({ k: 'burst', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5 + Math.random() * 0.4, color }); }
 }
 let bannerTimer = 0;
@@ -1713,7 +1896,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-chess'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-chess', 'scr-settings'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -1783,6 +1966,7 @@ function pause() {
   $('pause-note').hidden = mode !== 'race';
   $('b-cp').hidden = raceCountdown() || mode === 'pvp';
   $('b-pause-adm').hidden = !save.adm;
+  renderPauseExtras();
   $('b-cp').textContent = mode === 'world' ? 'Back to campfire' : mode === 'trial' ? 'Restart course' : 'Back to checkpoint';
   show('scr-pause');
   writeSave();
@@ -2006,12 +2190,13 @@ function spin(times) {
   const iv = setInterval(() => {
     ticks++;
     const it = pool[Math.floor(Math.random() * pool.length)];
-    gShown = it; setResult(it, false, true);
+    gShown = it; setResult(it, false, true); sfx('spin');
     if (ticks >= (reduceMotion ? 1 : 12)) {
       clearInterval(iv);
       const best = results.reduce((a, b) => b.it.r > a.it.r ? b : a, results[0]);
       gShown = best.it; setResult(best.it, best.dup);
       if (best.it.r >= 3) previewBurst(RAR[best.it.r].c);
+      sfx(best.it.r >= 3 ? 'rare' : 'pickup');
       if (times > 1) {
         const wrap = $('g-pulls');
         for (const res of results) {
@@ -2515,8 +2700,8 @@ function drawHat(id, face) {
 function emitTrail(o, dt, list) {
   const it = o.eq && o.eq.trail ? ITEM[o.eq.trail] : null;
   if (!it || it.k === 'ghost' || it.k === 'streak' || it.k === 'gstreak' || it.k === 'glitch') return;
-  if (Math.hypot(o.vx || 0, o.vy || 0) < 150) return;
-  o.trailAcc = (o.trailAcc || 0) + dt * (reduceMotion ? 12 : 55);
+  if (Math.hypot(o.vx || 0, o.vy || 0) < 150 || !SET.fx) return;
+  o.trailAcc = (o.trailAcc || 0) + dt * (reduceMotion ? 12 : 55) * SET.fx;
   while (o.trailAcc >= 1) {
     o.trailAcc--;
     const col = it.cols[Math.floor(Math.random() * it.cols.length)];
@@ -2660,7 +2845,7 @@ function render(dt) {
   camY += (target - camY) * Math.min(1, dt * 6);
   camY = clamp(camY, SUMMIT_Y - 720, 70 - vh);
   if (shake > 0) shake -= dt;
-  const sx = shake > 0 ? (Math.random() - 0.5) * 10 : 0, sy = shake > 0 ? (Math.random() - 0.5) * 10 : 0;
+  const sx = shake > 0 ? (Math.random() - 0.5) * 10 * SET.shake : 0, sy = shake > 0 ? (Math.random() - 0.5) * 10 * SET.shake : 0;
   const camM = Math.max(0, -(camY + vh * 0.5) / M);
 
   drawBackground(camM);
@@ -3135,7 +3320,7 @@ function worldAim() {
 function worldAttach(a) {
   const L = Math.hypot(a.x - P.x, a.y - P.y);
   rope = { kind: a.kind, ref: a.ref, x: a.x, y: a.y, L: clamp(L, MINL, curRange()) };
-  burst(a.x, a.y, '#ffb347', 6, 120);
+  burst(a.x, a.y, '#ffb347', 6, 120); sfx('hook');
 }
 function worldHurt(fx, fy) {
   if (P.inv > 0 || ADM.god) return;
@@ -3145,7 +3330,7 @@ function worldHurt(fx, fy) {
   hurt(fx, fy);
 }
 function knockedOut() {
-  achStat('hwko', 1);
+  achStat('hwko', 1); sfx('ko');
   burst(P.x, P.y, '#ff5a6e', 30, 300);
   if (!reduceMotion) shake = 0.4;
   hw.shots.length = 0;
@@ -3223,7 +3408,7 @@ function stepWorld(dt) {
   P.vx += ax * dt; P.vy += ay * dt;
   if (!rope && P.ground && !fly) P.vx += (dir * WALKMAX * km - P.vx) * Math.min(1, 12 * dt);
   P.jumpCd = (P.jumpCd || 0) - dt;
-  if (!rope && P.ground && !fly && held('KeyW', 'ArrowUp') && P.jumpCd <= 0) { P.vy = -JUMP_V; P.ground = false; P.jumpCd = 0.3; }
+  if (!rope && P.ground && !fly && held('KeyW', 'ArrowUp') && P.jumpCd <= 0) { P.vy = -JUMP_V; P.ground = false; P.jumpCd = 0.3; sfx('jump', 0.6); }
   if (rope) {
     if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL, rope.L - REEL_IN * dt);
     if (held('KeyS', 'ArrowDown')) rope.L = Math.min(range, rope.L + REEL_OUT * dt);
@@ -3288,6 +3473,7 @@ function useAbility(i) {
   if (mode === 'pvp' && pvp && (Date.now() < pvp.start || !pvp.me.alive || pvp.over || Date.now() < pvp.me.freezeUntil)) return;
   if (ab.cd[id] > 0 || ab.active[id] > 0) return;
   const A = ABIL[id];
+  sfx(id === 'dash' || id === 'blink' || id === 'zip' ? 'dash' : 'ability');
   const dx = mouse.wx - P.x, dy = mouse.wy - P.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
   switch (id) {
     case 'dash': {
@@ -3638,7 +3824,7 @@ function renderWorld(dt) {
   const k = Math.min(1, dt * 7);
   wcamX += (tx - wcamX) * k; wcamY += (ty - wcamY) * k;
   if (shake > 0) shake -= dt;
-  const sx = shake > 0 ? (Math.random() - 0.5) * 10 : 0, sy = shake > 0 ? (Math.random() - 0.5) * 10 : 0;
+  const sx = shake > 0 ? (Math.random() - 0.5) * 10 * SET.shake : 0, sy = shake > 0 ? (Math.random() - 0.5) * 10 * SET.shake : 0;
   // sky, or cave darkness underground
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const col = clamp(Math.floor((wcamX + vw / 2) / TS), 0, hw.wt - 1);
@@ -4006,7 +4192,7 @@ function applyFighter(f, kind, a, b, c, src, isMe) {
   else if (kind === 'n') f.netUntil = now + clamp(a, 0, 4000);
   else if (kind === 's') { body.x = a; body.y = b; body.vx = 0; body.vy = 0; if (isMe) P.hist.length = 0; }
   dmg = clamp(Math.round(dmg), 0, 3);
-  if (isMe) { detach(); P.stun = 0.2; if (!reduceMotion) shake = 0.2; } else f.rope = null;
+  if (isMe) { detach(); P.stun = 0.2; if (!reduceMotion) shake = 0.2; sfx('hurt'); } else { f.rope = null; if (src === selfId()) sfx('hit', 0.7); }
   f.hp -= dmg;
   burst(body.x, body.y, '#ff5a6e', 10, 220);
   if (f.hp <= 0) {
@@ -4015,6 +4201,7 @@ function applyFighter(f, kind, a, b, c, src, isMe) {
     if (kind === 'y' && !isMe && src === selfId()) unlockAch('yank');
     f.respawnAt = f.lives > 0 ? now + 3000 : 0;
     burst(body.x, body.y, '#ffd34d', 26, 300);
+    if (isMe) sfx('ko'); else if (src === selfId()) sfx('ko', 0.6);
     if (isMe) { pvp.spec = src; detach(); banner(f.lives > 0 ? 'Knocked out' : 'Out of lives', f.lives > 0 ? 'Back in 3' : 'Spectating', f.lives > 0 ? f.lives + (f.lives === 1 ? ' life' : ' lives') + ' left. A / D to watch someone else.' : 'A / D switches who you watch.'); }
   }
 }
@@ -4138,6 +4325,7 @@ function useUlt(src, f, body, id, ax, ay) {
   }
   pvp.fx.push(fx);
   burst(body.x, body.y, ULTS[id].c, 24, 260);
+  if (isMe) sfx('ult');
   if (isMe) { banner('Ultimate', ULTS[id].n); achStat('ults', 1); }
 }
 function updateFx(now, dt) {
@@ -4195,12 +4383,12 @@ function pvpShoot() {
   if (pvp.tag) {
     if (!pvp.tag.it.has(selfId()) || pvp.tag.over) return;
     const dx = mouse.wx - P.x, dy = mouse.wy - P.y, d = Math.hypot(dx, dy) || 1;
-    spawnShot(selfId(), pvp.me.team, P.x, P.y, dx / d, dy / d, { tag: true, speed: TAG_SHOT_V, life: TAG_SHOT_LIFE });
+    spawnShot(selfId(), pvp.me.team, P.x, P.y, dx / d, dy / d, { tag: true, speed: TAG_SHOT_V, life: TAG_SHOT_LIFE }); sfx('shoot');
     pvp.me.shotCd = TAG_CD;
     return;
   }
   const m = pvp.me, dx = mouse.wx - P.x, dy = mouse.wy - P.y, d = Math.hypot(dx, dy) || 1, od = m.od > Date.now();
-  spawnShot(selfId(), m.team, P.x, P.y, dx / d, dy / d, { dmg: od ? 2 : 1 });
+  spawnShot(selfId(), m.team, P.x, P.y, dx / d, dy / d, { dmg: od ? 2 : 1 }); sfx('shoot');
   m.shotCd = SHOT_CD * (od ? 0.5 : 1);
 }
 function pvpUltKey() { if (pvp && (pvp.tag || pvp.ctf)) return; if (pvpReady() && pvp.me.charge >= 100) useUlt(selfId(), pvp.me, P, pvp.me.ult, mouse.wx, mouse.wy); }
@@ -4466,6 +4654,7 @@ function finishPvp(win) {
   const won = win != null && win === pvp.me.team, tok = kosOf(selfId()) * 2 + (won ? 10 : 0);
   if (tok) addTokens(tok, P.x, P.y);
   pvp.reward = tok; pvp.won = won;
+  sfx(won ? 'win' : 'lose');
   achPvp(won);
   writeSave();
   detach(); for (const k in keys) keys[k] = false;
@@ -4886,6 +5075,7 @@ function tagTick(dt) {
   }
   const amIt = T.it.has(me);
   if (T.wasIt !== null && amIt !== T.wasIt && running) {
+    sfx(amIt ? 'tag' : 'alert');
     if (amIt) banner(T.v === 'infect' ? 'Infected' : 'Tagged', "You're IT!", 'Tag someone' + (T.v === 'classic' ? ' to pass it on' : '') + '. E fires a tag shot.');
     else banner('Passed it on', 'Run!');
   }
@@ -4919,6 +5109,7 @@ function finishTag(win) {
   const me = selfId(), won = win.includes(me) && tagPlayers().length > 1, tok = (T.tags[me] || 0) + (won ? 10 : 0);
   if (tok) addTokens(tok, P.x, P.y);
   pvp.reward = tok; pvp.won = won;
+  sfx(won ? 'win' : 'lose');
   writeSave();
   detach(); for (const k in keys) keys[k] = false;
   state = 'over';
@@ -5270,6 +5461,7 @@ function ctfTick(dt) {
     C.evSeen = e[0];
     if (now < pvp.start) continue;
     const who = (pvpViews().find(v => v.id === e[3]) || {}).name || 'Someone', mine = e[2] === (m.team & 1), you = e[3] === me, TN = TEAM_NAMES[e[2]].replace(' team', '');
+    sfx(e[1] === 'cap' ? 'capture' : e[1] === 'take' ? (mine ? 'alert' : 'pickup') : e[1] === 'stop' ? 'hit' : 'checkpoint');
     if (e[1] === 'take') banner(mine ? 'Alert' : 'Flag taken', you ? 'You have their flag!' : mine ? 'Your flag was taken' : who + ' has their flag', you ? 'Bring it to your base.' : mine ? who + ' is carrying it. Stop them before they cross the middle.' : '');
     else if (e[1] === 'cap') banner(TN + ' scores', 'Red ' + C.score[0] + ' – ' + C.score[1] + ' Blue', you ? '+5 tokens at the end' : who + ' captured the flag.');
     else if (e[1] === 'ret') banner('Flag returned', TN + ' flag is home', you ? 'Nice save.' : '');
@@ -5285,6 +5477,7 @@ function finishCtf(win) {
   const tok = st[0] * 5 + (st[1] + st[2]) * 2 + (won ? 10 : 0);
   if (tok) addTokens(tok, P.x, P.y);
   pvp.reward = tok; pvp.won = won;
+  sfx(won ? 'win' : 'lose');
   writeSave();
   detach(); for (const k in keys) keys[k] = false;
   state = 'over';
@@ -5559,7 +5752,7 @@ function chessHit(tid, dmg, kx, ky, src) {
   const mine = p.id === C.mine, peer = p.id === C.peerCp;
   if ((mine ? C.shieldUntil : p.shieldUntil || 0) > now) { burst(mine ? P.x : p.x, mine ? P.y : p.y, '#ffd34d', 8, 160); return; }
   if (mine && ADM.god) return;
-  if (mine) { P.vx += kx; P.vy += ky; detach(); P.stun = 0.15; if (!reduceMotion) shake = 0.15; }
+  if (mine) { P.vx += kx; P.vy += ky; detach(); P.stun = 0.15; if (!reduceMotion) shake = 0.15; sfx('hurt'); }
   else if (peer) { C.kn.push([++C.knN, p.id, Math.round(kx), Math.round(ky)]); if (C.kn.length > 10) C.kn.shift(); }
   else { p.vx += kx; p.vy += ky; p.rope = null; p.dash = null; }
   p.hp -= clamp(Math.round(dmg), 0, 3);
@@ -5608,12 +5801,12 @@ function chessKey(e) {
   if (e.code === 'KeyE') {
     const t = chessMyType();
     if ((C.cdA[C.mine] || 0) > now) return;
-    chessFire(C.mine, C.mySide, t, P.x, P.y, Math.atan2(mouse.wy - P.y, mouse.wx - P.x));
+    chessFire(C.mine, C.mySide, t, P.x, P.y, Math.atan2(mouse.wy - P.y, mouse.wx - P.x)); sfx('shoot');
     C.cdA[C.mine] = now + KF_ATK[t].cd * 1000;
   } else if (e.code === 'KeyQ' && !e.repeat) {
     const t = chessMyType();
     if ((C.cdM[C.mine] || 0) > now) return;
-    chessMove(P, t, mouse.wx, mouse.wy, true, null);
+    chessMove(P, t, mouse.wx, mouse.wy, true, null); sfx(t === 'N' ? 'jump' : 'dash');
     C.cdM[C.mine] = now + KF_TYPES[t].mcd * 1000;
   } else if (!e.repeat && /^Digit[1-8]$/.test(e.code)) chessControl(kfId(C.mySide, +e.code.slice(5) - 1));
   else if (e.code === 'Tab' && !e.repeat) {
@@ -5811,9 +6004,10 @@ function chessTick(dt) {
     if (e[0] <= C.evSeen) continue;
     C.evSeen = e[0];
     const p = chessPiece(e[2]);
-    if (p && e[1] === 'rev') { const T = KF_TYPES[p.type]; if (p.side === C.mySide) banner('Revived', 'Your ' + T.n + ' is back'); else banner('Revived', KF_SIDE[p.side] + ' brought back their ' + T.n); continue; }
+    if (p && e[1] === 'rev') { sfx('revive'); const T = KF_TYPES[p.type]; if (p.side === C.mySide) banner('Revived', 'Your ' + T.n + ' is back'); else banner('Revived', KF_SIDE[p.side] + ' brought back their ' + T.n); continue; }
     if (!p || e[1] !== 'take' || p.type === 'K') continue;
     const T = KF_TYPES[p.type];
+    sfx('ko', 0.7);
     if (p.side === C.mySide) { if (e[2] !== C.mine) banner('Piece lost', 'Your ' + T.n + ' was taken'); }
     else banner('Piece taken', 'You took their ' + T.n);
   }
@@ -5863,6 +6057,7 @@ function chessFinish(win) {
   const won = win === C.mySide, tok = C.kills[C.mySide] * 2 + (won ? 15 : 0);
   if (tok) addTokens(tok, P.x, P.y);
   pvp.reward = tok; pvp.won = won;
+  sfx(won ? 'win' : 'lose');
   writeSave();
   detach(); for (const k in keys) keys[k] = false;
   state = 'over';
@@ -6003,6 +6198,109 @@ const tryChessJoin = async () => {
 $('b-k-join').addEventListener('click', tryChessJoin);
 $('k-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryChessJoin(); });
 
+// ----- pause menu extras: restart, bot difficulty, switch mode -----
+const SWITCH_MODES = [['m-solo', 'Climb'], ['m-coop', 'Co-op'], ['m-race', 'Race'], ['m-world', 'Hookworld'], ['m-trial', 'Time Trials'], ['m-pvp', 'PvP'], ['m-tag', 'Hook Tag'], ['m-ctf', 'Capture the Flag'], ['m-chess', 'Kingfall']];
+function diffTarget() {
+  // which saved difficulty the current offline match uses
+  if (mode === 'pvp' && pvp && !pvp.online) {
+    if (pvp.chess) return { get: () => save.kfDiff, set: (v) => { save.kfDiff = v; } };
+    if (pvp.ctf) return { get: () => ccfg.diff, set: (v) => { ccfg.diff = v; saveCcfg(); } };
+    if (pvp.tag) return pvp.cfg.nb ? { get: () => tcfg.diff, set: (v) => { tcfg.diff = v; saveTcfg(); } } : null;
+    return pvp.cfg.nb ? { get: () => pcfg.diff, set: (v) => { pcfg.diff = v; savePcfg(); } } : null;
+  }
+  if (mode === 'race' && race && !race.online && race.bots.length) return { get: () => cfg.diff, set: (v) => { cfg.diff = v; save.raceCfg = Object.assign({}, cfg); } };
+  return null;
+}
+function canRestart() {
+  if (mode === 'pvp') return !!(pvp && !pvp.online);
+  if (mode === 'race') return !!(race && !race.online);
+  return mode === 'trial' || mode === 'solo';
+}
+function restartCurrent() {
+  writeSave();
+  if (mode === 'pvp' && pvp && !pvp.online) { const C = pvp; kfCloseMenu(); if (C.chess) startChessOffline(); else if (C.ctf) startCtfOffline(); else if (C.tag) startTagOffline(); else startPvpOffline(); }
+  else if (mode === 'trial' && trial) startTrial(trial.n);
+  else if (mode === 'race' && race && !race.online) startRace(offlineRc(), false);
+  else if (mode === 'solo') beginRun(0, true);
+}
+function renderPauseExtras() {
+  const can = canRestart();
+  $('b-restart').hidden = !can;
+  $('b-restart').textContent = mode === 'solo' ? 'Restart from the bottom' : mode === 'trial' ? 'Restart course' : 'Restart match';
+  const dt = can ? diffTarget() : null, el = $('pause-diff');
+  el.textContent = ''; el.hidden = !dt; $('pause-diff-note').hidden = !dt;
+  if (dt) for (const k of Object.keys(PDIFF)) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = DIFF[k].n + ' bots';
+    b.setAttribute('aria-pressed', String(dt.get() === k));
+    b.addEventListener('click', () => { dt.set(k); writeSave(); renderPauseExtras(); });
+    el.append(b);
+  }
+  $('pause-rs').hidden = !can && !dt;
+  const ms = $('pause-modes'); ms.textContent = '';
+  for (const [id, n] of SWITCH_MODES) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = n;
+    b.addEventListener('click', () => { toMenu(); $(id).click(); });
+    ms.append(b);
+  }
+}
+$('b-restart').addEventListener('click', restartCurrent);
+
+// ----- settings screen -----
+let setReturn = 'scr-menu', rebinding = null;
+function openSettings(from) { setReturn = from; renderSettings(); show('scr-settings'); }
+function renderSettings() {
+  $('set-sfx').value = Math.round(SET.sfx * 100); $('set-music').value = Math.round(SET.music * 100);
+  const seg = (id, opts, get, set) => {
+    const el = $(id); el.textContent = '';
+    for (const [v, label] of opts) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.setAttribute('aria-pressed', String(get() === v));
+      b.addEventListener('click', () => { set(v); writeSave(); renderSettings(); });
+      el.append(b);
+    }
+  };
+  seg('set-mute', [[false, 'Sound on'], [true, 'Muted']], () => SET.mute, (v) => { SET.mute = v; audioLevels(); });
+  seg('set-shake', [[1, 'Full'], [0.4, 'Low'], [0, 'Off']], () => SET.shake, (v) => { SET.shake = v; });
+  seg('set-fx', [[1, 'Full'], [0.4, 'Low'], [0, 'Off']], () => SET.fx, (v) => { SET.fx = v; });
+  const kg = $('set-keys'); kg.textContent = '';
+  for (const [act, def, label] of BIND_ACTIONS) {
+    const l = document.createElement('span'); l.textContent = label;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'keybtn' + (rebinding === act ? ' wait' : SET.keys[act] && SET.keys[act] !== def ? ' changed' : '');
+    b.textContent = rebinding === act ? 'Press a key…' : keyLabel(keyOf(act));
+    b.addEventListener('click', () => { rebinding = act; renderSettings(); });
+    kg.append(l, b);
+  }
+}
+addEventListener('keydown', (e) => {
+  if (!rebinding) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const act = rebinding; rebinding = null;
+  if (e.code !== 'Escape' && !/^Digit[1-8]$/.test(e.code) && !/^Arrow/.test(e.code)) {
+    const old = keyOf(act), other = BIND_ACTIONS.find(a => a[0] !== act && keyOf(a[0]) === e.code);
+    if (other) SET.keys[other[0]] = old; // swap
+    SET.keys[act] = e.code;
+    for (const [a, def] of BIND_ACTIONS) if (SET.keys[a] === def) delete SET.keys[a];
+    buildKeyMap(); for (const k in keys) keys[k] = false; refreshKeyHints(); writeSave();
+  }
+  renderSettings();
+}, { capture: true });
+$('set-sfx').addEventListener('input', (e) => { SET.sfx = e.target.value / 100; audioLevels(); sfx('click'); });
+$('set-music').addEventListener('input', (e) => { SET.music = e.target.value / 100; audioLevels(); });
+$('set-sfx').addEventListener('change', writeSave); $('set-music').addEventListener('change', writeSave);
+$('b-keys-reset').addEventListener('click', () => { SET.keys = {}; buildKeyMap(); refreshKeyHints(); writeSave(); renderSettings(); });
+$('b-set-back').addEventListener('click', () => { rebinding = null; if (setReturn === 'scr-pause' && state === 'paused') show('scr-pause'); else { refreshMenu(); show('scr-menu'); } });
+$('b-settings').addEventListener('click', () => openSettings('scr-menu'));
+$('b-settings2').addEventListener('click', () => openSettings('scr-pause'));
+$('mute-pill').addEventListener('click', (e) => { audioInit(); toggleMute(); e.currentTarget.blur(); canvas.focus(); });
+// key names shown on screen follow your bindings
+const HINT_TOKENS = { Space: 'hook', W: 'up', S: 'down', A: 'left', D: 'right', E: 'attack', Q: 'special', M: 'map', Tab: 'equip', R: 'reset', N: 'mute' };
+function refreshKeyHints() {
+  for (const el of document.querySelectorAll('.hint b, kbd, #scr-chess .note b, #scr-help b')) {
+    if (el.dataset.k == null) { if (!/^(Hold )?(Space|Tab|[A-Z])( \/ (Space|Tab|[A-Z]))*$/.test(el.textContent)) continue; el.dataset.k = el.textContent; }
+    el.textContent = el.dataset.k.replace(/\b(Space|Tab|[A-Z])\b/g, (t) => HINT_TOKENS[t] ? keyLabel(keyOf(HINT_TOKENS[t])) : t);
+  }
+}
+refreshKeyHints();
+
 // =================================================================
 // ---------- Achievements and skins ----------
 // =================================================================
@@ -6067,6 +6365,7 @@ function unlockAch(id) {
   const A = ACH_BY[id], s = achState();
   if (!A || s.u[id]) return;
   s.u[id] = Date.now();
+  sfx('rare');
   addTokens(achTok(A));
   writeSave();
   queueToast(A);
@@ -6343,6 +6642,7 @@ function startTrial(n) {
   canvas.focus();
 }
 function trialDie() {
+  sfx('hurt');
   burst(P.x, P.y, '#ff5a6e', 16, 240);
   if (!reduceMotion) shake = 0.2;
   detach(); P.x = trial.cp.x; P.y = trial.cp.y; P.vx = 0; P.vy = 0; P.hist.length = 0;
@@ -6367,7 +6667,7 @@ function trialTick(dt) {
   if (P.x >= hw.finishX) trialFinish();
 }
 function trialFinish() {
-  trial.done = true;
+  trial.done = true; sfx('win');
   const n = trial.n, c = hw, t = trial.time, ts = trState();
   const prevBest = ts.best[n] || 0, prevMedal = ts.medal[n] || 0;
   const medal = t <= c.gold ? 3 : t <= c.silver ? 2 : t <= c.bronze ? 1 : 0;
