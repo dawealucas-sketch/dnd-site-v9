@@ -206,6 +206,10 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 .seg.small button { padding: 6px 11px; font-size: 13px; }
 .kick { margin-left: auto; padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(255,90,110,.6); background: rgba(255,90,110,.12); color: #ffb3bd; font-size: 12px; font-weight: 700; pointer-events: auto; }
 .kick:hover { background: rgba(255,90,110,.25); }
+.tpick { display: inline-flex; gap: 4px; margin-left: auto; pointer-events: auto; }
+.tpick button { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--ink); font-size: 12px; font-weight: 700; }
+.tpick button[aria-pressed=true] { color: #12101f; border-color: transparent; }
+.tlabel { margin-left: auto; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); }
 .adm-badge { position: fixed; left: 50%; transform: translateX(-50%); top: calc(58px + env(safe-area-inset-top, 0px)); z-index: 40; padding: 4px 12px; border-radius: 999px; background: rgba(140,10,30,.75); border: 1px solid #ff3d55; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; pointer-events: none; }
 .notice { position: fixed; top: calc(18px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 60; max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 12px; background: #2a1020; border: 1px solid #ff5a6e; color: var(--ink); font-weight: 600; box-shadow: 0 12px 30px rgba(0,0,0,.45); pointer-events: none; }
 #m-logo { cursor: default; user-select: none; }
@@ -611,6 +615,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <div class="field"><span class="label">Arena</span><div class="seg" id="p-map"></div><p class="note" id="p-map-note"></p></div>
     <div class="field"><span class="label">Lives</span><div class="seg" id="p-lives"></div></div>
     <div class="field"><span class="label">Teams</span><div class="seg" id="p-teams"></div></div>
+    <div class="field" id="p-myteam-field"><span class="label">Your team (playing offline)</span><div class="seg" id="p-myteam"></div></div>
     <div class="field"><span class="label">Bots</span><div class="seg" id="p-bots"></div></div>
     <div class="field" id="p-diff-field"><span class="label">Bot difficulty</span><div class="seg" id="p-diff"></div></div>
     <div class="field"><span class="label">Your ultimate</span><div class="items" id="p-ults"></div></div>
@@ -655,6 +660,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <p>Red vs Blue. Touch the other team's flag to grab it, then bring it to your base while your own flag is home. Stop a carrier while they're on your side of the map: touch them, or hook them and press <kbd>W</kbd> to yank. Once they cross the middle, they're safe. Touch your own dropped flag to send it home. First to 3 captures wins, with a 10 minute limit.</p>
     <div class="field"><span class="label">Map</span><div class="seg" id="c-map"></div><p class="note" id="c-map-note"></p></div>
     <div class="field"><span class="label">Team size</span><div class="seg" id="c-size"></div><p class="note">Bots fill any empty spots on both teams.</p></div>
+    <div class="field"><span class="label">Your team (playing offline)</span><div class="seg" id="c-myteam"></div><p class="note">Online, the host puts everyone on a team in the lobby.</p></div>
     <div class="field"><span class="label">Bot difficulty</span><div class="seg" id="c-diff"></div></div>
     <div class="row">
       <button class="btn primary" id="b-c-start">Start match</button>
@@ -675,6 +681,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <p>A real-time battle on a giant chess board. You have 8 pieces. Play as any of them and switch whenever you like, while the rest follow your orders. Take the enemy <b>King</b> to win.</p>
     <div class="ktable" id="k-table"></div>
     <p class="note"><b>E</b> attack · <b>Q</b> piece move · <b>1–8</b> or <b>Tab</b> switch piece. Click a piece's order to pick a new one, or press <b>O</b> to order everyone. Orders: <b>Z</b> Attack · <b>X</b> Guard the King · <b>C</b> Follow you · <b>V</b> Hold where they are · <b>T</b> Go to a spot you click · <b>R</b> Attack the enemy King.</p>
+    <div class="field"><span class="label">Play as (vs bot)</span><div class="seg" id="k-side"></div><p class="note">Online, the host picks who plays White and who plays Black in the lobby.</p></div>
     <div class="field"><span class="label">Piece AI</span><div class="seg" id="k-diff"></div><p class="note">How well the pieces you aren't playing move and aim, on both sides.</p></div>
     <div class="row">
       <button class="btn primary" id="b-k-start">Play vs bot</button>
@@ -1055,7 +1062,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0 };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -1086,6 +1093,7 @@ try {
     if (typeof s.kfDiff === 'string') save.kfDiff = s.kfDiff;
     if (s.set && typeof s.set === 'object') save.set = s.set;
     if (s.seen && typeof s.seen === 'object') save.seen = s.seen;
+    save.kfSide = s.kfSide === 1 ? 1 : 0;
     if (typeof s.last === 'string' && /^m-[a-z]+$/.test(s.last)) save.last = s.last;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
@@ -4196,6 +4204,7 @@ const pcfg = Object.assign({ map: 'pit', lives: 3, teams: false, nb: 3, diff: 'm
 if (!ARENA_IDS.includes(pcfg.map)) pcfg.map = 'pit';
 if (![1, 3, 5].includes(pcfg.lives)) pcfg.lives = 3;
 pcfg.teams = pcfg.teams === true;
+pcfg.team = pcfg.team === 1 ? 1 : 0;
 pcfg.nb = clampInt(pcfg.nb, 0, 5);
 if (!PDIFF[pcfg.diff]) pcfg.diff = 'medium';
 if (!ULTS[pcfg.ult]) pcfg.ult = 'storm';
@@ -4744,7 +4753,8 @@ function startPvp(pm, online) {
   hw = pm.chess ? buildKingfall() : pm.ctf ? buildCtf(pm.map) : buildArena(pm.map); mode = 'pvp'; lastPvpId = pm.id;
   ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0;
   const tm = new Map(pm.tm || []), myId = online ? myPeerId : 'me';
-  const myTeam = online ? (tm.has(myId) ? tm.get(myId) : 99) : 0;
+  const myTeam = online ? (tm.has(myId) ? tm.get(myId) : 99) : (pm.teams ? (pm.mt === 1 ? 1 : 0) : 0);
+  const offCount = [0, 0]; offCount[myTeam & 1]++;
   pvp = { id: pm.id, cfg: pm, online, start: pm.st, over: false, overAt: 0, me: fighter(myId || 'me', myTeam, pm.lv), bots: [], rbots: [], shots: [], fx: [], claims: [], lines: [], seen: new Set(),
     roster: online ? pm.tm : null, size: online ? pm.tm.length : 1 + pm.nb, reward: 0, won: false, winTeam: null };
   pvp.me.ult = pcfg.ult; pvp.me.inv = pm.st + 2000;
@@ -4753,7 +4763,8 @@ function startPvp(pm, online) {
   if (pm.chess) initChess(pm, online);
   const sp = hw.spawns, off = pm.id % sp.length;
   if (!online || pvpHost) for (let k = 0; k < pm.nb; k++) {
-    const id = 'b' + k, team = online ? (tm.has(id) ? tm.get(id) : k + 1) : (pm.teams ? (k % 2 === 0 ? 1 : 0) : k + 1);
+    const id = 'b' + k, team = online ? (tm.has(id) ? tm.get(id) : k + 1) : (pm.teams ? (offCount[0] < offCount[1] ? 0 : 1) : k + 1);
+    if (!online && pm.teams) offCount[team]++;
     const b = makePvpBot(k, team, pm), idx = online ? Math.max(0, pm.tm.findIndex(e => e[0] === id)) : k + 1, s = hw.tspawns ? hw.tspawns[team & 1][idx % hw.tspawns[team & 1].length] : sp[(off + idx) % sp.length];
     b.x = s.x; b.y = s.y; b.inv = pm.st + 2000; pvp.bots.push(b);
   }
@@ -4773,25 +4784,35 @@ function startPvp(pm, online) {
   canvas.focus();
   firstHelp();
 }
-function startPvpOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: [] }, false); }
+function startPvpOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: [], mt: pcfg.team }, false); }
+function teamPlan(humans, ta, botsWanted) {
+  // players the host put on a team go there; everyone else, then the bots, go to the smaller team
+  const count = [0, 0], out = [];
+  for (const id of humans) if (ta[id] === 0 || ta[id] === 1) { out.push([id, ta[id]]); count[ta[id]]++; }
+  for (const id of humans) if (!(ta[id] === 0 || ta[id] === 1)) { const t = count[0] <= count[1] ? 0 : 1; out.push([id, t]); count[t]++; }
+  for (let k = 0; k < botsWanted; k++) { const t = count[0] <= count[1] ? 0 : 1; out.push(['b' + k, t]); count[t]++; }
+  return out;
+}
 function hostStartPvp() {
   if (!myPeerId) return;
-  const tg = pvpPm && pvpPm.tag, cf = pvpPm && pvpPm.ctf;
+  const tg = pvpPm && pvpPm.tag, cf = pvpPm && pvpPm.ctf, ta = (pvpPm && pvpPm.ta) || {};
   const ids = [myPeerId, ...[...peerState.values()].map(s => s.id).sort()];
   if (pvpPm && pvpPm.chess) {
     if (ids.length !== 2) return;
-    pvpPm = { id: Date.now() % 1e9, st: Date.now() + 4500, map: 'kingfall', lv: 1, teams: true, nb: 0, df: save.kfDiff, chess: {}, tm: [[ids[0], 0], [ids[1], 1]] };
+    let a = ta[ids[0]] === 1 ? 1 : ta[ids[0]] === 0 ? 0 : ta[ids[1]] === 0 ? 1 : 0; // the host's pick decides; the other player gets the other side
+    pvpPm = { id: Date.now() % 1e9, st: Date.now() + 4500, map: 'kingfall', lv: 1, teams: true, nb: 0, df: save.kfDiff, chess: {}, ta, tm: [[ids[0], a], [ids[1], 1 - a]] };
     presenceClock = 0;
     startPvp(pvpPm, true);
     return;
   }
   const nb = cf ? clamp(ccfg.size * 2 - ids.length, 0, 8) : tg ? tcfg.nb : pcfg.nb;
+  const plan = cf || (!tg && pcfg.teams) ? teamPlan(ids.slice(0, 16), ta, Math.min(nb, 16 - Math.min(16, ids.length))) : null;
   for (let k = 0; k < nb; k++) ids.push('b' + k);
   pvpPm = cf
-    ? { id: Date.now() % 1e9, st: Date.now() + 4500, map: ccfg.map, lv: 1, teams: true, nb, df: ccfg.diff, ctf: { size: ccfg.size }, tm: ids.slice(0, 16).map((id, i) => [id, i % 2]) }
+    ? { id: Date.now() % 1e9, st: Date.now() + 4500, map: ccfg.map, lv: 1, teams: true, nb, df: ccfg.diff, ctf: { size: ccfg.size }, ta, tm: plan }
     : tg
     ? { id: Date.now() % 1e9, st: Date.now() + 4500, map: tcfg.map, lv: 1, teams: false, nb, df: tcfg.diff, tag: { v: tcfg.v, len: tcfg.len }, tm: ids.slice(0, 16).map((id, i) => [id, i]) }
-    : { id: Date.now() % 1e9, st: Date.now() + 4500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: ids.slice(0, 16).map((id, i) => [id, pcfg.teams ? i % 2 : i]) };
+    : { id: Date.now() % 1e9, st: Date.now() + 4500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, ta, tm: plan || ids.slice(0, 16).map((id, i) => [id, i]) };
   presenceClock = 0;
   startPvp(pvpPm, true);
 }
@@ -4903,7 +4924,9 @@ function parsePm(v) {
   if (CTF_IDS.includes(v.map) && !ctf) return null;
   const chess = v.map === 'kingfall' && v.chess && typeof v.chess === 'object' ? {} : null;
   if (v.map === 'kingfall' && !chess) return null;
-  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 8), df: PDIFF[v.df] ? v.df : 'medium', tm, tag, ctf, chess };
+  const ta = {};
+  if (v.ta && typeof v.ta === 'object') for (const k of Object.keys(v.ta).slice(0, 16)) if (v.ta[k] === 0 || v.ta[k] === 1) ta[k.slice(0, 40)] = v.ta[k];
+  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 8), df: PDIFF[v.df] ? v.df : 'medium', tm, tag, ctf, chess, ta };
 }
 function syncRemoteBots(dt) {
   const h = hostPvpPeer(), ok = h && h.raw.pv && h.raw.pv.id === pvp.id && Array.isArray(h.raw.pb);
@@ -4946,16 +4969,41 @@ function renderPvpLobby() {
   const h = pvpHost ? null : hostPvpPeer(), pm = pvpHost ? pvpPm : (h && parsePm(h.raw.pm));
   $('p-lset').textContent = pm ? pmText(pm) : 'Waiting to hear from the host…';
   const list = $('p-llist'); list.textContent = '';
-  const rows = [{ n: tn(save.name || 'Climber', hasTitle()) + (pvpHost ? ' (you, host)' : ' (you)'), c: COLORS[save.color] }];
+  const rows = [{ n: tn(save.name || 'Climber', hasTitle()) + (pvpHost ? ' (you, host)' : ' (you)'), c: COLORS[save.color], me: myPeerId }];
   for (const s of peerState.values()) rows.push({ n: tn(s.n, s.ti) + (s.raw && s.raw.pm ? ' (host)' : ''), c: s.c, id: s.id });
+  const teamed = pm && (pm.ctf || pm.chess || (pm.teams && !pm.tag));
+  const TN = pm && pm.chess ? ['♔ White', '♚ Black'] : ['Red', 'Blue'], TC = pm && pm.chess ? ['#f4f1de', '#8a86a0'] : TEAM_COLORS;
   for (const r of rows) {
     const row = document.createElement('div'); row.className = 'team-row'; row.style.justifyContent = 'flex-start';
     const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = r.c;
     const nm = document.createElement('span'); nm.textContent = r.n;
-    row.append(dot, nm); if (r.id) addKick(row, r.id); list.append(row);
+    row.append(dot, nm);
+    const pid = r.id || r.me;
+    if (teamed && pid) {
+      const ta = pm.ta || {}, t = ta[pid];
+      if (pvpHost) {
+        const box = document.createElement('span'); box.className = 'tpick';
+        for (const [v, label] of [[-1, 'Auto'], [0, TN[0]], [1, TN[1]]]) {
+          const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+          const on = v === -1 ? !(t === 0 || t === 1) : t === v;
+          b.setAttribute('aria-pressed', String(on));
+          if (on && v >= 0) b.style.background = TC[v];
+          if (on && v === -1) b.style.background = 'var(--mint)';
+          b.addEventListener('pointerdown', (e) => { e.preventDefault(); pvpPm.ta = pvpPm.ta || {}; if (v === -1) delete pvpPm.ta[pid]; else pvpPm.ta[pid] = v; presenceClock = 0; renderPvpLobby(); });
+          box.append(b);
+        }
+        row.append(box);
+      } else {
+        const lb = document.createElement('span'); lb.className = 'tlabel';
+        lb.textContent = t === 0 || t === 1 ? TN[t] : 'Auto'; if (t === 0 || t === 1) { lb.style.borderColor = TC[t]; lb.style.color = TC[t]; }
+        row.append(lb);
+      }
+    }
+    if (r.id) addKick(row, r.id);
+    list.append(row);
   }
   $('b-p-lstart').hidden = !pvpHost; $('b-p-lstart').disabled = !myPeerId || !!(pm && pm.chess && peerState.size !== 1);
-  $('p-lmsg').textContent = (pvpHost ? 'Share the code, then start when everyone is here.' : 'Waiting for the host to start.') + (pm && pm.chess ? ' Kingfall is 1 vs 1: the host plays White, the other player plays Black.' + (peerState.size !== 1 ? ' Waiting for exactly one other player.' : '') : pm && pm.ctf ? ' First to 3 captures, 10 minute limit. Teams are picked when the match starts.' : pm && pm.tag ? ' ' + TAGV[pm.tag.v].d : ' Your ultimate: ' + ULTS[pcfg.ult].n + '.');
+  $('p-lmsg').textContent = (pvpHost ? 'Share the code, then start when everyone is here.' : 'Waiting for the host to start.') + (pm && pm.chess ? ' Kingfall is 1 vs 1. ' + (pvpHost ? 'Pick who plays White and Black, or leave it on Auto.' : 'The host picks who plays White and Black.') + (peerState.size !== 1 ? ' Waiting for exactly one other player.' : '') : pm && pm.ctf ? ' First to 3 captures, 10 minute limit. ' + (pvpHost ? 'Put players on Red or Blue, or leave them on Auto. Bots even out the teams.' : 'The host puts everyone on a team.') : pm && pm.teams && !pm.tag ? ' ' + (pvpHost ? 'Put players on Red or Blue, or leave them on Auto. Bots fill the smaller team.' : 'The host puts everyone on a team.') + ' Your ultimate: ' + ULTS[pcfg.ult].n + '.' : pm && pm.tag ? ' ' + TAGV[pm.tag.v].d : ' Your ultimate: ' + ULTS[pcfg.ult].n + '.');
 }
 
 // ----- PvP screens -----
@@ -4972,6 +5020,8 @@ function renderPvpSetup() {
   mk('p-map', ARENAS.map(a => [a.id, a.n]), () => pcfg.map, v => { pcfg.map = v; });
   mk('p-lives', [[1, '1 life'], [3, '3 lives'], [5, '5 lives']], () => pcfg.lives, v => { pcfg.lives = v; });
   mk('p-teams', [[false, 'Free-for-all'], [true, '2 teams']], () => pcfg.teams, v => { pcfg.teams = v; });
+  mk('p-myteam', [[0, 'Red'], [1, 'Blue']], () => pcfg.team, v => { pcfg.team = v; });
+  $('p-myteam-field').hidden = !pcfg.teams;
   mk('p-bots', [0, 1, 2, 3, 4, 5].map(n => [n, n ? String(n) : 'None']), () => pcfg.nb, v => { pcfg.nb = v; });
   mk('p-diff', Object.keys(PDIFF).map(k => [k, DIFF[k].n]), () => pcfg.diff, v => { pcfg.diff = v; });
   $('p-diff-field').hidden = pcfg.nb === 0;
@@ -4993,7 +5043,7 @@ $('b-p-back').addEventListener('click', () => show('scr-menu'));
 $('b-p-start').addEventListener('click', startPvpOffline);
 $('b-p-host').addEventListener('click', async () => {
   const err = $('p-err'); err.hidden = true;
-  try { await joinRoom('pvp', newCode()); pvpHost = true; pvpPm = { id: 0, st: 0, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: [] }; renderPvpLobby(); show('scr-pvp-lobby'); }
+  try { await joinRoom('pvp', newCode()); pvpHost = true; pvpPm = { id: 0, st: 0, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: [], ta: {} }; renderPvpLobby(); show('scr-pvp-lobby'); }
   catch (e) { team = null; err.textContent = 'Could not open an online match. Try again in a moment.'; err.hidden = false; }
 });
 const tryPvpJoin = async () => {
@@ -5451,6 +5501,7 @@ const CTF_GRACE = 1200, CTF_WIN = 3, CTF_TIME = 600, CTF_RETURN = 20000, CTF_TOU
 const ccfg = Object.assign({ map: 'run', size: 3, diff: 'medium' }, save.ctfCfg || {});
 if (!CTF_IDS.includes(ccfg.map)) ccfg.map = 'run';
 if (!CTF_SIZES.includes(ccfg.size)) ccfg.size = 3;
+ccfg.team = ccfg.team === 1 ? 1 : 0;
 if (!PDIFF[ccfg.diff]) ccfg.diff = 'medium';
 const saveCcfg = () => { save.ctfCfg = Object.assign({}, ccfg); writeSave(); };
 
@@ -5775,7 +5826,7 @@ function ctfHudSlow() {
     row.append(name, st2, dot); el.append(row);
   }
 }
-function startCtfOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: ccfg.map, lv: 1, teams: true, nb: ccfg.size * 2 - 1, df: ccfg.diff, tm: [], ctf: { size: ccfg.size } }, false); }
+function startCtfOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: ccfg.map, lv: 1, teams: true, nb: ccfg.size * 2 - 1, df: ccfg.diff, tm: [], ctf: { size: ccfg.size }, mt: ccfg.team }, false); }
 function renderCtfSetup() {
   const mk = (id, opts, get, set) => {
     const el = $(id); el.textContent = '';
@@ -5788,6 +5839,7 @@ function renderCtfSetup() {
   };
   mk('c-map', CTF_MAPS.map(m => [m.id, m.n]), () => ccfg.map, v => { ccfg.map = v; });
   mk('c-size', CTF_SIZES.map(n => [n, n + ' vs ' + n]), () => ccfg.size, v => { ccfg.size = v; });
+  mk('c-myteam', [[0, 'Red'], [1, 'Blue']], () => ccfg.team, v => { ccfg.team = v; });
   mk('c-diff', Object.keys(PDIFF).map(k => [k, DIFF[k].n]), () => ccfg.diff, v => { ccfg.diff = v; });
   $('c-map-note').textContent = (CTF_MAPS.find(m => m.id === ccfg.map) || {}).d || '';
   $('b-c-host').hidden = !roomApi; $('c-join').hidden = !roomApi;
@@ -5886,7 +5938,7 @@ function buildKingfall() {
 
 // ----- state -----
 function initChess(pm, online) {
-  const mySide = online ? ((pm.tm.find(e => e[0] === myPeerId) || [0, 0])[1] & 1) : 0;
+  const mySide = online ? ((pm.tm.find(e => e[0] === myPeerId) || [0, 0])[1] & 1) : (pm.mt === 1 ? 1 : 0);
   const C = pvp.chess = { mySide, mine: kfId(mySide, 1), orders: [{}, {}], cdA: {}, cdM: {}, shieldUntil: 0, kn: [], knN: 0, knSeen: 0, ev: [], evN: 0, evSeen: 0, peerCp: null,
     kills: [0, 0], over: false, win: null, rp: {}, cmdT: 0, offline: !online, opos: [{}, {}], rcd: [0, 0], revReq: null, revN: 0, revSeen: 0, picking: null, menu: null, healT: 0 };
   for (let side = 0; side < 2; side++) KF_SET.forEach((t, i) => { if (t !== 'K') C.orders[side][kfId(side, i)] = 'attack'; });
@@ -6245,7 +6297,7 @@ function chessFinish(win) {
   banner(won ? 'Checkmate' : 'Your King fell', won ? 'You win!' : KF_SIDE[win] + ' wins');
   setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1800);
 }
-function startChessOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: 'kingfall', lv: 1, teams: true, nb: 0, df: save.kfDiff, tm: [], chess: {} }, false); }
+function startChessOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: 'kingfall', lv: 1, teams: true, nb: 0, df: save.kfDiff, tm: [], chess: {}, mt: save.kfSide }, false); }
 // ----- drawing -----
 function chessRender(dt) {
   const C = pvp.chess, now = Date.now(), sc = wScale();
@@ -6352,6 +6404,12 @@ function renderChessSetup() {
     const st = document.createElement('span'); st.className = 'kx muted'; st.textContent = T.hp + ' hp · ' + (T.spd > 1 ? 'fast' : T.spd < 0.9 ? 'slow' : 'normal speed');
     const d = document.createElement('span'); d.className = 'muted'; d.textContent = T.d;
     tb.append(g, n, st, d);
+  }
+  const sd = $('k-side'); sd.textContent = '';
+  for (const [v, n] of [[0, '♔ White'], [1, '♚ Black']]) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = n; b.setAttribute('aria-pressed', String(save.kfSide === v));
+    b.addEventListener('click', () => { save.kfSide = v; writeSave(); renderChessSetup(); });
+    sd.append(b);
   }
   const el = $('k-diff'); el.textContent = '';
   for (const k of Object.keys(PDIFF)) {
