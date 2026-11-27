@@ -178,7 +178,14 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 .krow .khp { height: 4px; border-radius: 2px; background: rgba(255,255,255,.15); margin-top: 3px; overflow: hidden; }
 .krow .khp i { display: block; height: 100%; background: var(--mint); }
 .krow .kord { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.08); letter-spacing: .04em; }
-.krow .kord.attack { color: #ff8a9a; } .krow .kord.guard { color: #7fb2ff; } .krow .kord.follow { color: #ffd34d; }
+.krow .kord.attack { color: #ff8a9a; } .krow .kord.guard { color: #7fb2ff; } .krow .kord.follow { color: #ffd34d; } .krow .kord.hold { color: #c79bff; } .krow .kord.spot { color: #5ee6c1; } .krow .kord.retreat { color: #9be15d; }
+.kall { justify-self: start; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: rgba(10,8,24,.75); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
+.kmenu { position: absolute; z-index: 5; pointer-events: auto; display: grid; gap: 3px; padding: 8px; min-width: 210px; border-radius: 10px; background: rgba(16,12,34,.96); border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+.kmenu .kmh { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-weight: 700; padding: 2px 6px 4px; }
+.kmenu button { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; align-items: center; text-align: left; padding: 6px 8px; border-radius: 7px; border: 0; background: transparent; color: var(--ink); font-size: 13px; cursor: pointer; }
+.kmenu button:hover, .kmenu button:focus-visible { background: rgba(255,255,255,.09); }
+.kmenu button small { color: var(--dim); font-size: 11px; }
+.kmenu button .kk { font-weight: 700; color: var(--dim); font-size: 11px; }
 .ktable { display: grid; grid-template-columns: auto auto auto minmax(0, 1fr); gap: 6px 14px; font-size: 14px; align-items: baseline; }
 .ktable .kg { font-size: 20px; }
 @media (max-width: 640px) { .kroster { width: 190px; top: 130px; } .ktable { grid-template-columns: auto minmax(0, 1fr); } .ktable .kx { display: none; } }
@@ -251,7 +258,8 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   <div class="slots" id="w-slots"></div>
   <div class="hint" id="g-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>E</b> tag shot when you're IT · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
   <div class="kroster" id="k-roster" hidden></div>
-  <div class="hint" id="k-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>E</b> attack · <b>Q</b> piece move · <b>1–8 / Tab</b> switch · <b>Z</b> attack · <b>X</b> guard · <b>C</b> follow · <b>M</b> map</div>
+  <div class="kmenu" id="k-menu" hidden></div>
+  <div class="hint" id="k-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>E</b> attack · <b>Q</b> piece move · <b>1–8 / Tab</b> switch · <b>O</b> order all · <b>M</b> map</div>
   <div class="hint" id="c-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump / yank a hooked enemy · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
   <div class="hint" id="p-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / yank a hooked player · <b>E</b> shoot · <b>Q</b> ultimate · <b>1–5</b> abilities · <b>Esc</b> pause</div>
   <div class="hint" id="w-hint"><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1–5</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
@@ -564,7 +572,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <h2>Kingfall</h2>
     <p>A real-time battle on a giant chess board. You have 8 pieces. Play as any of them and switch whenever you like, while the rest follow your orders. Take the enemy <b>King</b> to win.</p>
     <div class="ktable" id="k-table"></div>
-    <p class="note"><b>E</b> attack · <b>Q</b> piece move · <b>1–8</b> or <b>Tab</b> switch piece · <b>Z</b> everyone attack · <b>X</b> everyone guard the King · <b>C</b> everyone follow you · click a piece's order to change just that one.</p>
+    <p class="note"><b>E</b> attack · <b>Q</b> piece move · <b>1–8</b> or <b>Tab</b> switch piece. Click a piece's order to pick a new one, or press <b>O</b> to order everyone. Orders: <b>Z</b> Attack · <b>X</b> Guard the King · <b>C</b> Follow you · <b>V</b> Hold where they are · <b>T</b> Go to a spot you click · <b>R</b> Retreat to the castle, where pieces heal.</p>
     <div class="field"><span class="label">Piece AI</span><div class="seg" id="k-diff"></div><p class="note">How well the pieces you aren't playing move and aim, on both sides.</p></div>
     <div class="row">
       <button class="btn primary" id="b-k-start">Play vs bot</button>
@@ -1109,7 +1117,8 @@ addEventListener('keydown', (e) => {
     if (GAME_KEYS.has(e.code) || ((mode === 'world' || (mode === 'pvp' && pvp && pvp.chess)) && e.code === 'Tab')) e.preventDefault();
     keys[e.code] = true;
     if (save.adm && !e.repeat && (e.code === 'KeyG' || e.code === 'KeyF')) admToggle(e.code === 'KeyG' ? 'god' : 'fly');
-    if (e.code === 'Escape' || e.code === 'KeyP') pause();
+    if (e.code === 'Escape' && (kfMenuOpen() || (pvp && pvp.chess && pvp.chess.picking))) { kfCloseMenu(); pvp.chess.picking = null; }
+    else if (e.code === 'Escape' || e.code === 'KeyP') pause();
     else if (mode === 'world' || mode === 'pvp' || mode === 'trial') {
       if (mode === 'pvp' && pvp && pvp.chess) chessKey(e);
       else if (mode === 'trial') { if (e.code === 'KeyR' && !e.repeat && trial) startTrial(trial.n); }
@@ -1130,7 +1139,13 @@ addEventListener('keyup', (e) => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (state === 'play') pause(); });
 canvas.addEventListener('pointermove', (e) => { mouse.sx = e.clientX; mouse.sy = e.clientY; mouse.inside = true; });
 canvas.addEventListener('pointerleave', () => { mouse.inside = false; });
-canvas.addEventListener('pointerdown', () => canvas.focus());
+canvas.addEventListener('pointerdown', (e) => {
+  canvas.focus();
+  if (mode === 'pvp' && pvp && pvp.chess) {
+    if (pvp.chess.picking) { const sc = wScale(); kfPickSpot(wcamX + e.clientX / sc, wcamY + e.clientY / sc); }
+    else if (kfMenuOpen()) kfCloseMenu();
+  }
+});
 const held = (a, b) => !!(keys[a] || keys[b]);
 
 // ---------- physics ----------
@@ -1372,7 +1387,7 @@ function burst(x, y, color, n, spd) {
 }
 let bannerTimer = 0;
 function banner(small, big, detail) {
-  const el = $(mode === 'world' ? 'wbanner' : 'banner');
+  const el = $(mode === 'world' || mode === 'pvp' || mode === 'trial' ? 'wbanner' : 'banner'); // the arena modes use the world HUD
   el.textContent = '';
   const s = document.createElement('small'); s.textContent = small;
   el.append(s, document.createTextNode(big));
@@ -1779,6 +1794,7 @@ function toMenu() {
   mode = 'solo'; race = null; raceHosting = false; hostRc = null;
   $('hud').hidden = true; $('h-race').hidden = true; $('whud').hidden = true;
   ab.active = {}; ab.cd = {};
+  kfCloseMenu();
   pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true; $('k-hint').hidden = true; $('k-roster').hidden = true;
   trial = null; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false;
   toCheckpoint(0);
@@ -3554,6 +3570,13 @@ $('b-w-back').addEventListener('click', toMenu);
 $('b-w-copy').addEventListener('click', () => copyCode($('b-w-copy'), $('w-code')));
 $('b-lo-close').addEventListener('click', resume);
 $('b-map-close').addEventListener('click', resume);
+$('w-map').addEventListener('pointerdown', (e) => {
+  if (!(mode === 'pvp' && pvp && pvp.chess && pvp.chess.picking)) return;
+  const cv = $('w-map'), r = cv.getBoundingClientRect(), px = (e.clientX - r.left) * cv.width / r.width, py = (e.clientY - r.top) * cv.height / r.height;
+  const s2 = Math.min(cv.width / hw.wt, cv.height / hw.ht), ox = (cv.width - hw.wt * s2) / 2, oy = (cv.height - hw.ht * s2) / 2;
+  kfPickSpot((px - ox) / s2 * TS, (py - oy) / s2 * TS);
+  resume();
+});
 async function worldJoin(code) {
   const err = $('w-err'); err.hidden = true;
   try { await joinRoom('world', code); openWorldScreen(); }
@@ -5382,7 +5405,7 @@ $('c-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryCtfJo
 // ---------- Kingfall: a real-time chess battle (runs on the PvP engine) ----------
 // =================================================================
 const KF_TYPES = {
-  K: { n: 'King', g: ['♔', '♚'], hp: 15, spd: 0.8, mv: 'Shield', mcd: 10, atk: 'Weak shot', d: 'Slow but sturdy. Q blocks all damage for 2 seconds.' },
+  K: { n: 'King', g: ['♔', '♚'], hp: 15, spd: 0.8, mv: 'Revive', mcd: 30, atk: 'Weak shot', d: 'Slow but sturdy. Q brings back one of your taken pieces next to the King, once every 30 seconds.' },
   Q: { n: 'Queen', g: ['♕', '♛'], hp: 10, spd: 1.0, mv: 'Royal dash', mcd: 4, atk: 'Strong shot', d: 'Q dashes toward your aim in any direction, hitting whoever you pass.' },
   R: { n: 'Rook', g: ['♖', '♜'], hp: 12, spd: 0.85, mv: 'Charge', mcd: 5, atk: 'Heavy shot', d: 'Q charges straight sideways, smashing through enemies. Its shots are slow but hit hard.' },
   B: { n: 'Bishop', g: ['♗', '♝'], hp: 6, spd: 1.15, mv: 'Diagonal dash', mcd: 3, atk: 'Rapid shots', d: 'Quick and fragile. Q dashes diagonally. Fires fast light shots.' },
@@ -5397,8 +5420,16 @@ const KF_ATK = {
 };
 const KF_SET = ['K', 'Q', 'R', 'R', 'B', 'B', 'N', 'N'];
 const KF_COL = ['#f4f1de', '#2b2740'], KF_SIDE = ['White', 'Black'];
-const KF_ORD = { attack: 'Attack', guard: 'Guard', follow: 'Follow' };
-const KF_ORD_NEXT = { attack: 'guard', guard: 'follow', follow: 'attack' };
+const KF_ORD = { attack: 'Attack', guard: 'Guard', follow: 'Follow', hold: 'Hold', spot: 'Go to', retreat: 'Retreat' };
+const KF_ORD_INFO = [
+  ['attack', 'Z', 'Attack', 'Go after the nearest enemy'],
+  ['guard', 'X', 'Guard the King', 'Stay near your King'],
+  ['follow', 'C', 'Follow me', 'Stick with the piece you play'],
+  ['hold', 'V', 'Hold here', 'Stay where it is now'],
+  ['spot', 'T', 'Go to spot', 'Click where it should go'],
+  ['retreat', 'R', 'Retreat', 'Back to the castle to heal'],
+];
+const KF_REVIVE = 30000, KF_HEAL = 1.5;
 const kfId = (side, i) => 'c' + side + i;
 if (!PDIFF[save.kfDiff]) save.kfDiff = 'medium';
 
@@ -5437,7 +5468,8 @@ function buildKingfall() {
       const o = (y * wt + x) * 4; id2.data[o] = c[0]; id2.data[o + 1] = c[1]; id2.data[o + 2] = c[2]; id2.data[o + 3] = 255;
     }
     ic.putImageData(id2, 0, 0); }
-  const a = { name: 'Kingfall', img, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings, spawns: kspawn[0].concat(kspawn[1]), kspawn,
+  const castles = [{ x0: 1 * TS, x1: 13 * TS, y0: 12 * TS, y1: 32 * TS }, { x0: (wt - 13) * TS, x1: (wt - 1) * TS, y0: 12 * TS, y1: 32 * TS }];
+  const a = { name: 'Kingfall', img, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings, spawns: kspawn[0].concat(kspawn[1]), kspawn, castles,
     shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
   arenaCache.kingfall = a;
   return a;
@@ -5447,7 +5479,7 @@ function buildKingfall() {
 function initChess(pm, online) {
   const mySide = online ? ((pm.tm.find(e => e[0] === myPeerId) || [0, 0])[1] & 1) : 0;
   const C = pvp.chess = { mySide, mine: kfId(mySide, 1), orders: [{}, {}], cdA: {}, cdM: {}, shieldUntil: 0, kn: [], knN: 0, knSeen: 0, ev: [], evN: 0, evSeen: 0, peerCp: null,
-    kills: [0, 0], over: false, win: null, rp: {}, cmdT: 0, offline: !online };
+    kills: [0, 0], over: false, win: null, rp: {}, cmdT: 0, offline: !online, opos: [{}, {}], rcd: [0, 0], revReq: null, revN: 0, revSeen: 0, picking: null, menu: null, healT: 0 };
   for (let side = 0; side < 2; side++) KF_SET.forEach((t, i) => { if (t !== 'K') C.orders[side][kfId(side, i)] = 'attack'; });
   if (!online || pvpHost) {
     for (let side = 0; side < 2; side++) KF_SET.forEach((t, i) => {
@@ -5534,8 +5566,10 @@ function chessDash(body, id, side, now) {
 // ----- your controls -----
 function chessKey(e) {
   const C = pvp.chess, now = Date.now();
-  if (e.code === 'KeyM' && !e.repeat) { openMap(); return; }
+  if (e.code === 'KeyM' && !e.repeat) { kfCloseMenu(); openMap(); return; }
   if (!pvpReady() || C.over) return;
+  if (C.menu === 'revive' && !e.repeat && /^Digit[1-9]$/.test(e.code)) { const b = $('k-menu').querySelectorAll('button')[+e.code.slice(5) - 1]; if (b) b.dispatchEvent(new Event('pointerdown')); return; }
+  if (e.code === 'KeyQ' && !e.repeat && chessMyType() === 'K') { kfReviveMenu(); return; }
   if (e.code === 'KeyE') {
     const t = chessMyType();
     if ((C.cdA[C.mine] || 0) > now) return;
@@ -5550,12 +5584,84 @@ function chessKey(e) {
   else if (e.code === 'Tab' && !e.repeat) {
     const ids = KF_SET.map((t, i) => kfId(C.mySide, i)), at = ids.indexOf(C.mine);
     for (let k = 1; k <= 8; k++) { const id = ids[(at + k) % 8], p = chessPiece(id); if (p && p.alive) { chessControl(id); break; } }
-  } else if (!e.repeat && (e.code === 'KeyZ' || e.code === 'KeyX' || e.code === 'KeyC')) {
-    const o = e.code === 'KeyZ' ? 'attack' : e.code === 'KeyX' ? 'guard' : 'follow';
-    for (const id of Object.keys(C.orders[C.mySide])) C.orders[C.mySide][id] = o;
-    banner('Orders', 'Everyone: ' + (o === 'attack' ? 'Attack' : o === 'guard' ? 'Guard the King' : 'Follow me'));
-    presenceClock = 0;
+  } else if (!e.repeat && e.code === 'KeyO') kfOrderMenu(null, null);
+  else if (!e.repeat) { const row = KF_ORD_INFO.find(r => 'Key' + r[1] === e.code); if (row) kfSetOrder(Object.keys(C.orders[C.mySide]), row[0]); }
+}
+// ----- orders -----
+function kfPosOf(id) { const v = pvpViews().find(w => w.id === id); return v ? { x: v.x, y: v.y } : null; }
+function kfSetOrder(ids, o) {
+  const C = pvp.chess;
+  kfCloseMenu();
+  if (o === 'spot') { C.picking = ids; banner('Go to spot', 'Click where to send ' + (ids.length > 1 ? 'everyone' : 'it'), 'Click in the arena or on the M map.'); return; }
+  for (const id of ids) {
+    C.orders[C.mySide][id] = o;
+    if (o === 'hold') { const q = kfPosOf(id); if (q) C.opos[C.mySide][id] = q; }
   }
+  if (ids.length > 1) banner('Orders', 'Everyone: ' + KF_ORD_INFO.find(r => r[0] === o)[2]);
+  presenceClock = 0; chessHudSlow();
+}
+function kfPickSpot(x, y) {
+  const C = pvp.chess, ids = C.picking;
+  C.picking = null;
+  if (!ids) return;
+  x = clamp(x, TS, hw.wt * TS - TS); y = clamp(y, TS, hw.ht * TS - TS);
+  for (const id of ids) { C.orders[C.mySide][id] = 'spot'; C.opos[C.mySide][id] = { x, y }; }
+  burst(x, y, '#5ee6c1', 14, 160);
+  banner('Orders', (ids.length > 1 ? 'Everyone' : KF_TYPES[chessPiece(ids[0]).type].n) + ': go to that spot');
+  presenceClock = 0; chessHudSlow();
+}
+function kfMenuOpen() { return !!(pvp && pvp.chess && pvp.chess.menu); }
+function kfCloseMenu() { if (pvp && pvp.chess) pvp.chess.menu = null; const m = $('k-menu'); m.hidden = true; m.textContent = ''; }
+function kfMenuAt(anchor) {
+  const m = $('k-menu');
+  if (anchor) { const r = anchor.getBoundingClientRect(); m.style.left = Math.min(innerWidth - 230, r.right + 8) + 'px'; m.style.top = Math.max(8, Math.min(innerHeight - 280, r.top - 6)) + 'px'; }
+  else { m.style.left = 'calc(50% - 110px)'; m.style.top = '30%'; }
+  m.hidden = false;
+}
+function kfMenuItem(m, key, label, sub, fn) {
+  const b = document.createElement('button'); b.type = 'button';
+  const k = document.createElement('span'); k.className = 'kk'; k.textContent = key;
+  const t = document.createElement('span'); t.textContent = label;
+  const sm = document.createElement('small'); sm.textContent = sub;
+  b.append(k, t, sm);
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); fn(); canvas.focus(); });
+  m.append(b);
+}
+function kfOrderMenu(id, anchor) {
+  const C = pvp.chess, m = $('k-menu');
+  m.textContent = ''; C.menu = 'order';
+  const h = document.createElement('div'); h.className = 'kmh'; h.textContent = id ? 'Order: ' + KF_TYPES[chessPiece(id).type].n : 'Order everyone'; m.append(h);
+  const ids = id ? [id] : Object.keys(C.orders[C.mySide]);
+  for (const [o, key, label, sub] of KF_ORD_INFO) kfMenuItem(m, id ? '' : key, label, sub, () => kfSetOrder(ids, o));
+  kfMenuAt(anchor);
+}
+// ----- the King's revive -----
+function kfDead(side) { return chessPieces().filter(p => p.side === side && !p.alive && p.type !== 'K'); }
+function kfReviveMenu() {
+  const C = pvp.chess, now = Date.now(), left = C.rcd[C.mySide] - now;
+  if (left > 0) { banner('Revive', 'Ready in ' + Math.ceil(left / 1000) + 's'); return; }
+  const dead = kfDead(C.mySide).sort((a, b) => 'QRBN'.indexOf(a.type) - 'QRBN'.indexOf(b.type));
+  if (!dead.length) { banner('Revive', 'No pieces to bring back'); return; }
+  const m = $('k-menu'); m.textContent = ''; C.menu = 'revive';
+  const h = document.createElement('div'); h.className = 'kmh'; h.textContent = 'Bring a piece back'; m.append(h);
+  dead.forEach((p, i) => kfMenuItem(m, String(i + 1), KF_TYPES[p.type].g[C.mySide] + ' ' + KF_TYPES[p.type].n, 'full health', () => { kfCloseMenu(); kfRequestRevive(p.id); }));
+  kfMenuAt(null);
+}
+function kfRequestRevive(id) {
+  const C = pvp.chess;
+  if (kfAuth()) chessRevive(C.mySide, id);
+  else { C.revReq = [++C.revN, id]; C.rcd[C.mySide] = Date.now() + KF_REVIVE; presenceClock = 0; }
+}
+function chessRevive(side, id) {
+  const C = pvp.chess, now = Date.now(), p = pvp.bots.find(q => q.id === id), k = pvp.bots.find(q => q.id === kfId(side, 0));
+  if (!p || p.alive || p.side !== side || p.type === 'K' || !k || !k.alive || now < C.rcd[side] || C.over) return false;
+  const kx = k.id === C.mine ? P.x : k.x, ky = k.id === C.mine ? P.y : k.y;
+  Object.assign(p, { alive: true, hp: p.maxhp, x: kx + (side ? -1 : 1) * 46, y: ky - 6, vx: 0, vy: 0, rope: null, dash: null, shotCd: 1, mcd: 2 });
+  p.hist.length = 0;
+  C.rcd[side] = now + KF_REVIVE;
+  burst(p.x, p.y, '#ffd34d', 30, 260); burst(p.x, p.y, '#5ee6c1', 20, 200);
+  chessEvent('rev', id, String(side));
+  return true;
 }
 function chessControl(id) {
   const C = pvp.chess, p = chessPiece(id);
@@ -5583,11 +5689,20 @@ function chessBotTick(b, dt, now) {
   let foe = null, fd = Infinity;
   for (const v of views) if (v.alive && v.team !== side) { const d = Math.hypot(v.x - b.x, v.y - b.y); if (d < fd) { fd = d; foe = v; } }
   const order = b.type === 'K' ? 'king' : (C.orders[side][b.id] || 'attack');
+  if (b.type === 'K' && C.offline && side !== C.mySide && now >= C.rcd[side]) { const d = kfDead(side).sort((x, y) => 'QRBN'.indexOf(x.type) - 'QRBN'.indexOf(y.type)); if (d.length) chessRevive(side, d[0].id); }
   const king = views.find(v => v.team === side && v.piece.type === 'K' && v.alive);
   let tgt = null;
   if (order === 'king') tgt = foe && fd < 320 ? foe : b.home;
   else if (order === 'attack') tgt = foe;
-  else {
+  else if (order === 'hold' || order === 'spot') {
+    const q = C.opos[side][b.id] || b.home;
+    let near = null, nd = order === 'hold' ? 280 : 380;
+    for (const v of views) if (v.alive && v.team !== side) { const d = Math.hypot(v.x - q.x, v.y - q.y); if (d < nd) { nd = d; near = v; } }
+    tgt = near || { x: q.x, y: q.y - 10 };
+  } else if (order === 'retreat') {
+    const home = hw.kspawn[side][0];
+    tgt = { x: home.x + (side ? -1 : 1) * (b.k - 4) * 24, y: home.y - 10 };
+  } else {
     const anchor = order === 'guard' ? (king || b) : (views.find(v => v.team === side && v.human && v.alive) || king || b);
     let near = null, nd = order === 'guard' ? 520 : 400;
     for (const v of views) if (v.alive && v.team !== side) { const d = Math.hypot(v.x - anchor.x, v.y - anchor.y); if (d < nd) { nd = d; near = v; } }
@@ -5609,7 +5724,7 @@ function chessBotTick(b, dt, now) {
   }
   if (b.mcd <= 0 && !b.dash) {
     let use = false;
-    if (b.type === 'K') use = b.hp < b.maxhp * 0.6 && fd < 420;
+    if (b.type === 'K') use = false;
     else if (b.type === 'Q' || b.type === 'B') use = los && fd < 360;
     else if (b.type === 'R') use = Math.abs(foe.y - b.y) < 70 && fd < 460 && los;
     else if (b.type === 'N') use = (foe.y < b.y - 160 && fd < 650) || (b.stuck > 1);
@@ -5640,12 +5755,27 @@ function chessTick(dt) {
       if (s) {
         const cp = typeof s.raw.kc === 'string' ? s.raw.kc.slice(0, 8) : null, p = cp && pvp.bots.find(b => b.id === cp && b.side === os && b.alive);
         if (p) { C.peerCp = p.id; p.x = s.rx; p.y = s.ry; p.vx = s.vx || 0; p.vy = s.vy || 0; p.rope = null; p.shieldUntil = now + clamp(num(s.raw.ksh) || 0, 0, 2000); p.anchorA = s.a; }
-        if (Array.isArray(s.raw.ko)) for (const e of s.raw.ko.slice(0, 8)) if (Array.isArray(e) && typeof e[0] === 'string' && KF_ORD[e[1]] && C.orders[os][e[0]] !== undefined) C.orders[os][e[0]] = e[1];
+        if (Array.isArray(s.raw.ko)) for (const e of s.raw.ko.slice(0, 8)) if (Array.isArray(e) && typeof e[0] === 'string' && KF_ORD[e[1]] && C.orders[os][e[0]] !== undefined) {
+          C.orders[os][e[0]] = e[1];
+          if (num(e[2]) != null && num(e[3]) != null) C.opos[os][e[0]] = { x: clamp(e[2], 0, hw.wt * TS), y: clamp(e[3], 0, hw.ht * TS) };
+        }
+        const rq = s.raw.kr;
+        if (Array.isArray(rq) && num(rq[0]) != null && rq[0] > C.revSeen && typeof rq[1] === 'string') { C.revSeen = rq[0]; chessRevive(os, rq[1].slice(0, 8)); }
       }
     } else chessCommander(now);
     const mine = pvp.bots.find(b => b.id === C.mine);
     if (mine && mine.alive) { mine.x = P.x; mine.y = P.y; mine.vx = P.vx; mine.vy = P.vy; mine.shieldUntil = C.shieldUntil; }
     for (const b of pvp.bots) if (b.id !== C.mine && b.id !== C.peerCp) botTick(b, dt, now);
+    // pieces inside their own castle heal
+    C.healT += dt;
+    if (C.healT >= KF_HEAL) {
+      C.healT = 0;
+      for (const b of pvp.bots) {
+        if (!b.alive || b.hp >= b.maxhp) continue;
+        const z = hw.castles[b.side], x = b.id === C.mine ? P.x : b.x, y = b.id === C.mine ? P.y : b.y;
+        if (x > z.x0 && x < z.x1 && y > z.y0 && y < z.y1) { b.hp = Math.min(b.maxhp, b.hp + 1); particles.push({ k: 'text', text: '+1', x, y: y - 40, vx: 0, vy: -40, life: 0.8, color: '#5ee6c1' }); }
+      }
+    }
   }
   const me = chessPiece(C.mine);
   if (!pvp.over && now >= pvp.start && (!me || !me.alive)) chessAutoSwitch();
@@ -5656,6 +5786,7 @@ function chessTick(dt) {
     if (e[0] <= C.evSeen) continue;
     C.evSeen = e[0];
     const p = chessPiece(e[2]);
+    if (p && e[1] === 'rev') { const T = KF_TYPES[p.type]; if (p.side === C.mySide) banner('Revived', 'Your ' + T.n + ' is back'); else banner('Revived', KF_SIDE[p.side] + ' brought back their ' + T.n); continue; }
     if (!p || e[1] !== 'take' || p.type === 'K') continue;
     const T = KF_TYPES[p.type];
     if (p.side === C.mySide) { if (e[2] !== C.mine) banner('Piece lost', 'Your ' + T.n + ' was taken'); }
@@ -5668,11 +5799,12 @@ function chessPresence(pr, now) {
   if (kfAuth()) {
     pr.kp = pvp.bots.map(b => { const mine = b.id === C.mine, x = mine ? P.x : b.x, y = mine ? P.y : b.y, a = mine ? ropeAnchor() : b.rope ? { x: b.rope.x, y: b.rope.y } : null;
       return [R(x), R(y), a ? R(a.x) : -1, a ? R(a.y) : 0, b.hp, b.alive ? 1 : 0, (mine ? C.shieldUntil : b.shieldUntil || 0) > now ? 1 : 0, mine || b.id === C.peerCp ? 1 : 0]; });
-    pr.kn = C.kn.slice(-10); pr.kev = C.ev.slice(-10); pr.kk = C.kills; pr.kov = C.over ? 1 : 0; pr.kw = C.win == null ? -1 : C.win;
+    pr.kn = C.kn.slice(-10); pr.kev = C.ev.slice(-10); pr.kk = C.kills; pr.krc = C.rcd.map(t => Math.max(0, R(t - now))); pr.kov = C.over ? 1 : 0; pr.kw = C.win == null ? -1 : C.win;
     pr.pbs = pvp.shots.slice(-24).map(s => [R(s.x), R(s.y)]);
   } else {
     pr.kc = C.mine; pr.ksh = R(Math.max(0, C.shieldUntil - now));
-    pr.ko = Object.entries(C.orders[C.mySide]).slice(0, 8);
+    pr.ko = Object.entries(C.orders[C.mySide]).slice(0, 8).map(([id, o]) => { const q = C.opos[C.mySide][id]; return q ? [id, o, R(q.x), R(q.y)] : [id, o]; });
+    pr.kr = C.revReq;
     pr.sh = pvp.shots.slice(-12).map(s => [R(s.x), R(s.y)]);
   }
 }
@@ -5695,7 +5827,9 @@ function chessPull(now, dt) {
   });
   if (Array.isArray(g.kn)) for (const e of g.kn.slice(-10)) if (Array.isArray(e) && num(e[0]) != null && e[0] > C.knSeen) { C.knSeen = e[0]; if (e[1] === C.mine) { P.vx += clamp(num(e[2]) || 0, -1500, 1500); P.vy += clamp(num(e[3]) || 0, -1500, 1500); detach(); P.stun = 0.15; } }
   if (Array.isArray(g.kev)) C.ev = g.kev.slice(-10).filter(e => Array.isArray(e) && num(e[0]) != null && typeof e[2] === 'string').map(e => [e[0], String(e[1]).slice(0, 8), e[2].slice(0, 8), String(e[3] || '').slice(0, 40)]);
+  if (C.menu === 'revive' && !kfDead(C.mySide).length) kfCloseMenu();
   if (Array.isArray(g.kk)) C.kills = [clampInt(g.kk[0], 0, 8), clampInt(g.kk[1], 0, 8)];
+  if (Array.isArray(g.krc)) C.rcd = [now + clamp(num(g.krc[0]) || 0, 0, KF_REVIVE), now + clamp(num(g.krc[1]) || 0, 0, KF_REVIVE)];
   if (g.kov === 1 && !pvp.over) chessFinish(g.kw === 0 || g.kw === 1 ? g.kw : null);
 }
 function chessFinish(win) {
@@ -5737,6 +5871,18 @@ function chessRender(dt) {
     for (const d of s.raw[key].slice(0, 24)) if (Array.isArray(d) && num(d[0]) != null && num(d[1]) != null) { ctx.beginPath(); ctx.arc(d[0], d[1], 6, 0, 6.283); ctx.fill(); }
   }
   for (const s of pvp.shots) { ctx.fillStyle = s.team === C.mySide ? '#5ee6c1' : '#ff5a6e'; ctx.beginPath(); ctx.arc(s.x, s.y, s.big ? 10 : 6, 0, 6.283); ctx.fill(); }
+  // where your Hold and Go-to pieces are headed
+  const seen = {};
+  for (const [id, o] of Object.entries(C.orders[C.mySide])) {
+    const q = C.opos[C.mySide][id], p = chessPiece(id);
+    if ((o !== 'spot' && o !== 'hold') || !q || !p || !p.alive || id === C.mine) continue;
+    const key = Math.round(q.x / 30) + ',' + Math.round(q.y / 30), n = seen[key] = (seen[key] || 0) + 1;
+    ctx.strokeStyle = o === 'spot' ? '#5ee6c1' : '#c79bff'; ctx.lineWidth = 2; ctx.setLineDash([4, 5]);
+    ctx.beginPath(); ctx.arc(q.x, q.y + 10, 16, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = '600 14px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = ctx.strokeStyle;
+    ctx.fillText(KF_TYPES[p.type].g[C.mySide], q.x - 16 + n * 10, q.y - 12);
+  }
+  if (C.picking) { ctx.strokeStyle = '#5ee6c1'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(mouse.wx, mouse.wy, 18, 0, 6.283); ctx.moveTo(mouse.wx - 26, mouse.wy); ctx.lineTo(mouse.wx + 26, mouse.wy); ctx.moveTo(mouse.wx, mouse.wy - 26); ctx.lineTo(mouse.wx, mouse.wy + 26); ctx.stroke(); }
 }
 function chessBar(x, y, hp, mx, side) {
   const w = 44, f = clamp(hp / mx, 0, 1);
@@ -5754,7 +5900,7 @@ function chessHudFast(now) {
   const C = pvp.chess, ks = [0, 1].map(s => chessPiece(kfId(s, 0)));
   const txt = ks.map((k, s) => KF_TYPES.K.g[s] + ' ' + KF_SIDE[s] + ' King ' + (k ? Math.max(0, k.hp) : 0) + '/' + KF_TYPES.K.hp).join('  ·  ');
   const el = $('t-timer'); if (el.textContent !== txt) el.textContent = txt;
-  const t = chessMyType(), T = KF_TYPES[t], mr = Math.max(0, ((C.cdM[C.mine] || 0) - now) / 1000);
+  const t = chessMyType(), T = KF_TYPES[t], mr = Math.max(0, ((t === 'K' ? C.rcd[C.mySide] : C.cdM[C.mine] || 0) - now) / 1000);
   const f = T.g[C.mySide] + ' ' + T.n + ' · E ' + T.atk + ' · Q ' + T.mv + (mr > 0 ? ' (' + mr.toFixed(1) + 's)' : ' (ready)');
   const wf = $('w-found'); if (wf.textContent !== f) wf.textContent = f;
 }
@@ -5762,6 +5908,9 @@ function chessHudSlow() {
   const C = pvp.chess, el = $('k-roster');
   $('w-team').textContent = '';
   el.textContent = '';
+  const all = document.createElement('button'); all.type = 'button'; all.className = 'kall'; all.textContent = 'Order all ▾  (O)';
+  all.addEventListener('pointerdown', (e) => { e.preventDefault(); kfOrderMenu(null, all); });
+  el.append(all);
   KF_SET.forEach((t, i) => {
     const id = kfId(C.mySide, i), p = chessPiece(id), T = KF_TYPES[t], alive = !!(p && p.alive);
     const row = document.createElement('div'); row.className = 'krow' + (alive ? '' : ' dead'); row.setAttribute('aria-current', String(id === C.mine));
@@ -5771,9 +5920,10 @@ function chessHudSlow() {
     const mid = document.createElement('span'); mid.textContent = T.n;
     const hpb = document.createElement('div'); hpb.className = 'khp'; const fill = document.createElement('i'); fill.style.width = (alive ? clamp(p.hp / (p.maxhp || T.hp), 0, 1) * 100 : 0) + '%'; hpb.append(fill); mid.append(hpb);
     const ord = document.createElement('button'); ord.type = 'button';
-    if (t === 'K') { ord.className = 'kord'; ord.textContent = 'Hold'; ord.disabled = true; }
+    if (t === 'K') { ord.className = 'kord'; ord.textContent = 'King'; ord.disabled = true; }
     else { const o = C.orders[C.mySide][id]; ord.className = 'kord ' + o; ord.textContent = KF_ORD[o]; ord.title = 'Change this piece\'s order';
-      ord.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); C.orders[C.mySide][id] = KF_ORD_NEXT[C.orders[C.mySide][id]]; presenceClock = 0; chessHudSlow(); }); }
+      ord.textContent = KF_ORD[o] + ' ▾';
+      ord.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (alive) kfOrderMenu(id, ord); }); }
     row.append(key, gl, mid, ord);
     if (alive) row.addEventListener('pointerdown', (e) => { if (e.target === ord) return; e.preventDefault(); chessControl(id); canvas.focus(); chessHudSlow(); });
     el.append(row);
