@@ -230,6 +230,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   <div class="ult" id="w-ult" hidden><span class="k">Q</span><span id="w-ult-name"></span><span class="bar"><i id="w-ult-bar"></i></span></div>
   <div class="slots" id="w-slots"></div>
   <div class="hint" id="g-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>E</b> tag shot when you're IT · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
+  <div class="hint" id="c-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump / yank a hooked enemy · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
   <div class="hint" id="p-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / yank a hooked player · <b>E</b> shoot · <b>Q</b> ultimate · <b>1–5</b> abilities · <b>Esc</b> pause</div>
   <div class="hint" id="w-hint"><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1–5</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
 </div>
@@ -255,6 +256,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <button class="mode" id="m-trial"><b>Time Trials</b><small>30 courses against the clock. Gold medals unlock skins.</small></button>
       <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
       <button class="mode" id="m-tag"><b>Hook Tag</b><small>Tag or be tagged. Classic or Infection, with bots or friends.</small></button>
+      <button class="mode" id="m-ctf"><b>Capture the Flag</b><small>Red vs Blue. Steal their flag and bring it home. First to 3.</small></button>
     </div>
     <div class="modes">
       <button class="mode shop" id="m-gacha"><b>Gacha</b><small>Spend 5 tokens to spin for hats, colors, ropes, trails and auras.</small></button>
@@ -515,6 +517,26 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <button class="link" id="b-g-back">Back to menu</button>
   </section>
 
+  <section class="panel wide" id="scr-ctf" hidden>
+    <h2>Capture the Flag</h2>
+    <p>Red vs Blue. Touch the other team's flag to grab it, then bring it to your base while your own flag is home. Stop a carrier while they're on your side of the map: touch them, or hook them and press <kbd>W</kbd> to yank. Once they cross the middle, they're safe. Touch your own dropped flag to send it home. First to 3 captures wins, with a 10 minute limit.</p>
+    <div class="field"><span class="label">Map</span><div class="seg" id="c-map"></div><p class="note" id="c-map-note"></p></div>
+    <div class="field"><span class="label">Team size</span><div class="seg" id="c-size"></div><p class="note">Bots fill any empty spots on both teams.</p></div>
+    <div class="field"><span class="label">Bot difficulty</span><div class="seg" id="c-diff"></div></div>
+    <div class="row">
+      <button class="btn primary" id="b-c-start">Start match</button>
+      <button class="btn" id="b-c-host">Host online match</button>
+    </div>
+    <div class="join" id="c-join">
+      <label for="c-code">Join a friend's match</label>
+      <input type="text" id="c-code" maxlength="6" placeholder="Match code" autocomplete="off" spellcheck="false">
+      <button class="btn" id="b-c-join">Join</button>
+    </div>
+    <p class="err" id="c-err" hidden></p>
+    <p class="note">Tokens: 5 for each capture, 2 for each flag you return or carrier you stop, 10 for winning.</p>
+    <button class="link" id="b-c-back">Back to menu</button>
+  </section>
+
   <section class="panel" id="scr-pvp-lobby" hidden>
     <h2>Online match</h2>
     <div class="code-box">
@@ -643,7 +665,9 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <div class="seg small" id="adm-arenas"></div>
         <span class="label">Hook Tag</span>
         <div class="seg small" id="adm-tag"></div>
-        <label class="row" style="text-transform:none;letter-spacing:0;font-size:14px;font-weight:500"><input type="checkbox" id="adm-bots"> Bring bots (uses your PvP or Hook Tag settings)</label>
+        <span class="label">Capture the Flag</span>
+        <div class="seg small" id="adm-ctf"></div>
+        <label class="row" style="text-transform:none;letter-spacing:0;font-size:14px;font-weight:500"><input type="checkbox" id="adm-bots"> Bring bots (uses your PvP, Hook Tag or Capture the Flag settings)</label>
       </div>
       <div class="adm-sec">
         <h3>Room</h3>
@@ -860,7 +884,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -887,6 +911,7 @@ try {
     if (s.trials && typeof s.trials === 'object') save.trials = s.trials;
     save.adm = s.adm === true;
     if (s.tagCfg && typeof s.tagCfg === 'object') save.tagCfg = s.tagCfg;
+    if (s.ctfCfg && typeof s.ctfCfg === 'object') save.ctfCfg = s.ctfCfg;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
 const gotSet = new Set(save.got);
@@ -1626,7 +1651,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -1707,7 +1732,7 @@ function toMenu() {
   mode = 'solo'; race = null; raceHosting = false; hostRc = null;
   $('hud').hidden = true; $('h-race').hidden = true; $('whud').hidden = true;
   ab.active = {}; ab.cd = {};
-  pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true;
+  pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true;
   trial = null; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false;
   toCheckpoint(0);
   runHeight = 0;
@@ -3461,6 +3486,9 @@ function updateWorldHud(dt) {
   } else if (mode === 'pvp' && pvp && pvp.tag) {
     tagHudSlow();
     pvpLobbyTick();
+  } else if (mode === 'pvp' && pvp && pvp.ctf) {
+    ctfHudSlow();
+    pvpLobbyTick();
   } else if (mode === 'pvp' && pvp) {
     $('w-found').textContent = pvp.me.alive ? 'Lives ' + Math.max(0, pvp.me.lives) + ' · KOs ' + kosOf(selfId()) : (specTarget() ? 'Watching ' + specTarget().name + ' · A / D to switch' : 'Knocked out');
     renderPvpBoard($('w-team'));
@@ -3717,7 +3745,7 @@ const ARENAS = [
 ];
 const ARENA_IDS = ARENAS.map(a => a.id);
 const TEAM_COLORS = ['#ff6b8b', '#7fb2ff'], TEAM_NAMES = ['Red team', 'Blue team'];
-const PVP_BOT_NAMES = ['Bot Pip', 'Bot Juno', 'Bot Rook', 'Bot Vex', 'Bot Moss', 'Bot Zed'];
+const PVP_BOT_NAMES = ['Bot Pip', 'Bot Juno', 'Bot Rook', 'Bot Vex', 'Bot Moss', 'Bot Zed', 'Bot Kit', 'Bot Ash'];
 const PDIFF = { easy: { rate: 1.7, err: 0.28, yank: false }, medium: { rate: 1.15, err: 0.13, yank: true }, hard: { rate: 0.8, err: 0.05, yank: true } };
 const SHOT_V = 900, SHOT_CD = 0.55, YANK_CD = 2, ULT_TIME = 40, P_HP = 5;
 let pvp = null, pvpHost = false, pvpPm = null, lastPvpId = 0, myPeerId = null, PB = P, claimN = 0;
@@ -3870,6 +3898,7 @@ function camFocus() {
   return P;
 }
 function respawnSpot(team) {
+  if (hw.tspawns) { const l = hw.tspawns[team & 1]; return l[Math.floor(Math.random() * l.length)]; }
   const foes = pvpViews().filter(v => v.alive && v.team !== team);
   let best = hw.spawns[0], bs = -1;
   for (const s of hw.spawns) {
@@ -3935,8 +3964,9 @@ function readClaims() {
     const raw = s.raw;
     if (!raw || !raw.pv || raw.pv.id !== pvp.id || !Array.isArray(raw.cl)) continue;
     for (const c of raw.cl.slice(-30)) {
-      if (!Array.isArray(c) || typeof c[0] !== 'string' || typeof c[1] !== 'string' || typeof c[2] !== 'string' || c[2].length !== 1 || !'dylfnspht'.includes(c[2])) continue;
+      if (!Array.isArray(c) || typeof c[0] !== 'string' || typeof c[1] !== 'string' || typeof c[2] !== 'string' || c[2].length !== 1 || !'dylfnsphtk'.includes(c[2])) continue;
       if (pvp.seen.has(c[0])) continue;
+      if (c[2] === 'k') { if (pvpHost && pvp.ctf) { pvp.seen.add(c[0]); if (c[6] === s.id) ctfYanked(s.id, c[1].slice(0, 40)); } continue; }
       if (c[2] === 't') { if (pvpHost && pvp.tag) { pvp.seen.add(c[0]); if (c[6] === s.id) tagEvent(s.id, c[1].slice(0, 40)); } continue; }
       const mine = c[1] === myPeerId, lb = pvpHost ? pvp.bots.find(b => b.id === c[1]) : null;
       if (!mine && !lb) continue;
@@ -4080,6 +4110,7 @@ function pvpGate(dt) {
 }
 function pvpReady() { const m = pvp && pvp.me, now = Date.now(); return !!(m && m.alive && now >= pvp.start && !pvp.over && now >= m.freezeUntil && state === 'play'); }
 function pvpShoot() {
+  if (pvp && pvp.ctf) return;
   if (!pvpReady() || pvp.me.shotCd > 0) return;
   if (pvp.tag) {
     if (!pvp.tag.it.has(selfId()) || pvp.tag.over) return;
@@ -4092,14 +4123,15 @@ function pvpShoot() {
   spawnShot(selfId(), m.team, P.x, P.y, dx / d, dy / d, { dmg: od ? 2 : 1 });
   m.shotCd = SHOT_CD * (od ? 0.5 : 1);
 }
-function pvpUltKey() { if (pvp && pvp.tag) return; if (pvpReady() && pvp.me.charge >= 100) useUlt(selfId(), pvp.me, P, pvp.me.ult, mouse.wx, mouse.wy); }
+function pvpUltKey() { if (pvp && (pvp.tag || pvp.ctf)) return; if (pvpReady() && pvp.me.charge >= 100) useUlt(selfId(), pvp.me, P, pvp.me.ult, mouse.wx, mouse.wy); }
 function pvpYank() {
   if (pvp && pvp.tag) return;
   if (!pvpReady() || !rope || rope.kind !== 'peer' || pvp.me.yankCd > 0) return;
   const t = pvpViews().find(v => v.id === rope.ref);
   if (!t || !t.alive || t.team === pvp.me.team) return;
   const dx = P.x - t.x, dy = P.y - t.y, d = Math.hypot(dx, dy) || 1;
-  deal(selfId(), t.id, 'y', 1, dx / d * 950, dy / d * 950 - 250);
+  deal(selfId(), t.id, 'y', pvp.ctf ? 0 : 1, dx / d * 950, dy / d * 950 - 250);
+  if (pvp.ctf) ctfKnock(selfId(), t.id);
   pvp.me.yankCd = YANK_CD;
   pvp.lines.push({ x1: P.x, y1: P.y, x2: t.x, y2: t.y, until: Date.now() + 250 });
   detach();
@@ -4193,6 +4225,7 @@ function botTick(b, dt, now) {
   pushHist(b.hist, b.x, b.y);
   if (!b.alive) { if (b.lives > 0 && b.respawnAt && now >= b.respawnAt) respawnFighter(b, false); return; }
   if (pvp.tag) { tagBotTick(b, dt, now); return; }
+  if (pvp.ctf) { ctfBotTick(b, dt, now); return; }
   if (now < pvp.start || pvp.over) return;
   b.charge = Math.min(100, b.charge + dt * 100 / ULT_TIME);
   b.shotCd -= dt; b.yankCd -= dt;
@@ -4224,7 +4257,7 @@ function botTick(b, dt, now) {
 
 // ----- match flow -----
 function startPvp(pm, online) {
-  hw = buildArena(pm.map); mode = 'pvp'; lastPvpId = pm.id;
+  hw = pm.ctf ? buildCtf(pm.map) : buildArena(pm.map); mode = 'pvp'; lastPvpId = pm.id;
   ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0;
   const tm = new Map(pm.tm || []), myId = online ? myPeerId : 'me';
   const myTeam = online ? (tm.has(myId) ? tm.get(myId) : 99) : 0;
@@ -4232,13 +4265,14 @@ function startPvp(pm, online) {
     roster: online ? pm.tm : null, size: online ? pm.tm.length : 1 + pm.nb, reward: 0, won: false, winTeam: null };
   pvp.me.ult = pcfg.ult; pvp.me.inv = pm.st + 2000;
   if (pm.tag) initTag(pm, online);
+  if (pm.ctf) initCtf(pm);
   const sp = hw.spawns, off = pm.id % sp.length;
   if (!online || pvpHost) for (let k = 0; k < pm.nb; k++) {
     const id = 'b' + k, team = online ? (tm.has(id) ? tm.get(id) : k + 1) : (pm.teams ? (k % 2 === 0 ? 1 : 0) : k + 1);
-    const b = makePvpBot(k, team, pm), idx = online ? Math.max(0, pm.tm.findIndex(e => e[0] === id)) : k + 1, s = sp[(off + idx) % sp.length];
+    const b = makePvpBot(k, team, pm), idx = online ? Math.max(0, pm.tm.findIndex(e => e[0] === id)) : k + 1, s = hw.tspawns ? hw.tspawns[team & 1][idx % hw.tspawns[team & 1].length] : sp[(off + idx) % sp.length];
     b.x = s.x; b.y = s.y; b.inv = pm.st + 2000; pvp.bots.push(b);
   }
-  const myIdx = online ? Math.max(0, pm.tm.findIndex(e => e[0] === myId)) : 0, s = sp[(off + myIdx) % sp.length];
+  const myIdx = online ? Math.max(0, pm.tm.findIndex(e => e[0] === myId)) : 0, s = hw.tspawns ? hw.tspawns[myTeam & 1][myIdx % hw.tspawns[myTeam & 1].length] : sp[(off + myIdx) % sp.length];
   detach(); P.x = s.x; P.y = s.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.stun = 0; P.inv = 0;
   particles.length = 0; runHeight = 0;
   const sc = wScale();
@@ -4247,7 +4281,7 @@ function startPvp(pm, online) {
   state = 'play'; show(null);
   $('hud').hidden = true; $('whud').hidden = false; $('w-ult').hidden = false; $('w-hint').hidden = true; $('p-hint').hidden = false;
   { const mm = $('w-mini'); mm.width = 440; mm.height = Math.round(440 * hw.ht / hw.wt); mm.hidden = false; }
-  { const tg = !!pm.tag; $('w-ult').hidden = tg; $('p-hint').hidden = tg; $('g-hint').hidden = !tg; $('w-hp').hidden = tg; $('t-timer').hidden = !tg; }
+  { const tg = !!pm.tag, cf = !!pm.ctf, alt = tg || cf; $('w-ult').hidden = alt; $('p-hint').hidden = alt; $('g-hint').hidden = !tg; $('c-hint').hidden = !cf; $('w-hp').hidden = alt; $('t-timer').hidden = !alt; $('t-timer').style.borderColor = ''; }
   $('wbanner').dataset.cd = '';
   buildSlots(); lastHP = -1; wHP = P_HP;
   canvas.focus();
@@ -4255,10 +4289,13 @@ function startPvp(pm, online) {
 function startPvpOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: [] }, false); }
 function hostStartPvp() {
   if (!myPeerId) return;
-  const tg = pvpPm && pvpPm.tag, nb = tg ? tcfg.nb : pcfg.nb;
+  const tg = pvpPm && pvpPm.tag, cf = pvpPm && pvpPm.ctf;
   const ids = [myPeerId, ...[...peerState.values()].map(s => s.id).sort()];
+  const nb = cf ? clamp(ccfg.size * 2 - ids.length, 0, 8) : tg ? tcfg.nb : pcfg.nb;
   for (let k = 0; k < nb; k++) ids.push('b' + k);
-  pvpPm = tg
+  pvpPm = cf
+    ? { id: Date.now() % 1e9, st: Date.now() + 4500, map: ccfg.map, lv: 1, teams: true, nb, df: ccfg.diff, ctf: { size: ccfg.size }, tm: ids.slice(0, 16).map((id, i) => [id, i % 2]) }
+    : tg
     ? { id: Date.now() % 1e9, st: Date.now() + 4500, map: tcfg.map, lv: 1, teams: false, nb, df: tcfg.diff, tag: { v: tcfg.v, len: tcfg.len }, tm: ids.slice(0, 16).map((id, i) => [id, i]) }
     : { id: Date.now() % 1e9, st: Date.now() + 4500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: ids.slice(0, 16).map((id, i) => [id, pcfg.teams ? i % 2 : i]) };
   presenceClock = 0;
@@ -4266,6 +4303,7 @@ function hostStartPvp() {
 }
 function pvpTick(dt) {
   if (pvp.tag) { tagTick(dt); return; }
+  if (pvp.ctf) { ctfTick(dt); return; }
   const now = Date.now(), m = pvp.me;
   if (pvp.online) { if (!pvpHost) syncRemoteBots(dt); readClaims(); }
   if (!m.alive && m.lives > 0 && m.respawnAt && now >= m.respawnAt) respawnFighter(m, true);
@@ -4310,9 +4348,9 @@ function finishPvp(win) {
   setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1600);
 }
 function showPvpResults() {
-  $('pr-title').textContent = pvp.won ? 'You win!' : pvp.tag ? tagWinLabel(pvp.tag.win || []) : winnerLabel(pvp.winTeam);
+  $('pr-title').textContent = pvp.won ? 'You win!' : pvp.ctf ? (pvp.ctf.win == null ? 'Draw' : TEAM_NAMES[pvp.ctf.win] + ' wins') : pvp.tag ? tagWinLabel(pvp.tag.win || []) : winnerLabel(pvp.winTeam);
   const a = ARENAS.find(q => q.id === pvp.cfg.map);
-  $('pr-sub').textContent = pvp.tag ? 'Hook Tag · ' + TAGV[pvp.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pvp.tag.len / 60) + ' min' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : (a ? a.n : '') + ' · ' + pvp.cfg.lv + (pvp.cfg.lv === 1 ? ' life' : ' lives') + ' · ' + (pvp.cfg.teams ? '2 teams' : 'Free-for-all') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '');
+  $('pr-sub').textContent = pvp.ctf ? 'Capture the Flag · ' + ((CTF_MAPS.find(q => q.id === pvp.cfg.map) || {}).n || '') + ' · Red ' + pvp.ctf.score[0] + ' – ' + pvp.ctf.score[1] + ' Blue' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.tag ? 'Hook Tag · ' + TAGV[pvp.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pvp.tag.len / 60) + ' min' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : (a ? a.n : '') + ' · ' + pvp.cfg.lv + (pvp.cfg.lv === 1 ? ' life' : ' lives') + ' · ' + (pvp.cfg.teams ? '2 teams' : 'Free-for-all') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '');
   renderPvpResults();
   const follower = pvp.online && !pvpHost;
   $('b-pr-again').hidden = follower;
@@ -4321,6 +4359,7 @@ function showPvpResults() {
 }
 function renderPvpResults() {
   if (pvp.tag) { renderTagResults(); return; }
+  if (pvp.ctf) { renderCtfResults(); return; }
   const list = $('pr-list'); list.textContent = '';
   const views = pvpViews();
   const rows = views.map(v => ({ v, k: kosOf(v.id, views), win: pvp.winTeam != null && v.team === pvp.winTeam }));
@@ -4347,6 +4386,7 @@ function pvpPresence(pr) {
   pr.dc = pvp.fx.filter(f => f.decoys && f.src === sid).flatMap(f => f.decoys.map(d => [R(d.x), R(d.y)])).slice(0, 6);
   pr.cl = pvp.claims.slice(-24).map(c => c.slice(0, 7));
   if (pvp.tag && pvpHost) pr.tg = tagPack(now);
+  if (pvp.ctf && pvpHost) pr.cf = ctfPack(now);
   if (pvpHost) {
     const ids = new Set(pvp.bots.map(b => b.id));
     pr.pb = pvp.bots.map(b => [R(b.x), R(b.y), b.rope ? R(b.rope.x) : -1, b.rope ? R(b.rope.y) : 0, b.hp, b.lives, b.alive ? 1 : 0, b.team, b.invisUntil > now ? 1 : 0, Object.entries(b.kb).slice(0, 8), now < b.freezeUntil ? 1 : 0, now < b.netUntil ? 1 : 0]);
@@ -4358,14 +4398,16 @@ function hostPvpPeer() { let h = null; for (const s of peerState.values()) if (s
 function parsePm(v) {
   if (!v || typeof v !== 'object') return null;
   const id = num(v.id), st = num(v.st);
-  if (id == null || st == null || !ARENA_IDS.includes(v.map) || ![1, 3, 5].includes(v.lv)) return null;
+  if (id == null || st == null || !(ARENA_IDS.includes(v.map) || CTF_IDS.includes(v.map)) || ![1, 3, 5].includes(v.lv)) return null;
   const tm = Array.isArray(v.tm) ? v.tm.slice(0, 16).filter(e => Array.isArray(e) && typeof e[0] === 'string' && num(e[1]) != null).map(e => [e[0].slice(0, 40), clampInt(e[1], 0, 99)]) : [];
   const tag = v.tag && typeof v.tag === 'object' && TAGV[v.tag.v] && TAG_LENS.includes(v.tag.len) ? { v: v.tag.v, len: v.tag.len } : null;
-  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 5), df: PDIFF[v.df] ? v.df : 'medium', tm, tag };
+  const ctf = v.ctf && typeof v.ctf === 'object' && CTF_SIZES.includes(v.ctf.size) && CTF_IDS.includes(v.map) ? { size: v.ctf.size } : null;
+  if (CTF_IDS.includes(v.map) && !ctf) return null;
+  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 8), df: PDIFF[v.df] ? v.df : 'medium', tm, tag, ctf };
 }
 function syncRemoteBots(dt) {
   const h = hostPvpPeer(), ok = h && h.raw.pv && h.raw.pv.id === pvp.id && Array.isArray(h.raw.pb);
-  const arr = ok ? h.raw.pb.slice(0, 6) : [];
+  const arr = ok ? h.raw.pb.slice(0, 8) : [];
   const k2 = 1 - Math.pow(1e-6, dt), WP = hw.wt * TS, HP = hw.ht * TS;
   pvp.rbots.length = arr.length;
   arr.forEach((e, k) => {
@@ -4394,6 +4436,7 @@ function pvpLobbyTick() {
 }
 function pmText(pm) {
   const a = ARENAS.find(q => q.id === pm.map);
+  if (pm.ctf) { const cm = CTF_MAPS.find(q => q.id === pm.map); return 'Capture the Flag · ' + (cm ? cm.n : '') + ' · ' + pm.ctf.size + ' vs ' + pm.ctf.size + ' · ' + DIFF[pm.df].n.toLowerCase() + ' bots fill empty spots'; }
   if (pm.tag) return 'Hook Tag · ' + TAGV[pm.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pm.tag.len / 60) + ' min · ' + (pm.nb ? pm.nb + ' ' + DIFF[pm.df].n.toLowerCase() + ' bot' + (pm.nb > 1 ? 's' : '') : 'no bots');
   return (a ? a.n : '') + ' · ' + pm.lv + (pm.lv === 1 ? ' life' : ' lives') + ' · ' + (pm.teams ? '2 teams' : 'Free-for-all') + ' · ' + (pm.nb ? pm.nb + ' ' + DIFF[pm.df].n.toLowerCase() + ' bot' + (pm.nb > 1 ? 's' : '') : 'no bots');
 }
@@ -4411,7 +4454,7 @@ function renderPvpLobby() {
     row.append(dot, nm); if (r.id) addKick(row, r.id); list.append(row);
   }
   $('b-p-lstart').hidden = !pvpHost; $('b-p-lstart').disabled = !myPeerId;
-  $('p-lmsg').textContent = (pvpHost ? 'Share the code, then start when everyone is here.' : 'Waiting for the host to start.') + (pm && pm.tag ? ' ' + TAGV[pm.tag.v].d : ' Your ultimate: ' + ULTS[pcfg.ult].n + '.');
+  $('p-lmsg').textContent = (pvpHost ? 'Share the code, then start when everyone is here.' : 'Waiting for the host to start.') + (pm && pm.ctf ? ' First to 3 captures, 10 minute limit. Teams are picked when the match starts.' : pm && pm.tag ? ' ' + TAGV[pm.tag.v].d : ' Your ultimate: ' + ULTS[pcfg.ult].n + '.');
 }
 
 // ----- PvP screens -----
@@ -4464,12 +4507,13 @@ $('p-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryPvpJo
 $('b-p-copy').addEventListener('click', () => copyCode($('b-p-copy'), $('p-lcode')));
 $('b-p-lstart').addEventListener('click', hostStartPvp);
 $('b-p-leave').addEventListener('click', toMenu);
-$('b-pr-again').addEventListener('click', () => { if (pvp && pvp.online && pvpHost) hostStartPvp(); else if (pvp && pvp.tag) startTagOffline(); else startPvpOffline(); });
+$('b-pr-again').addEventListener('click', () => { if (pvp && pvp.online && pvpHost) hostStartPvp(); else if (pvp && pvp.tag) startTagOffline(); else if (pvp && pvp.ctf) startCtfOffline(); else startPvpOffline(); });
 $('b-pr-menu').addEventListener('click', toMenu);
 
 // ----- PvP drawing -----
 function drawTag(x, y, hp, teamCol) {
   if (pvp && pvp.tag) return;
+  if (pvp && pvp.ctf) { if (teamCol) { ctx.strokeStyle = teamCol; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, y + 24, 16, 5, 0, 0, 6.283); ctx.stroke(); } return; }
   for (let i = 0; i < P_HP; i++) { ctx.fillStyle = i < hp ? '#ff5a6e' : 'rgba(255,255,255,0.25)'; ctx.fillRect(x - 24 + i * 10, y - 46, 8, 4); }
   if (teamCol) { ctx.strokeStyle = teamCol; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, y + 24, 16, 5, 0, 0, 6.283); ctx.stroke(); }
 }
@@ -4544,6 +4588,7 @@ function pvpRender(dt) {
   for (const b of pvp.bots) if (b.alive) drawFighter(b, b.x, b.y, b.rope ? { x: b.rope.x, y: b.rope.y } : null, b.invisUntil > now, b.inv > now, now < b.freezeUntil, now < b.netUntil, dt);
   for (const b of pvp.rbots) if (b && b.alive) drawFighter(b, b.rx, b.ry, b.a ? { x: b.a[0], y: b.a[1] } : null, b.invis, false, b.fr, b.nt, dt);
   if (pvp.tag) tagMarkers();
+  if (pvp.ctf) ctfDraw();
   for (const s of pvp.shots) { ctx.fillStyle = s.tag ? '#ff3d55' : s.swap ? '#ffd34d' : s.homing ? '#ff8a3d' : (s.team === pvp.me.team ? '#5ee6c1' : '#ff5a6e'); ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, 6.283); ctx.fill(); }
   ctx.strokeStyle = 'rgba(255,179,71,0.9)'; ctx.lineWidth = 3;
   for (const l of pvp.lines) { ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke(); }
@@ -4575,10 +4620,12 @@ function pvpHudFast() {
   if (el < 0 && el > -3.2) { const n = String(Math.ceil(-el)); if (bn.dataset.cd !== n) { bn.dataset.cd = n; banner('Get ready', n); } }
   else if (el >= 0 && bn.dataset.cd && bn.dataset.cd !== 'go') {
     bn.dataset.cd = 'go';
-    if (pvp.tag) { if (pvp.tag.it.has(selfId())) banner(TAGV[pvp.tag.v].n, "You're IT!", 'Everyone else gets a 3 second head start. E fires a tag shot.'); else banner(TAGV[pvp.tag.v].n, 'Run!', 'Don\'t let IT touch you.'); }
+    if (pvp.ctf) banner('Capture the Flag', 'Go!', 'You\'re on the ' + TEAM_NAMES[pvp.me.team & 1] + '. Grab their flag and bring it home.');
+    else if (pvp.tag) { if (pvp.tag.it.has(selfId())) banner(TAGV[pvp.tag.v].n, "You're IT!", 'Everyone else gets a 3 second head start. E fires a tag shot.'); else banner(TAGV[pvp.tag.v].n, 'Run!', 'Don\'t let IT touch you.'); }
     else banner(hw.name, 'Fight!');
   }
   if (pvp.tag) tagHudFast(now);
+  if (pvp.ctf) ctfHudFast(now);
   const sv = !m.alive ? specTarget() : null;
   const txt = !m.alive ? (m.lives > 0 ? 'Back in ' + Math.max(1, Math.ceil((m.respawnAt - now) / 1000)) : 'Watching ' + (sv ? sv.name : 'nobody')) : hw.name;
   const reg = $('w-region'); if (reg.textContent !== txt) reg.textContent = txt;
@@ -4605,6 +4652,11 @@ function drawArenaMap(cv, big) {
     c2.strokeStyle = 'rgba(0,0,0,0.65)'; c2.lineWidth = big ? 2.5 : 2; c2.stroke();
     if (pvp.tag && pvp.tag.it.has(v.id)) { c2.strokeStyle = '#ff3d55'; c2.lineWidth = big ? 4 : 3; c2.beginPath(); c2.arc(mx(v.x), my(v.y), r + 4, 0, 6.283); c2.stroke(); }
     if (big) { c2.fillStyle = '#ffffff'; c2.fillText(v.name, mx(v.x), my(v.y) - r - 4); }
+  }
+  if (pvp.ctf) for (let t = 0; t < 2; t++) {
+    const q = ctfFlagPos(t), sz = big ? 14 : Math.max(6, W2 / 50);
+    c2.fillStyle = TEAM_COLORS[t]; c2.strokeStyle = 'rgba(0,0,0,0.7)'; c2.lineWidth = big ? 2 : 1.5;
+    c2.beginPath(); c2.moveTo(mx(q.x) - sz * 0.4, my(q.y) + sz * 0.8); c2.lineTo(mx(q.x) - sz * 0.4, my(q.y) - sz); c2.lineTo(mx(q.x) + sz, my(q.y) - sz * 0.5); c2.lineTo(mx(q.x) - sz * 0.4, my(q.y)); c2.closePath(); c2.fill(); c2.stroke();
   }
   if (pvp.me.alive) {
     c2.fillStyle = COLORS[save.color]; c2.beginPath(); c2.arc(mx(P.x), my(P.y), r * 0.75, 0, 6.283); c2.fill();
@@ -4877,6 +4929,377 @@ const tryTagJoin = async () => {
 };
 $('b-g-join').addEventListener('click', tryTagJoin);
 $('g-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryTagJoin(); });
+
+// =================================================================
+// ---------- Capture the Flag (runs on the PvP engine) ----------
+// =================================================================
+const CTF_MAPS = [
+  { id: 'run', n: 'Canyon Run', d: 'Open ground and rock pillars. Fast and direct.' },
+  { id: 'sky', n: 'Sky Bridges', d: 'Floating islands and steel bridges with a long drop below.' },
+  { id: 'forts', n: 'Twin Forts', d: 'Each flag sits inside a steel fort. Go in through the door or drop through the roof.' },
+];
+const CTF_IDS = CTF_MAPS.map(m => m.id);
+const CTF_SIZES = [2, 3, 4];
+const CTF_GRACE = 1200, CTF_WIN = 3, CTF_TIME = 600, CTF_RETURN = 20000, CTF_TOUCH = PR * 2 + 10, CTF_GRAB = 46, CTF_HOME = 60, CTF_FREEZE = 2000;
+const ccfg = Object.assign({ map: 'run', size: 3, diff: 'medium' }, save.ctfCfg || {});
+if (!CTF_IDS.includes(ccfg.map)) ccfg.map = 'run';
+if (!CTF_SIZES.includes(ccfg.size)) ccfg.size = 3;
+if (!PDIFF[ccfg.diff]) ccfg.diff = 'medium';
+const saveCcfg = () => { save.ctfCfg = Object.assign({}, ccfg); writeSave(); };
+
+function buildCtf(id) {
+  const key = 'ctf_' + id;
+  if (arenaCache[key]) return arenaCache[key];
+  const wt = 96, ht = 40, half = wt / 2, g = new Uint8Array(wt * ht);
+  const r = mulberry({ run: 5, sky: 6, forts: 7 }[id] * 7919);
+  const inb = (x, y) => x >= 0 && y >= 0 && x < wt && y < ht;
+  // every tile written on the left is mirrored on the right, so both sides are the same
+  const set = (x, y, v) => { if (inb(x, y)) { g[y * wt + x] = v; g[y * wt + (wt - 1 - x)] = v; } };
+  const get = (x, y) => inb(x, y) ? g[y * wt + x] : TMETAL;
+  const fill = (x0, y0, w, h, v) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) set(x, y, v); };
+  const blob = (cx, cy, rx, ry, v) => { for (let dy = -ry; dy <= ry; dy++) for (let dx = -rx; dx <= rx; dx++) if ((dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) <= 1) set(cx + dx, cy + dy, v); };
+  const topAt = (x, from) => { for (let y = from; y < ht; y++) if (get(x, y) !== TAIR) return y; return ht; };
+  const ceiling = (rows) => { for (let x = 0; x < half; x++) { fill(x, 0, 1, rows, TROCK); const d = Math.max(0, Math.round(Math.sin(x * 0.7) * 1.5 + r() * 2 - 0.5)); fill(x, rows, 1, d, TROCK); } };
+  let pal, bx, bfrom, spawnXs;
+  if (id === 'run') {
+    pal = { n: 'Canyon Run', top: '#f0b073', rock: '#b4603f', deep: '#7a3f2b' };
+    ceiling(3);
+    for (let x = 0; x < half; x++) { const top = 33 + Math.round(Math.sin(x / 6) * 1.2); fill(x, top, 1, ht - top, TROCK); }
+    fill(1, 31, 13, 4, TROCK);                       // the base ledge
+    fill(14, 32, 1, 3, TROCK); fill(15, 33, 1, 2, TROCK); // steps up to it
+    fill(20, 19, 3, 16, TROCK); fill(32, 23, 3, 12, TROCK); // pillars
+    fill(43, 16, 5, 2, TROCK);                       // the centre arch
+    fill(46, 28, 2, 6, TMETAL);                      // a steel hump in the middle
+    fill(12, 18, 5, 1, TROCK); fill(26, 12, 5, 1, TROCK);
+    bx = 7; bfrom = 24; spawnXs = [3, 5, 9, 11, 12];
+  } else if (id === 'sky') {
+    pal = { n: 'Sky Bridges', top: '#bff3ff', rock: '#6a7fa0', deep: '#4a5a78' };
+    ceiling(2);
+    fill(0, 38, half, 2, TROCK);
+    fill(1, 22, 12, 4, TROCK); blob(7, 26, 5, 2, TROCK); // home island
+    fill(13, 22, 6, 1, TMETAL);                          // bridge off the island
+    blob(23, 18, 4, 2, TROCK); blob(30, 26, 4, 2, TROCK); blob(39, 15, 4, 2, TROCK);
+    fill(34, 20, 5, 1, TMETAL);
+    fill(44, 22, 4, 3, TROCK);                           // centre island
+    bx = 7; bfrom = 12; spawnXs = [2, 4, 10, 12, 15];
+  } else {
+    pal = { n: 'Twin Forts', top: '#9be15d', rock: '#7a6a58', deep: '#574b3f' };
+    ceiling(3);
+    fill(0, 34, half, ht - 34, TROCK);
+    blob(47, 35, 12, 5, TROCK);                          // the hill in the middle
+    fill(1, 22, 15, 1, TMETAL);                          // fort roof
+    fill(6, 22, 5, 1, TAIR);                             // a hatch in the roof, right over the flag
+    fill(15, 22, 1, 5, TMETAL);                          // fort wall; the door is the tall gap underneath
+    fill(26, 20, 3, 14, TROCK);                          // towers
+    fill(35, 18, 6, 1, TROCK);
+    fill(18, 15, 4, 1, TROCK);
+    bx = 8; bfrom = 24; spawnXs = [2, 4, 11, 13, 14];
+  }
+  fill(0, 0, 1, ht, TMETAL); fill(0, ht - 1, half, 1, TMETAL);
+  // hook rings, mirrored
+  const rings = [];
+  const ring = (tx, ty) => {
+    for (const x of [tx, wt - 1 - tx]) {
+      const px = x * TS + TS / 2, py = ty * TS + TS / 2;
+      if (get(x, ty) === TAIR && get(x, ty + 1) === TAIR && !rings.some(q => Math.abs(q.x - px) < 60 && Math.abs(q.y - py) < 60)) rings.push({ x: px, y: py });
+    }
+  };
+  for (let x = 3; x < half; x += 5) ring(x, 8 + (x % 3));
+  if (id === 'run') for (const [x, y] of [[10, 14], [17, 22], [27, 26], [38, 20], [44, 24], [16, 9], [36, 13], [13, 24], [8, 23], [18, 27], [24, 16], [30, 19]]) ring(x, y);
+  else if (id === 'sky') for (const [x, y] of [[16, 30], [26, 33], [36, 32], [46, 31], [12, 14], [26, 12], [19, 24], [34, 23], [42, 19], [9, 31], [22, 28]]) ring(x, y);
+  else for (const [x, y] of [[4, 16], [11, 15], [8, 15], [8, 28], [12, 30], [20, 25], [31, 15], [40, 24], [45, 14], [22, 10], [36, 27], [18, 30]]) ring(x, y);
+  // a lattice of rings everywhere there's open air, so you (and bots) can always hook onward
+  for (let x = 2; x < half; x += 4) for (const y of [14, 20, 26, 31]) ring(x + (y % 3), y);
+  // bases and spawns
+  const by = topAt(bx, bfrom);
+  const bases = [{ x: bx * TS + TS / 2, y: by * TS - PR - 1 }, { x: (wt - 1 - bx) * TS + TS / 2, y: by * TS - PR - 1 }];
+  const tspawns = [[], []];
+  for (const x of spawnXs) { const t = topAt(x, bfrom); if (t < ht - 1) { tspawns[0].push({ x: x * TS + TS / 2, y: t * TS - PR - 2 }); tspawns[1].push({ x: (wt - 1 - x) * TS + TS / 2, y: t * TS - PR - 2 }); } }
+  const img = document.createElement('canvas'); img.width = wt; img.height = ht;
+  { const ic = img.getContext('2d'), id2 = ic.createImageData(wt, ht), top = hexRGB(pal.top), rock = hexRGB(pal.rock);
+    for (let y = 0; y < ht; y++) for (let x = 0; x < wt; x++) {
+      const v = g[y * wt + x];
+      const c = v === TAIR ? [150, 200, 240] : v === TMETAL ? [75, 91, 117] : (y > 0 && g[(y - 1) * wt + x] === TAIR ? top : rock);
+      const o = (y * wt + x) * 4; id2.data[o] = c[0]; id2.data[o + 1] = c[1]; id2.data[o + 2] = c[2]; id2.data[o + 3] = 255;
+    }
+    ic.putImageData(id2, 0, 0); }
+  const a = { name: pal.n, img, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings, spawns: tspawns[0].concat(tspawns[1]), tspawns, bases,
+    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
+  arenaCache[key] = a;
+  return a;
+}
+
+// ----- match state (the host, or you offline, runs the rules; everyone else copies) -----
+function initCtf(pm) {
+  const flag = (t) => ({ s: 'home', by: null, x: hw.bases[t].x, y: hw.bases[t].y, t: 0 });
+  pvp.ctf = { size: pm.ctf.size, end: pm.st + CTF_TIME * 1000, score: [0, 0], flags: [flag(0), flag(1)], stats: {}, ev: [], evN: 0, evSeen: 0, rs: {}, rsN: 0, myRs: 0, nopick: {}, over: false, win: null };
+}
+const ctfAuth = () => !pvp.online || pvpHost;
+const ctfOnSide = (t, x) => t === 0 ? x < hw.wt * TS / 2 : x > hw.wt * TS / 2; // is x on team t's half?
+const ctfStat = (id) => { const C = pvp.ctf; return C.stats[id] || (C.stats[id] = [0, 0, 0]); }; // captures, returns, stops
+function ctfEvent(k, t, id) { const C = pvp.ctf; C.ev.push([++C.evN, k, t, id || '']); if (C.ev.length > 10) C.ev.shift(); presenceClock = 0; }
+function ctfHome(t) { const F = pvp.ctf.flags[t]; F.s = 'home'; F.by = null; F.x = hw.bases[t].x; F.y = hw.bases[t].y; }
+function ctfDrop(t, x, y) {
+  const F = pvp.ctf.flags[t];
+  for (let k = 0; k < 20 && wSolid(Math.floor(x / TS), Math.floor(y / TS)); k++) y -= TS / 2;
+  F.s = 'dropped'; F.by = null; F.x = x; F.y = y; F.t = Date.now();
+  ctfEvent('drop', t);
+}
+function ctfSendBack(id) {
+  // a stopped carrier goes back to their own base
+  const C = pvp.ctf; C.rs[id] = ++C.rsN; C.nopick[id] = Date.now() + 1500; // their old position takes a moment to catch up
+  const b = pvp.bots.find(q => q.id === id);
+  if (b) { const s = respawnSpot(b.team); b.x = s.x; b.y = s.y; b.vx = 0; b.vy = 0; b.rope = null; b.freezeUntil = Date.now() + CTF_FREEZE; b.hist.length = 0; }
+}
+function ctfKnock(src, tid) { if (ctfAuth()) ctfYanked(src, tid); else pvp.claims.push([pvpSid + '.' + (++claimN), tid, 'k', 0, 0, 0, src, Date.now()]); }
+function ctfYanked(src, tid) {
+  const C = pvp.ctf; if (!C || C.over) return;
+  const views = pvpViews(), sv = views.find(v => v.id === src), tv = views.find(v => v.id === tid);
+  if (!sv || !tv) return;
+  const t = sv.team & 1, F = C.flags[t];
+  if (!ctfOnSide(t, tv.x)) return; // carriers past the middle are safe
+  if (F.s === 'carried' && F.by === tid) { ctfStat(src)[2]++; ctfDrop(t, tv.x, tv.y); }
+}
+function ctfRules(now) {
+  const C = pvp.ctf, views = pvpViews().filter(v => v.alive), byId = new Map(views.map(v => [v.id, v]));
+  for (let t = 0; t < 2; t++) {
+    const F = C.flags[t];
+    if (F.s === 'carried') { const c = byId.get(F.by); if (!c) ctfDrop(t, F.x, F.y); else { F.x = c.x; F.y = c.y; } }
+    if (F.s === 'dropped' && now - F.t > CTF_RETURN) { ctfHome(t); ctfEvent('auto', t); }
+  }
+  for (const v of views) {
+    const own = v.team & 1, E = C.flags[1 - own], O = C.flags[own];
+    const frozen = (C.nopick[v.id] || 0) > now || (v.me ? now < pvp.me.freezeUntil : v.bot ? now < v.bot.freezeUntil : false);
+    if (O.s === 'dropped' && Math.hypot(v.x - O.x, v.y - O.y) < CTF_GRAB) { ctfHome(own); ctfStat(v.id)[1]++; ctfEvent('ret', own, v.id); }
+    if (!frozen && E.s !== 'carried' && Math.hypot(v.x - E.x, v.y - E.y) < CTF_GRAB) { E.s = 'carried'; E.by = v.id; E.g = now + CTF_GRACE; ctfEvent('take', 1 - own, v.id); }
+    if (E.s === 'carried' && E.by === v.id && O.s === 'home' && Math.hypot(v.x - hw.bases[own].x, v.y - hw.bases[own].y) < CTF_HOME) {
+      C.score[own]++; ctfHome(1 - own); ctfStat(v.id)[0]++; ctfEvent('cap', own, v.id);
+    }
+  }
+  // touching a carrier stops them
+  for (let t = 0; t < 2; t++) {
+    const F = C.flags[t];
+    if (F.s !== 'carried' || now < (F.g || 0)) continue; // a moment of grace right after a grab
+    const c = byId.get(F.by); if (!c) continue;
+    if (!ctfOnSide(t, c.x)) continue; // carriers can only be stopped on the defenders' side
+    const e = views.find(v => (v.team & 1) === t && Math.hypot(v.x - c.x, v.y - c.y) < CTF_TOUCH);
+    if (e) { ctfStat(e.id)[2]++; ctfDrop(t, c.x, c.y); ctfEvent('stop', t, e.id); ctfSendBack(c.id); }
+  }
+  if (C.score[0] >= CTF_WIN || C.score[1] >= CTF_WIN || now >= C.end) {
+    const w = C.score[0] === C.score[1] ? null : C.score[0] > C.score[1] ? 0 : 1;
+    C.over = true; C.win = w; presenceClock = 0; finishCtf(w);
+  }
+}
+function ctfPack(now) {
+  const C = pvp.ctf, R = Math.round;
+  return {
+    f: C.flags.map(F => [F.s === 'home' ? 0 : F.s === 'carried' ? 1 : 2, F.by || '', R(F.x), R(F.y), F.s === 'dropped' ? R(Math.max(0, CTF_RETURN - (now - F.t))) : 0]),
+    sc: C.score, st: Object.entries(C.stats).slice(0, 16).map(([k, v]) => [k, v[0], v[1], v[2]]),
+    ev: C.ev.slice(-10), rs: Object.entries(C.rs).slice(-16), ov: C.over ? 1 : 0, w: C.win == null ? -1 : C.win,
+  };
+}
+function ctfPull(now) {
+  const C = pvp.ctf, h = hostPvpPeer(), g = h && h.raw.pv && h.raw.pv.id === pvp.id ? h.raw.cf : null;
+  if (!g || typeof g !== 'object') { if (!pvp.over && now > C.end + 5000) finishCtf(C.score[0] === C.score[1] ? null : C.score[0] > C.score[1] ? 0 : 1); return; }
+  const WP = hw.wt * TS, HP = hw.ht * TS;
+  if (Array.isArray(g.f)) for (let t = 0; t < 2; t++) {
+    const e = g.f[t], F = C.flags[t];
+    if (!Array.isArray(e)) continue;
+    F.s = e[0] === 1 ? 'carried' : e[0] === 2 ? 'dropped' : 'home';
+    F.by = typeof e[1] === 'string' && e[1] ? e[1].slice(0, 40) : null;
+    if (F.s === 'home') { F.x = hw.bases[t].x; F.y = hw.bases[t].y; } else { F.x = clamp(num(e[2]) || 0, 0, WP); F.y = clamp(num(e[3]) || 0, 0, HP); }
+    if (F.s === 'dropped') F.t = now - (CTF_RETURN - clamp(num(e[4]) || 0, 0, CTF_RETURN));
+  }
+  if (Array.isArray(g.sc)) C.score = [clampInt(g.sc[0], 0, 99), clampInt(g.sc[1], 0, 99)];
+  if (Array.isArray(g.st)) { C.stats = {}; for (const e of g.st.slice(0, 16)) if (Array.isArray(e) && typeof e[0] === 'string') C.stats[e[0].slice(0, 40)] = [clampInt(e[1], 0, 99), clampInt(e[2], 0, 99), clampInt(e[3], 0, 99)]; }
+  if (Array.isArray(g.ev)) C.ev = g.ev.slice(-10).filter(e => Array.isArray(e) && num(e[0]) != null && typeof e[1] === 'string' && (e[2] === 0 || e[2] === 1)).map(e => [e[0], e[1].slice(0, 8), e[2], typeof e[3] === 'string' ? e[3].slice(0, 40) : '']);
+  if (Array.isArray(g.rs)) { C.rs = {}; for (const e of g.rs.slice(-16)) if (Array.isArray(e) && typeof e[0] === 'string' && num(e[1]) != null) C.rs[e[0].slice(0, 40)] = e[1]; }
+  if (g.ov === 1 && !pvp.over) finishCtf(g.w === 0 || g.w === 1 ? g.w : null);
+}
+function ctfTick(dt) {
+  const now = Date.now(), m = pvp.me, C = pvp.ctf, me = selfId();
+  if (pvp.online) { if (!pvpHost) { syncRemoteBots(dt); ctfPull(now); } readClaims(); }
+  m.yankCd -= dt; wHP = P_HP;
+  for (const b of pvp.bots) botTick(b, dt, now);
+  pvp.lines = pvp.lines.filter(l => l.until > now);
+  pvp.claims = pvp.claims.filter(c => now - c[7] < 2500).slice(-24);
+  // a stopped carrier (you) goes back to base
+  if (C.rs[me] && C.rs[me] !== C.myRs) {
+    const s = respawnSpot(m.team); detach(); P.x = s.x; P.y = s.y; P.vx = 0; P.vy = 0; P.hist.length = 0;
+    m.freezeUntil = now + CTF_FREEZE;
+    C.myRs = C.rs[me];
+  }
+  // banners for things that happened
+  for (const e of C.ev) {
+    if (e[0] <= C.evSeen) continue;
+    C.evSeen = e[0];
+    if (now < pvp.start) continue;
+    const who = (pvpViews().find(v => v.id === e[3]) || {}).name || 'Someone', mine = e[2] === (m.team & 1), you = e[3] === me, TN = TEAM_NAMES[e[2]].replace(' team', '');
+    if (e[1] === 'take') banner(mine ? 'Alert' : 'Flag taken', you ? 'You have their flag!' : mine ? 'Your flag was taken' : who + ' has their flag', you ? 'Bring it to your base.' : mine ? who + ' is carrying it. Stop them before they cross the middle.' : '');
+    else if (e[1] === 'cap') banner(TN + ' scores', 'Red ' + C.score[0] + ' – ' + C.score[1] + ' Blue', you ? '+5 tokens at the end' : who + ' captured the flag.');
+    else if (e[1] === 'ret') banner('Flag returned', TN + ' flag is home', you ? 'Nice save.' : '');
+    else if (e[1] === 'stop') banner('Carrier stopped', you ? 'You stopped them!' : who + ' stopped the carrier');
+    else if (e[1] === 'auto') banner('Flag returned', TN + ' flag went home');
+  }
+  if (ctfAuth() && !pvp.over && !C.over && now >= pvp.start) ctfRules(now);
+}
+function finishCtf(win) {
+  const C = pvp.ctf;
+  C.over = true; C.win = win; pvp.over = true; pvp.winTeam = win;
+  const st = C.stats[selfId()] || [0, 0, 0], won = win != null && win === (pvp.me.team & 1);
+  const tok = st[0] * 5 + (st[1] + st[2]) * 2 + (won ? 10 : 0);
+  if (tok) addTokens(tok, P.x, P.y);
+  pvp.reward = tok; pvp.won = won;
+  writeSave();
+  detach(); for (const k in keys) keys[k] = false;
+  state = 'over';
+  banner(won ? 'Victory' : win == null ? 'Draw' : 'Match over', won ? 'Your team wins!' : win == null ? 'Red ' + C.score[0] + ' – ' + C.score[1] + ' Blue' : TEAM_NAMES[win] + ' wins');
+  setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1600);
+}
+function renderCtfResults() {
+  const C = pvp.ctf, list = $('pr-list'); list.textContent = '';
+  const rows = pvpViews().map(v => { const st = C.stats[v.id] || [0, 0, 0]; return { v, st, w: C.win != null && (v.team & 1) === C.win }; });
+  rows.sort((a, b) => (b.w - a.w) || ((a.v.team & 1) - (b.v.team & 1)) || (b.st[0] - a.st[0]) || (b.st[1] + b.st[2] - a.st[1] - a.st[2]));
+  rows.forEach((r, i) => {
+    const li = document.createElement('li'); if (r.v.me) li.className = 'me';
+    const pl = document.createElement('span'); pl.className = 'place'; pl.textContent = ORD[i] || String(i + 1);
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = TEAM_COLORS[r.v.team & 1];
+    const nm = document.createElement('span'); nm.textContent = r.v.name + (r.v.me ? ' (you)' : '');
+    const res = document.createElement('span'); res.className = 'res';
+    const p = (n, a, b) => n + ' ' + (n === 1 ? a : b);
+    res.textContent = (r.w ? 'Winner · ' : '') + p(r.st[0], 'capture', 'captures') + ' · ' + p(r.st[1], 'return', 'returns') + ' · ' + p(r.st[2], 'stop', 'stops');
+    li.append(pl, dot, nm, res); list.append(li);
+  });
+}
+function ctfFlagPos(t) {
+  const F = pvp.ctf.flags[t];
+  if (F.s === 'carried') { const v = pvpViews().find(w => w.id === F.by); if (v) return { x: v.x, y: v.y, carried: true }; }
+  return { x: F.x, y: F.y, carried: false };
+}
+function ctfBotTick(b, dt, now) {
+  if (now < pvp.start || pvp.over) return;
+  b.yankCd -= dt;
+  if (now < b.freezeUntil) { b.vx = 0; b.vy = 0; b.rope = null; return; }
+  const C = pvp.ctf, own = b.team & 1, E = C.flags[1 - own], O = C.flags[own], views = pvpViews(), base = hw.bases[own];
+  const role = Math.floor(b.k / 2) % 2 === 0 ? 'attack' : 'defend';
+  let tgt = null, chase = null;
+  const carrierOf = (F) => F.s === 'carried' ? views.find(v => v.id === F.by) : null;
+  if (E.s === 'carried' && E.by === b.id) tgt = base;                         // bring it home
+  else if (O.s === 'carried') { chase = carrierOf(O); tgt = chase; }           // get our flag back
+  else if (O.s === 'dropped') tgt = { x: O.x, y: O.y };                        // return it
+  else if (E.s === 'dropped') tgt = { x: E.x, y: E.y };
+  else if (role === 'attack') {
+    const mate = carrierOf(E);
+    tgt = mate && mate.id !== b.id ? { x: mate.x, y: mate.y - 60 } : { x: E.x, y: E.y }; // escort the carrier, or go for the flag
+  } else {
+    // defend: patrol a little way out from our base (carriers are chased above)
+    tgt = { x: base.x + (own ? -1 : 1) * (320 + Math.sin(now / 1500 + b.k) * 160), y: base.y - 80 };
+  }
+  b.target = tgt;
+  botBrain(b, tgt, dt, now);
+  const n = Math.max(1, Math.ceil(dt / STEP)), h = dt / n;
+  for (let i = 0; i < n; i++) botPhysics(b, h, now);
+  if (Math.abs(b.vx) > 20) b.face = Math.sign(b.vx);
+  // yank an enemy carrier that's in reach
+  const c = carrierOf(O);
+  if (c && b.yankCd <= 0 && ctfOnSide(own, c.x)) {
+    const d = Math.hypot(c.x - b.x, c.y - b.y), D = PDIFF[b.diff] || PDIFF.medium;
+    if (d < RANGE * 0.9 && d > 60 && wLos(b.x, b.y, c.x, c.y) && Math.random() < dt * (b.diff === 'hard' ? 0.9 : b.diff === 'medium' ? 0.5 : 0.25)) {
+      deal(b.id, c.id, 'y', 0, (b.x - c.x) / d * 950, (b.y - c.y) / d * 950 - 250);
+      ctfKnock(b.id, c.id);
+      b.yankCd = D.rate * 6; pvp.lines.push({ x1: b.x, y1: b.y, x2: c.x, y2: c.y, until: now + 250 });
+    }
+  }
+}
+function drawFlag(x, y, t, tilt, small) {
+  const sc = small ? 0.85 : 1, wave = Math.sin(gt * 6 + t) * 3 * sc;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(tilt || 0); ctx.scale(sc, sc);
+  ctx.strokeStyle = '#e8e4f0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 16); ctx.lineTo(0, -46); ctx.stroke();
+  ctx.fillStyle = TEAM_COLORS[t]; ctx.shadowBlur = 10; ctx.shadowColor = TEAM_COLORS[t];
+  ctx.beginPath(); ctx.moveTo(1, -46); ctx.quadraticCurveTo(16, -42 + wave, 30, -38 + wave); ctx.lineTo(1, -26); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function ctfDraw() {
+  const C = pvp.ctf, now = Date.now();
+  for (let t = 0; t < 2; t++) {
+    const b = hw.bases[t];
+    // base pad
+    ctx.fillStyle = TEAM_COLORS[t]; ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.ellipse(b.x, b.y + PR + 1, 60, 10, 0, 0, 6.283); ctx.fill();
+    ctx.globalAlpha = 0.9; ctx.strokeStyle = TEAM_COLORS[t]; ctx.lineWidth = 2; ctx.stroke(); ctx.globalAlpha = 1;
+    const F = C.flags[t];
+    if (F.s === 'home') drawFlag(F.x, F.y, t, 0, false);
+    else {
+      ctx.strokeStyle = TEAM_COLORS[t]; ctx.setLineDash([4, 6]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(b.x, b.y + 16); ctx.lineTo(b.x, b.y - 46); ctx.stroke(); ctx.setLineDash([]);
+      const q = ctfFlagPos(t);
+      if (q.carried) drawFlag(q.x + 12, q.y - 26, t, 0.15, true);
+      else {
+        drawFlag(q.x, q.y, t, 0.5, false);
+        const left = clamp(1 - (now - F.t) / CTF_RETURN, 0, 1);
+        ctx.strokeStyle = TEAM_COLORS[t]; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(q.x, q.y - 10, 34, -Math.PI / 2, -Math.PI / 2 + left * 6.283); ctx.stroke();
+      }
+    }
+  }
+}
+function ctfHudFast(now) {
+  const C = pvp.ctf, left = Math.max(0, (C.end - Math.max(now, pvp.start)) / 1000);
+  const txt = 'Red ' + C.score[0] + ' – ' + C.score[1] + ' Blue · ' + fmtClock(left);
+  const el = $('t-timer'); if (el.textContent !== txt) el.textContent = txt;
+  el.style.borderColor = TEAM_COLORS[pvp.me.team & 1];
+}
+function ctfHudSlow() {
+  const C = pvp.ctf, own = pvp.me.team & 1, O = C.flags[own], E = C.flags[1 - own], me = selfId(), views = pvpViews();
+  const nameOf = (id) => ((views.find(v => v.id === id) || {}).name || 'someone');
+  const flag = O.s === 'home' ? 'home' : O.s === 'carried' ? 'taken by ' + nameOf(O.by) : 'dropped, back in ' + Math.ceil(Math.max(0, CTF_RETURN - (Date.now() - O.t)) / 1000) + 's';
+  $('w-found').textContent = (E.s === 'carried' && E.by === me)
+    ? (O.s === 'home' ? 'You have their flag! Get it to your base.' : 'You have their flag, but yours must be home to score.')
+    : TEAM_NAMES[own] + ' · Your flag: ' + flag;
+  const el = $('w-team'); el.textContent = '';
+  views.sort((a, b) => ((a.team & 1) - (b.team & 1)) || ((b.me ? 1 : 0) - (a.me ? 1 : 0)));
+  for (const v of views) {
+    const row = document.createElement('div'); row.className = 'team-row';
+    const name = document.createElement('span'); name.textContent = v.name + (v.me ? ' (you)' : '');
+    const st2 = document.createElement('span'); st2.className = 'muted';
+    const carrying = C.flags.some(F => F.s === 'carried' && F.by === v.id), st = C.stats[v.id] || [0, 0, 0];
+    st2.textContent = (carrying ? '⚑ carrying · ' : '') + st[0] + ' cap';
+    if (carrying) st2.style.color = '#ffd34d';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = TEAM_COLORS[v.team & 1];
+    row.append(name, st2, dot); el.append(row);
+  }
+}
+function startCtfOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: ccfg.map, lv: 1, teams: true, nb: ccfg.size * 2 - 1, df: ccfg.diff, tm: [], ctf: { size: ccfg.size } }, false); }
+function renderCtfSetup() {
+  const mk = (id, opts, get, set) => {
+    const el = $(id); el.textContent = '';
+    for (const [v, label] of opts) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+      b.setAttribute('aria-pressed', String(get() === v));
+      b.addEventListener('click', () => { set(v); saveCcfg(); renderCtfSetup(); });
+      el.append(b);
+    }
+  };
+  mk('c-map', CTF_MAPS.map(m => [m.id, m.n]), () => ccfg.map, v => { ccfg.map = v; });
+  mk('c-size', CTF_SIZES.map(n => [n, n + ' vs ' + n]), () => ccfg.size, v => { ccfg.size = v; });
+  mk('c-diff', Object.keys(PDIFF).map(k => [k, DIFF[k].n]), () => ccfg.diff, v => { ccfg.diff = v; });
+  $('c-map-note').textContent = (CTF_MAPS.find(m => m.id === ccfg.map) || {}).d || '';
+  $('b-c-host').hidden = !roomApi; $('c-join').hidden = !roomApi;
+}
+$('m-ctf').addEventListener('click', () => { renderCtfSetup(); $('c-err').hidden = true; show('scr-ctf'); });
+$('b-c-back').addEventListener('click', () => show('scr-menu'));
+$('b-c-start').addEventListener('click', startCtfOffline);
+$('b-c-host').addEventListener('click', async () => {
+  const err = $('c-err'); err.hidden = true;
+  try { await joinRoom('pvp', newCode()); pvpHost = true; pvpPm = { id: 0, st: 0, map: ccfg.map, lv: 1, teams: true, nb: 0, df: ccfg.diff, tm: [], ctf: { size: ccfg.size } }; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = 'Could not open an online match. Try again in a moment.'; err.hidden = false; }
+});
+const tryCtfJoin = async () => {
+  const err = $('c-err'); err.hidden = true;
+  const code = readCode($('c-code'));
+  if (code.length < 4) { err.textContent = 'Match codes are 5 letters and numbers.'; err.hidden = false; return; }
+  try { await joinRoom('pvp', code); pvpHost = false; lastPvpId = 0; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join match "' + code + '". Check the code and try again.'); err.hidden = false; }
+};
+$('b-c-join').addEventListener('click', tryCtfJoin);
+$('c-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryCtfJoin(); });
 
 // =================================================================
 // ---------- Achievements and skins ----------
@@ -5536,6 +5959,8 @@ function buildAdmGoTo() {
   const ar = $('adm-arenas'); ar.textContent = '';
   for (const a of ARENAS) admBtn(ar, a.n, () => goArena(a.id));
   const tgEl = $('adm-tag'); tgEl.textContent = '';
+  const cfEl = $('adm-ctf'); cfEl.textContent = '';
+  for (const cm of CTF_MAPS) admBtn(cfEl, cm.n, () => { toMenu(); const bots = $('adm-bots').checked; startPvp({ id: Date.now() % 1e9, st: Date.now() + 1500, map: cm.id, lv: 1, teams: true, nb: bots ? ccfg.size * 2 - 1 : 0, df: ccfg.diff, tm: [], ctf: { size: ccfg.size } }, false); });
   for (const v of Object.keys(TAGV)) for (const a of ARENAS) admBtn(tgEl, TAGV[v].n + ' · ' + a.n, () => { toMenu(); const bots = $('adm-bots').checked; startPvp({ id: Date.now() % 1e9, st: Date.now() + 1500, map: a.id, lv: 1, teams: false, nb: bots ? tcfg.nb : 0, df: tcfg.diff, tm: [], tag: { v, len: tcfg.len } }, false); });
 }
 function renderAdmRoom() {
