@@ -237,6 +237,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   <div class="hint" id="t-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W / S</b> reel · <b>A / D</b> swing · <b>R</b> restart · <b>Esc</b> pause</div>
   <div class="ult" id="w-ult" hidden><span class="k">Q</span><span id="w-ult-name"></span><span class="bar"><i id="w-ult-bar"></i></span></div>
   <div class="slots" id="w-slots"></div>
+  <div class="hint" id="g-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>E</b> tag shot when you're IT · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
   <div class="hint" id="p-hint" hidden><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / yank a hooked player · <b>E</b> shoot · <b>Q</b> ultimate · <b>1–5</b> abilities · <b>Esc</b> pause</div>
   <div class="hint" id="w-hint"><b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1–5</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
 </div>
@@ -261,6 +262,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
       <button class="mode" id="m-trial"><b>Time Trials</b><small>30 courses against the clock. Gold medals unlock skins.</small></button>
       <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
+      <button class="mode" id="m-tag"><b>Hook Tag</b><small>Tag or be tagged. Classic or Infection, with bots or friends.</small></button>
     </div>
     <div class="modes">
       <button class="mode shop" id="m-gacha"><b>Gacha</b><small>Spend 5 tokens to spin for hats, colors, ropes, trails and auras.</small></button>
@@ -499,6 +501,28 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <button class="link" id="b-p-back">Back to menu</button>
   </section>
 
+  <section class="panel wide" id="scr-tag" hidden>
+    <h2>Hook Tag</h2>
+    <p>Whoever is <b>IT</b> tags people by touching them or hitting them with a tag shot (<kbd>E</kbd>). Tagged players freeze for a moment. Your Hookworld abilities work on keys 1–5. No ultimates.</p>
+    <div class="field"><span class="label">Mode</span><div class="seg" id="g-var"></div><p class="note" id="g-var-note"></p></div>
+    <div class="field"><span class="label">Arena</span><div class="seg" id="g-map"></div></div>
+    <div class="field"><span class="label">Round length</span><div class="seg" id="g-len"></div></div>
+    <div class="field"><span class="label">Bots</span><div class="seg" id="g-bots"></div></div>
+    <div class="field" id="g-diff-field"><span class="label">Bot difficulty</span><div class="seg" id="g-diff"></div></div>
+    <div class="row">
+      <button class="btn primary" id="b-g-start">Start round</button>
+      <button class="btn" id="b-g-host">Host online round</button>
+    </div>
+    <div class="join" id="g-join">
+      <label for="g-code">Join a friend's round</label>
+      <input type="text" id="g-code" maxlength="6" placeholder="Round code" autocomplete="off" spellcheck="false">
+      <button class="btn" id="b-g-join">Join</button>
+    </div>
+    <p class="err" id="g-err" hidden></p>
+    <p class="note">Tokens: 1 for each tag you make, 10 for winning a round with at least one other player.</p>
+    <button class="link" id="b-g-back">Back to menu</button>
+  </section>
+
   <section class="panel" id="scr-pvp-lobby" hidden>
     <h2>Online match</h2>
     <div class="code-box">
@@ -624,7 +648,9 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <div class="seg small" id="adm-world"></div>
         <span class="label">PvP arenas</span>
         <div class="seg small" id="adm-arenas"></div>
-        <label class="row" style="text-transform:none;letter-spacing:0;font-size:14px;font-weight:500"><input type="checkbox" id="adm-bots"> Bring bots (uses your PvP settings)</label>
+        <span class="label">Hook Tag</span>
+        <div class="seg small" id="adm-tag"></div>
+        <label class="row" style="text-transform:none;letter-spacing:0;font-size:14px;font-weight:500"><input type="checkbox" id="adm-bots"> Bring bots (uses your PvP or Hook Tag settings)</label>
       </div>
       <div class="adm-sec">
         <h3>Room</h3>
@@ -841,7 +867,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -867,6 +893,7 @@ try {
     if (s.ach && typeof s.ach === 'object') save.ach = s.ach;
     if (s.trials && typeof s.trials === 'object') save.trials = s.trials;
     save.adm = s.adm === true;
+    if (s.tagCfg && typeof s.tagCfg === 'object') save.tagCfg = s.tagCfg;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
 const gotSet = new Set(save.got);
@@ -1606,7 +1633,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -1687,7 +1714,7 @@ function toMenu() {
   mode = 'solo'; race = null; raceHosting = false; hostRc = null;
   $('hud').hidden = true; $('h-race').hidden = true; $('whud').hidden = true;
   ab.active = {}; ab.cd = {};
-  pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true;
+  pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true;
   trial = null; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false;
   toCheckpoint(0);
   runHeight = 0;
@@ -3438,6 +3465,9 @@ function updateWorldHud(dt) {
   if (mode === 'trial' && trial) {
     $('w-found').textContent = 'Falls ' + trial.deaths + (trState().best[trial.n] ? ' · Best ' + fmtTime(trState().best[trial.n]) : '');
     $('w-team').textContent = '';
+  } else if (mode === 'pvp' && pvp && pvp.tag) {
+    tagHudSlow();
+    pvpLobbyTick();
   } else if (mode === 'pvp' && pvp) {
     $('w-found').textContent = pvp.me.alive ? 'Lives ' + Math.max(0, pvp.me.lives) + ' · KOs ' + kosOf(selfId()) : (specTarget() ? 'Watching ' + specTarget().name + ' · A / D to switch' : 'Knocked out');
     renderPvpBoard($('w-team'));
@@ -3894,6 +3924,12 @@ function applyFighter(f, kind, a, b, c, src, isMe) {
 function deal(src, tid, kind, a, b, c) {
   a = a || 0; b = b || 0; c = c || 0;
   if (!pvp) return;
+  if (kind === 't') {
+    // tags are decided by the host (or by you, offline)
+    if (!pvp.online || pvpHost) tagEvent(src, tid);
+    else pvp.claims.push([pvpSid + '.' + (++claimN), tid, 't', 0, 0, 0, src, Date.now()]);
+    return;
+  }
   if (kind !== 'h' && kind !== 'p') { const f = src === selfId() ? pvp.me : pvp.bots.find(x => x.id === src); if (f) f.charge = Math.min(100, f.charge + 10); }
   if (tid === selfId()) return applyFighter(pvp.me, kind, a, b, c, src, true);
   const lb = pvp.bots.find(x => x.id === tid);
@@ -3906,8 +3942,9 @@ function readClaims() {
     const raw = s.raw;
     if (!raw || !raw.pv || raw.pv.id !== pvp.id || !Array.isArray(raw.cl)) continue;
     for (const c of raw.cl.slice(-30)) {
-      if (!Array.isArray(c) || typeof c[0] !== 'string' || typeof c[1] !== 'string' || typeof c[2] !== 'string' || c[2].length !== 1 || !'dylfnsph'.includes(c[2])) continue;
+      if (!Array.isArray(c) || typeof c[0] !== 'string' || typeof c[1] !== 'string' || typeof c[2] !== 'string' || c[2].length !== 1 || !'dylfnspht'.includes(c[2])) continue;
       if (pvp.seen.has(c[0])) continue;
+      if (c[2] === 't') { if (pvpHost && pvp.tag) { pvp.seen.add(c[0]); if (c[6] === s.id) tagEvent(s.id, c[1].slice(0, 40)); } continue; }
       const mine = c[1] === myPeerId, lb = pvpHost ? pvp.bots.find(b => b.id === c[1]) : null;
       if (!mine && !lb) continue;
       pvp.seen.add(c[0]);
@@ -3925,7 +3962,7 @@ function readClaims() {
 function spawnShot(owner, team, x, y, ux, uy, o) {
   o = o || {};
   const v = o.speed || SHOT_V;
-  pvp.shots.push({ owner, team, x: x + ux * 22, y: y + uy * 22, vx: ux * v, vy: uy * v, life: o.life || 1.2, dmg: o.dmg || 1, homing: !!o.homing, swap: !!o.swap });
+  pvp.shots.push({ owner, team, x: x + ux * 22, y: y + uy * 22, vx: ux * v, vy: uy * v, life: o.life || 1.2, dmg: o.dmg || 1, homing: !!o.homing, swap: !!o.swap, tag: !!o.tag });
 }
 function moveFighter(id, x, y) {
   if (id === selfId()) { detach(); P.x = x; P.y = y; P.vx = 0; P.vy = 0; P.hist.length = 0; return; }
@@ -3950,7 +3987,9 @@ function updateShots(dt) {
       if (wSolid(Math.floor(s.x / TS), Math.floor(s.y / TS))) { gone = true; burst(s.x, s.y, '#ffd34d', 4, 90); break; }
       for (const v of views) {
         if (!v.alive || v.team === s.team || v.id === s.owner) continue;
+        if (s.tag && pvp.tag && pvp.tag.it.has(v.id)) continue; // tag shots pass through other ITs
         if (Math.hypot(v.x - s.x, v.y - s.y) < 22) {
+          if (s.tag) { deal(s.owner, v.id, 't'); gone = true; break; }
           const sp = Math.hypot(s.vx, s.vy) || 1;
           if (s.swap) { const ov = views.find(w => w.id === s.owner); if (ov) { deal(s.owner, v.id, 's', ov.x, ov.y); moveFighter(s.owner, v.x, v.y); } }
           else deal(s.owner, v.id, 'd', s.dmg, s.vx / sp * 320, s.vy / sp * 320 - 120);
@@ -4049,12 +4088,20 @@ function pvpGate(dt) {
 function pvpReady() { const m = pvp && pvp.me, now = Date.now(); return !!(m && m.alive && now >= pvp.start && !pvp.over && now >= m.freezeUntil && state === 'play'); }
 function pvpShoot() {
   if (!pvpReady() || pvp.me.shotCd > 0) return;
+  if (pvp.tag) {
+    if (!pvp.tag.it.has(selfId()) || pvp.tag.over) return;
+    const dx = mouse.wx - P.x, dy = mouse.wy - P.y, d = Math.hypot(dx, dy) || 1;
+    spawnShot(selfId(), pvp.me.team, P.x, P.y, dx / d, dy / d, { tag: true, speed: TAG_SHOT_V, life: TAG_SHOT_LIFE });
+    pvp.me.shotCd = TAG_CD;
+    return;
+  }
   const m = pvp.me, dx = mouse.wx - P.x, dy = mouse.wy - P.y, d = Math.hypot(dx, dy) || 1, od = m.od > Date.now();
   spawnShot(selfId(), m.team, P.x, P.y, dx / d, dy / d, { dmg: od ? 2 : 1 });
   m.shotCd = SHOT_CD * (od ? 0.5 : 1);
 }
-function pvpUltKey() { if (pvpReady() && pvp.me.charge >= 100) useUlt(selfId(), pvp.me, P, pvp.me.ult, mouse.wx, mouse.wy); }
+function pvpUltKey() { if (pvp && pvp.tag) return; if (pvpReady() && pvp.me.charge >= 100) useUlt(selfId(), pvp.me, P, pvp.me.ult, mouse.wx, mouse.wy); }
 function pvpYank() {
+  if (pvp && pvp.tag) return;
   if (!pvpReady() || !rope || rope.kind !== 'peer' || pvp.me.yankCd > 0) return;
   const t = pvpViews().find(v => v.id === rope.ref);
   if (!t || !t.alive || t.team === pvp.me.team) return;
@@ -4152,6 +4199,7 @@ function botPhysics(b, dt, now) {
 function botTick(b, dt, now) {
   pushHist(b.hist, b.x, b.y);
   if (!b.alive) { if (b.lives > 0 && b.respawnAt && now >= b.respawnAt) respawnFighter(b, false); return; }
+  if (pvp.tag) { tagBotTick(b, dt, now); return; }
   if (now < pvp.start || pvp.over) return;
   b.charge = Math.min(100, b.charge + dt * 100 / ULT_TIME);
   b.shotCd -= dt; b.yankCd -= dt;
@@ -4190,6 +4238,7 @@ function startPvp(pm, online) {
   pvp = { id: pm.id, cfg: pm, online, start: pm.st, over: false, overAt: 0, me: fighter(myId || 'me', myTeam, pm.lv), bots: [], rbots: [], shots: [], fx: [], claims: [], lines: [], seen: new Set(),
     roster: online ? pm.tm : null, size: online ? pm.tm.length : 1 + pm.nb, reward: 0, won: false, winTeam: null };
   pvp.me.ult = pcfg.ult; pvp.me.inv = pm.st + 2000;
+  if (pm.tag) initTag(pm, online);
   const sp = hw.spawns, off = pm.id % sp.length;
   if (!online || pvpHost) for (let k = 0; k < pm.nb; k++) {
     const id = 'b' + k, team = online ? (tm.has(id) ? tm.get(id) : k + 1) : (pm.teams ? (k % 2 === 0 ? 1 : 0) : k + 1);
@@ -4205,6 +4254,7 @@ function startPvp(pm, online) {
   state = 'play'; show(null);
   $('hud').hidden = true; $('whud').hidden = false; $('w-ult').hidden = false; $('w-hint').hidden = true; $('p-hint').hidden = false;
   { const mm = $('w-mini'); mm.width = 440; mm.height = Math.round(440 * hw.ht / hw.wt); mm.hidden = false; }
+  { const tg = !!pm.tag; $('w-ult').hidden = tg; $('p-hint').hidden = tg; $('g-hint').hidden = !tg; $('w-hp').hidden = tg; $('t-timer').hidden = !tg; }
   $('wbanner').dataset.cd = '';
   buildSlots(); lastHP = -1; wHP = P_HP;
   canvas.focus();
@@ -4212,13 +4262,17 @@ function startPvp(pm, online) {
 function startPvpOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: [] }, false); }
 function hostStartPvp() {
   if (!myPeerId) return;
+  const tg = pvpPm && pvpPm.tag, nb = tg ? tcfg.nb : pcfg.nb;
   const ids = [myPeerId, ...[...peerState.values()].map(s => s.id).sort()];
-  for (let k = 0; k < pcfg.nb; k++) ids.push('b' + k);
-  pvpPm = { id: Date.now() % 1e9, st: Date.now() + 4500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: ids.slice(0, 16).map((id, i) => [id, pcfg.teams ? i % 2 : i]) };
+  for (let k = 0; k < nb; k++) ids.push('b' + k);
+  pvpPm = tg
+    ? { id: Date.now() % 1e9, st: Date.now() + 4500, map: tcfg.map, lv: 1, teams: false, nb, df: tcfg.diff, tag: { v: tcfg.v, len: tcfg.len }, tm: ids.slice(0, 16).map((id, i) => [id, i]) }
+    : { id: Date.now() % 1e9, st: Date.now() + 4500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, tm: ids.slice(0, 16).map((id, i) => [id, pcfg.teams ? i % 2 : i]) };
   presenceClock = 0;
   startPvp(pvpPm, true);
 }
 function pvpTick(dt) {
+  if (pvp.tag) { tagTick(dt); return; }
   const now = Date.now(), m = pvp.me;
   if (pvp.online) { if (!pvpHost) syncRemoteBots(dt); readClaims(); }
   if (!m.alive && m.lives > 0 && m.respawnAt && now >= m.respawnAt) respawnFighter(m, true);
@@ -4263,9 +4317,9 @@ function finishPvp(win) {
   setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1600);
 }
 function showPvpResults() {
-  $('pr-title').textContent = pvp.won ? 'You win!' : winnerLabel(pvp.winTeam);
+  $('pr-title').textContent = pvp.won ? 'You win!' : pvp.tag ? tagWinLabel(pvp.tag.win || []) : winnerLabel(pvp.winTeam);
   const a = ARENAS.find(q => q.id === pvp.cfg.map);
-  $('pr-sub').textContent = (a ? a.n : '') + ' · ' + pvp.cfg.lv + (pvp.cfg.lv === 1 ? ' life' : ' lives') + ' · ' + (pvp.cfg.teams ? '2 teams' : 'Free-for-all') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '');
+  $('pr-sub').textContent = pvp.tag ? 'Hook Tag · ' + TAGV[pvp.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pvp.tag.len / 60) + ' min' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : (a ? a.n : '') + ' · ' + pvp.cfg.lv + (pvp.cfg.lv === 1 ? ' life' : ' lives') + ' · ' + (pvp.cfg.teams ? '2 teams' : 'Free-for-all') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '');
   renderPvpResults();
   const follower = pvp.online && !pvpHost;
   $('b-pr-again').hidden = follower;
@@ -4273,6 +4327,7 @@ function showPvpResults() {
   show('scr-pvp-res');
 }
 function renderPvpResults() {
+  if (pvp.tag) { renderTagResults(); return; }
   const list = $('pr-list'); list.textContent = '';
   const views = pvpViews();
   const rows = views.map(v => ({ v, k: kosOf(v.id, views), win: pvp.winTeam != null && v.team === pvp.winTeam }));
@@ -4298,6 +4353,7 @@ function pvpPresence(pr) {
   pr.u = pvp.fx.slice(-6).map(f => [f.kind, R(f.x), R(f.y), R(f.ang * 100) / 100, f.t0, f.dur]);
   pr.dc = pvp.fx.filter(f => f.decoys && f.src === sid).flatMap(f => f.decoys.map(d => [R(d.x), R(d.y)])).slice(0, 6);
   pr.cl = pvp.claims.slice(-24).map(c => c.slice(0, 7));
+  if (pvp.tag && pvpHost) pr.tg = tagPack(now);
   if (pvpHost) {
     const ids = new Set(pvp.bots.map(b => b.id));
     pr.pb = pvp.bots.map(b => [R(b.x), R(b.y), b.rope ? R(b.rope.x) : -1, b.rope ? R(b.rope.y) : 0, b.hp, b.lives, b.alive ? 1 : 0, b.team, b.invisUntil > now ? 1 : 0, Object.entries(b.kb).slice(0, 8), now < b.freezeUntil ? 1 : 0, now < b.netUntil ? 1 : 0]);
@@ -4311,7 +4367,8 @@ function parsePm(v) {
   const id = num(v.id), st = num(v.st);
   if (id == null || st == null || !ARENA_IDS.includes(v.map) || ![1, 3, 5].includes(v.lv)) return null;
   const tm = Array.isArray(v.tm) ? v.tm.slice(0, 16).filter(e => Array.isArray(e) && typeof e[0] === 'string' && num(e[1]) != null).map(e => [e[0].slice(0, 40), clampInt(e[1], 0, 99)]) : [];
-  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 5), df: PDIFF[v.df] ? v.df : 'medium', tm };
+  const tag = v.tag && typeof v.tag === 'object' && TAGV[v.tag.v] && TAG_LENS.includes(v.tag.len) ? { v: v.tag.v, len: v.tag.len } : null;
+  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 5), df: PDIFF[v.df] ? v.df : 'medium', tm, tag };
 }
 function syncRemoteBots(dt) {
   const h = hostPvpPeer(), ok = h && h.raw.pv && h.raw.pv.id === pvp.id && Array.isArray(h.raw.pb);
@@ -4344,6 +4401,7 @@ function pvpLobbyTick() {
 }
 function pmText(pm) {
   const a = ARENAS.find(q => q.id === pm.map);
+  if (pm.tag) return 'Hook Tag · ' + TAGV[pm.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pm.tag.len / 60) + ' min · ' + (pm.nb ? pm.nb + ' ' + DIFF[pm.df].n.toLowerCase() + ' bot' + (pm.nb > 1 ? 's' : '') : 'no bots');
   return (a ? a.n : '') + ' · ' + pm.lv + (pm.lv === 1 ? ' life' : ' lives') + ' · ' + (pm.teams ? '2 teams' : 'Free-for-all') + ' · ' + (pm.nb ? pm.nb + ' ' + DIFF[pm.df].n.toLowerCase() + ' bot' + (pm.nb > 1 ? 's' : '') : 'no bots');
 }
 function renderPvpLobby() {
@@ -4360,7 +4418,7 @@ function renderPvpLobby() {
     row.append(dot, nm); if (r.id) addKick(row, r.id); list.append(row);
   }
   $('b-p-lstart').hidden = !pvpHost; $('b-p-lstart').disabled = !myPeerId;
-  $('p-lmsg').textContent = (pvpHost ? 'Share the code, then start when everyone is here.' : 'Waiting for the host to start.') + ' Your ultimate: ' + ULTS[pcfg.ult].n + '.';
+  $('p-lmsg').textContent = (pvpHost ? 'Share the code, then start when everyone is here.' : 'Waiting for the host to start.') + (pm && pm.tag ? ' ' + TAGV[pm.tag.v].d : ' Your ultimate: ' + ULTS[pcfg.ult].n + '.');
 }
 
 // ----- PvP screens -----
@@ -4413,11 +4471,12 @@ $('p-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryPvpJo
 $('b-p-copy').addEventListener('click', () => copyCode($('b-p-copy'), $('p-lcode')));
 $('b-p-lstart').addEventListener('click', hostStartPvp);
 $('b-p-leave').addEventListener('click', toMenu);
-$('b-pr-again').addEventListener('click', () => { if (pvp && pvp.online && pvpHost) hostStartPvp(); else startPvpOffline(); });
+$('b-pr-again').addEventListener('click', () => { if (pvp && pvp.online && pvpHost) hostStartPvp(); else if (pvp && pvp.tag) startTagOffline(); else startPvpOffline(); });
 $('b-pr-menu').addEventListener('click', toMenu);
 
 // ----- PvP drawing -----
 function drawTag(x, y, hp, teamCol) {
+  if (pvp && pvp.tag) return;
   for (let i = 0; i < P_HP; i++) { ctx.fillStyle = i < hp ? '#ff5a6e' : 'rgba(255,255,255,0.25)'; ctx.fillRect(x - 24 + i * 10, y - 46, 8, 4); }
   if (teamCol) { ctx.strokeStyle = teamCol; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, y + 24, 16, 5, 0, 0, 6.283); ctx.stroke(); }
 }
@@ -4491,7 +4550,8 @@ function pvpRender(dt) {
   }
   for (const b of pvp.bots) if (b.alive) drawFighter(b, b.x, b.y, b.rope ? { x: b.rope.x, y: b.rope.y } : null, b.invisUntil > now, b.inv > now, now < b.freezeUntil, now < b.netUntil, dt);
   for (const b of pvp.rbots) if (b && b.alive) drawFighter(b, b.rx, b.ry, b.a ? { x: b.a[0], y: b.a[1] } : null, b.invis, false, b.fr, b.nt, dt);
-  for (const s of pvp.shots) { ctx.fillStyle = s.swap ? '#ffd34d' : s.homing ? '#ff8a3d' : (s.team === pvp.me.team ? '#5ee6c1' : '#ff5a6e'); ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, 6.283); ctx.fill(); }
+  if (pvp.tag) tagMarkers();
+  for (const s of pvp.shots) { ctx.fillStyle = s.tag ? '#ff3d55' : s.swap ? '#ffd34d' : s.homing ? '#ff8a3d' : (s.team === pvp.me.team ? '#5ee6c1' : '#ff5a6e'); ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, 6.283); ctx.fill(); }
   ctx.strokeStyle = 'rgba(255,179,71,0.9)'; ctx.lineWidth = 3;
   for (const l of pvp.lines) { ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke(); }
 }
@@ -4520,7 +4580,12 @@ function pvpHudFast() {
   $('w-ult').classList.toggle('ready', m.charge >= 100);
   const el = (now - pvp.start) / 1000, bn = $('wbanner');
   if (el < 0 && el > -3.2) { const n = String(Math.ceil(-el)); if (bn.dataset.cd !== n) { bn.dataset.cd = n; banner('Get ready', n); } }
-  else if (el >= 0 && bn.dataset.cd && bn.dataset.cd !== 'go') { bn.dataset.cd = 'go'; banner(hw.name, 'Fight!'); }
+  else if (el >= 0 && bn.dataset.cd && bn.dataset.cd !== 'go') {
+    bn.dataset.cd = 'go';
+    if (pvp.tag) { if (pvp.tag.it.has(selfId())) banner(TAGV[pvp.tag.v].n, "You're IT!", 'Everyone else gets a 3 second head start. E fires a tag shot.'); else banner(TAGV[pvp.tag.v].n, 'Run!', 'Don\'t let IT touch you.'); }
+    else banner(hw.name, 'Fight!');
+  }
+  if (pvp.tag) tagHudFast(now);
   const sv = !m.alive ? specTarget() : null;
   const txt = !m.alive ? (m.lives > 0 ? 'Back in ' + Math.max(1, Math.ceil((m.respawnAt - now) / 1000)) : 'Watching ' + (sv ? sv.name : 'nobody')) : hw.name;
   const reg = $('w-region'); if (reg.textContent !== txt) reg.textContent = txt;
@@ -4545,6 +4610,7 @@ function drawArenaMap(cv, big) {
     const col = pvp.cfg.teams ? TEAM_COLORS[v.team & 1] : v.c;
     c2.fillStyle = col; c2.beginPath(); c2.arc(mx(v.x), my(v.y), r, 0, 6.283); c2.fill();
     c2.strokeStyle = 'rgba(0,0,0,0.65)'; c2.lineWidth = big ? 2.5 : 2; c2.stroke();
+    if (pvp.tag && pvp.tag.it.has(v.id)) { c2.strokeStyle = '#ff3d55'; c2.lineWidth = big ? 4 : 3; c2.beginPath(); c2.arc(mx(v.x), my(v.y), r + 4, 0, 6.283); c2.stroke(); }
     if (big) { c2.fillStyle = '#ffffff'; c2.fillText(v.name, mx(v.x), my(v.y) - r - 4); }
   }
   if (pvp.me.alive) {
@@ -4552,6 +4618,272 @@ function drawArenaMap(cv, big) {
     c2.strokeStyle = '#ffd34d'; c2.lineWidth = big ? 4 : 3; c2.beginPath(); c2.arc(mx(P.x), my(P.y), r + 3, 0, 6.283); c2.stroke();
   }
 }
+
+// =================================================================
+// ---------- Hook Tag (runs on the PvP engine) ----------
+// =================================================================
+const TAGV = {
+  classic: { n: 'Classic', d: 'One player is IT. Tag someone to pass it on. Whoever spends the least time as IT wins.' },
+  infect: { n: 'Infection', d: 'Tagged players join IT. Survive until time runs out, or IT wins by catching everyone.' },
+};
+const TAG_LENS = [60, 120, 180, 300];
+const TAG_CD = 1.1, TAG_SHOT_V = 1000, TAG_SHOT_LIFE = 0.7, TAG_FREEZE = 1500, TAG_HEAD = 3000, TAG_NOBACK = 3000, TAG_TOUCH = PR * 2 + 10;
+const tcfg = Object.assign({ v: 'classic', map: 'pit', len: 120, nb: 3, diff: 'medium' }, save.tagCfg || {});
+if (!TAGV[tcfg.v]) tcfg.v = 'classic';
+if (!ARENA_IDS.includes(tcfg.map)) tcfg.map = 'pit';
+if (!TAG_LENS.includes(tcfg.len)) tcfg.len = 120;
+tcfg.nb = clampInt(tcfg.nb, 0, 5);
+if (!PDIFF[tcfg.diff]) tcfg.diff = 'medium';
+const saveTcfg = () => { save.tagCfg = Object.assign({}, tcfg); writeSave(); };
+
+function initTag(pm, online) {
+  // everyone works out the same starting IT from the match id
+  const ids = online ? pm.tm.map(e => e[0]) : ['me', ...Array.from({ length: pm.nb }, (_, k) => 'b' + k)];
+  const n = ids.length, nIt = pm.tag.v === 'infect' && n >= 7 ? 2 : 1, it = new Set();
+  for (let k = 0; k < nIt; k++) it.add(ids[(pm.id + k * 3) % n]);
+  const fz = {};
+  for (const id of it) fz[id] = pm.st + TAG_HEAD; // a head start for everyone else
+  pvp.tag = { v: pm.tag.v, len: pm.tag.len, end: pm.st + pm.tag.len * 1000, it, first: new Set(it), ms: {}, tags: {}, fz, nb: {}, sent: {}, over: false, win: null, wasIt: null };
+}
+const tagAuth = () => !pvp.online || pvpHost;
+function tagPlayers() { return pvpViews().map(v => v.id); }
+function tagEvent(src, tid) {
+  const T = pvp.tag, now = Date.now();
+  if (!T || T.over || pvp.over || now < pvp.start || src === tid || !T.it.has(src) || T.it.has(tid)) return;
+  if ((T.fz[src] || 0) > now) return;
+  const nb = T.nb[src];
+  if (nb && nb[0] === tid && nb[1] > now) return; // no tag-backs right away
+  if (T.v === 'classic') T.it.delete(src);
+  T.it.add(tid);
+  T.tags[src] = (T.tags[src] || 0) + 1;
+  T.fz[tid] = now + TAG_FREEZE; T.nb[tid] = [src, now + TAG_NOBACK];
+  const b = pvp.bots.find(q => q.id === tid);
+  if (b) { b.freezeUntil = T.fz[tid]; b.rope = null; }
+  if (tid === selfId()) { pvp.me.freezeUntil = T.fz[tid]; detach(); }
+  const v = pvpViews().find(w => w.id === tid);
+  if (v) burst(v.x, v.y, '#ff3d55', 22, 260);
+  presenceClock = 0;
+}
+function tagPack(now) {
+  const T = pvp.tag, R = Math.round;
+  return {
+    it: [...T.it].slice(0, 16),
+    ms: Object.entries(T.ms).slice(0, 16).map(([k, v]) => [k, R(v)]),
+    tg: Object.entries(T.tags).slice(0, 16),
+    fz: Object.entries(T.fz).filter(([, u]) => u > now).slice(0, 16).map(([k, u]) => [k, R(u - now)]),
+    ov: T.over ? 1 : 0, w: (T.win || []).slice(0, 16),
+  };
+}
+function tagPull(now) {
+  // followers copy the host's view of who is IT
+  const T = pvp.tag, h = hostPvpPeer(), g = h && h.raw.pv && h.raw.pv.id === pvp.id ? h.raw.tg : null;
+  if (!g || typeof g !== 'object') { if (!pvp.over && now > T.end + 5000) finishTag(tagWinners()); return; }
+  const arr = (a) => Array.isArray(a) ? a.slice(0, 16) : [];
+  const ids = (a) => arr(a).filter(x => typeof x === 'string').map(x => x.slice(0, 40));
+  const pairs = (a, mx) => { const o = {}; for (const e of arr(a)) if (Array.isArray(e) && typeof e[0] === 'string' && num(e[1]) != null) o[e[0].slice(0, 40)] = clamp(e[1], 0, mx); return o; };
+  T.it = new Set(ids(g.it));
+  T.ms = pairs(g.ms, 1e7); T.tags = pairs(g.tg, 999);
+  const fz = pairs(g.fz, 5000); T.fz = {}; for (const k in fz) T.fz[k] = now + fz[k];
+  if (g.ov === 1 && !pvp.over) finishTag(ids(g.w));
+}
+function tagTick(dt) {
+  const now = Date.now(), m = pvp.me, T = pvp.tag, auth = tagAuth(), me = selfId();
+  if (pvp.online) { if (!pvpHost) { syncRemoteBots(dt); tagPull(now); } readClaims(); }
+  m.shotCd -= dt; wHP = P_HP;
+  if ((T.fz[me] || 0) > m.freezeUntil) m.freezeUntil = T.fz[me];
+  for (const b of pvp.bots) { if ((T.fz[b.id] || 0) > b.freezeUntil) b.freezeUntil = T.fz[b.id]; botTick(b, dt, now); }
+  updateShots(dt);
+  pvp.claims = pvp.claims.filter(c => now - c[7] < 2500).slice(-24);
+  const running = now >= pvp.start && !pvp.over && !T.over;
+  if (running) {
+    const views = pvpViews();
+    if (auth) {
+      for (const id of T.it) if (!((T.fz[id] || 0) > now)) T.ms[id] = (T.ms[id] || 0) + dt * 1000; // frozen time doesn't count
+      for (const a of views) if (T.it.has(a.id)) for (const b of views) if (!T.it.has(b.id) && Math.hypot(a.x - b.x, a.y - b.y) < TAG_TOUCH) tagEvent(a.id, b.id);
+    } else if (T.it.has(me) && !((T.fz[me] || 0) > now)) {
+      for (const b of views) if (!b.me && !T.it.has(b.id) && Math.hypot(P.x - b.x, P.y - b.y) < TAG_TOUCH && !(T.sent[b.id] > now)) { T.sent[b.id] = now + 600; deal(me, b.id, 't'); }
+    }
+  }
+  const amIt = T.it.has(me);
+  if (T.wasIt !== null && amIt !== T.wasIt && running) {
+    if (amIt) banner(T.v === 'infect' ? 'Infected' : 'Tagged', "You're IT!", 'Tag someone' + (T.v === 'classic' ? ' to pass it on' : '') + '. E fires a tag shot.');
+    else banner('Passed it on', 'Run!');
+  }
+  T.wasIt = amIt;
+  if (auth && !pvp.over && !T.over && now >= pvp.start) {
+    const ids = tagPlayers(), runners = ids.filter(id => !T.it.has(id));
+    if (now >= T.end || (T.v === 'infect' && ids.length > 1 && !runners.length)) { const w = tagWinners(); T.over = true; T.win = w; presenceClock = 0; finishTag(w); }
+  }
+}
+function tagWinners() {
+  const T = pvp.tag, ids = tagPlayers();
+  if (T.v === 'infect') { const run = ids.filter(id => !T.it.has(id)); return run.length ? run : [...T.first]; }
+  let mn = Infinity;
+  for (const id of ids) mn = Math.min(mn, T.ms[id] || 0);
+  const best = ids.filter(id => (T.ms[id] || 0) <= mn + 50), free = best.filter(id => !T.it.has(id));
+  return free.length ? free : best; // on a tie, whoever isn't IT at the buzzer wins
+}
+function tagWinLabel(win) {
+  const T = pvp.tag, views = pvpViews();
+  if (T.v === 'infect') {
+    if (!views.some(v => !T.it.has(v.id))) return 'IT caught everyone';
+    return win.length === 1 ? ((views.find(v => v.id === win[0]) || {}).name || 'Someone') + ' survived' : win.length + ' survivors win';
+  }
+  if (win.length !== 1) return win.length + ' players tie';
+  const v = views.find(w => w.id === win[0]);
+  return v ? (v.me ? 'You win' : v.name + ' wins') : 'Round over';
+}
+function finishTag(win) {
+  const T = pvp.tag;
+  T.over = true; T.win = win; pvp.over = true;
+  const me = selfId(), won = win.includes(me) && tagPlayers().length > 1, tok = (T.tags[me] || 0) + (won ? 10 : 0);
+  if (tok) addTokens(tok, P.x, P.y);
+  pvp.reward = tok; pvp.won = won;
+  writeSave();
+  detach(); for (const k in keys) keys[k] = false;
+  state = 'over';
+  banner(won ? 'Victory' : 'Round over', won ? 'You win!' : tagWinLabel(win));
+  setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1600);
+}
+function renderTagResults() {
+  const T = pvp.tag, list = $('pr-list'); list.textContent = '';
+  const win = new Set(T.win || []);
+  const rows = pvpViews().map(v => ({ v, w: win.has(v.id), ms: T.ms[v.id] || 0, n: T.tags[v.id] || 0, it: T.it.has(v.id) }));
+  rows.sort((a, b) => (b.w - a.w) || (T.v === 'classic' ? a.ms - b.ms : (a.it - b.it) || (b.n - a.n)));
+  rows.forEach((r, i) => {
+    const li = document.createElement('li'); if (r.v.me) li.className = 'me';
+    const pl = document.createElement('span'); pl.className = 'place'; pl.textContent = ORD[i] || String(i + 1);
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = r.v.c;
+    const nm = document.createElement('span'); nm.textContent = r.v.name + (r.v.me ? ' (you)' : '');
+    const res = document.createElement('span'); res.className = 'res';
+    const tg = r.n + (r.n === 1 ? ' tag' : ' tags');
+    res.textContent = (r.w ? 'Winner · ' : '') + (T.v === 'classic' ? 'IT for ' + fmtClock(r.ms / 1000) : (r.it ? 'IT' : 'Survived')) + ' · ' + tg;
+    li.append(pl, dot, nm, res); list.append(li);
+  });
+}
+function tagBotTick(b, dt, now) {
+  const T = pvp.tag;
+  if (now < pvp.start || pvp.over) return;
+  b.shotCd -= dt;
+  if (now < b.freezeUntil) { b.vx = 0; b.vy = 0; b.rope = null; return; }
+  const it = T.it.has(b.id), views = pvpViews();
+  let tgt = null, td = 1e9;
+  if (it) {
+    // chase the nearest runner it's allowed to tag
+    const nb = T.nb[b.id];
+    for (const t of views) {
+      if (t.id === b.id || T.it.has(t.id) || t.invis || (nb && nb[0] === t.id && nb[1] > now)) continue;
+      const d = Math.hypot(t.x - b.x, t.y - b.y); if (d < td) { td = d; tgt = t; }
+    }
+  } else {
+    // run for the spawn point that is farthest from the nearest IT
+    let near = null, nd = 1e9;
+    for (const t of views) if (T.it.has(t.id)) { const d = Math.hypot(t.x - b.x, t.y - b.y); if (d < nd) { nd = d; near = t; } }
+    const close = near && nd < 300;
+    if (!b.flee || now > b.fleeT || Math.hypot(b.flee.x - b.x, b.flee.y - b.y) < 90 || (close && !b.fleeClose)) {
+      let best = null, bs = -Infinity;
+      for (const sp of hw.spawns) {
+        const dIt = near ? Math.hypot(sp.x - near.x, sp.y - near.y) : 0, dMe = Math.hypot(sp.x - b.x, sp.y - b.y);
+        const toward = near ? ((sp.x - b.x) * (near.x - b.x) + (sp.y - b.y) * (near.y - b.y)) / ((dMe || 1) * (nd || 1)) : 0; // don't run through IT
+        const sc = dIt - dMe * 0.3 - toward * 300 + Math.random() * 120;
+        if (sc > bs) { bs = sc; best = sp; }
+      }
+      b.flee = best; b.fleeT = now + 2500 + Math.random() * 1500;
+    }
+    b.fleeClose = close;
+    tgt = b.flee;
+  }
+  b.target = tgt;
+  botBrain(b, tgt, dt, now);
+  const n = Math.max(1, Math.ceil(dt / STEP)), h = dt / n;
+  for (let i = 0; i < n; i++) botPhysics(b, h, now);
+  if (Math.abs(b.vx) > 20) b.face = Math.sign(b.vx);
+  if (it && tgt && td < TAG_SHOT_V * TAG_SHOT_LIFE * 0.85 && b.shotCd <= 0 && !((T.fz[b.id] || 0) > now) && wLos(b.x, b.y, tgt.x, tgt.y)) {
+    const D = PDIFF[b.diff] || PDIFF.medium, lead = td / TAG_SHOT_V * 0.6;
+    const a = Math.atan2(tgt.y + (tgt.vy || 0) * lead - b.y, tgt.x + (tgt.vx || 0) * lead - b.x) + (Math.random() - 0.5) * 2 * D.err * 1.3;
+    spawnShot(b.id, b.team, b.x, b.y, Math.cos(a), Math.sin(a), { tag: true, speed: TAG_SHOT_V, life: TAG_SHOT_LIFE });
+    b.shotCd = TAG_CD * D.rate * (1.1 + Math.random() * 0.5);
+  }
+}
+function tagMarkers() {
+  const T = pvp.tag;
+  for (const v of pvpViews()) {
+    if (!T.it.has(v.id) || (v.invis && !v.me)) continue;
+    const pulse = 0.5 + 0.5 * Math.sin(gt * 8);
+    ctx.save();
+    ctx.strokeStyle = '#ff3d55'; ctx.lineWidth = 3; ctx.globalAlpha = 0.55 + pulse * 0.45; ctx.shadowBlur = 12; ctx.shadowColor = '#ff3d55';
+    ctx.beginPath(); ctx.arc(v.x, v.y - 2, 30 + pulse * 4, 0, 6.283); ctx.stroke();
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+    ctx.font = '16px Bungee, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(10,8,24,0.8)'; ctx.strokeText('IT', v.x, v.y - 88);
+    ctx.fillStyle = '#ff3d55'; ctx.fillText('IT', v.x, v.y - 88);
+    ctx.restore();
+  }
+}
+function tagHudFast(now) {
+  const T = pvp.tag, left = Math.max(0, (T.end - Math.max(now, pvp.start)) / 1000), amIt = T.it.has(selfId());
+  const fz = (T.fz[selfId()] || 0) - now;
+  const txt = fmtClock(left) + ' · ' + (amIt ? (fz > 0 ? 'IT in ' + Math.ceil(fz / 1000) : "You're IT") : 'Run!');
+  const el = $('t-timer'); if (el.textContent !== txt) el.textContent = txt;
+  el.style.borderColor = amIt ? '#ff3d55' : '';
+}
+function tagHudSlow() {
+  const T = pvp.tag, me = selfId(), n = T.tags[me] || 0;
+  const views = pvpViews(), runners = views.filter(v => !T.it.has(v.id)).length;
+  $('w-found').textContent = T.v === 'classic'
+    ? 'Time as IT ' + fmtClock((T.ms[me] || 0) / 1000) + ' · Tags ' + n
+    : (T.it.has(me) ? 'IT' : 'Survivor') + ' · ' + runners + ' running · Tags ' + n;
+  const el = $('w-team'); el.textContent = '';
+  views.sort((a, b) => (T.it.has(b.id) - T.it.has(a.id)) || ((T.ms[a.id] || 0) - (T.ms[b.id] || 0)));
+  for (const v of views) {
+    const row = document.createElement('div'); row.className = 'team-row';
+    const name = document.createElement('span'); name.textContent = v.name + (v.me ? ' (you)' : '');
+    const st2 = document.createElement('span'); st2.className = 'muted';
+    st2.textContent = (T.it.has(v.id) ? 'IT' : 'running') + (T.v === 'classic' ? ' · ' + fmtClock((T.ms[v.id] || 0) / 1000) : '');
+    if (T.it.has(v.id)) st2.style.color = '#ff6b7d';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = v.c;
+    row.append(name, st2, dot); el.append(row);
+  }
+}
+function startTagOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: tcfg.map, lv: 1, teams: false, nb: tcfg.nb, df: tcfg.diff, tm: [], tag: { v: tcfg.v, len: tcfg.len } }, false); }
+function renderTagSetup() {
+  const mk = (id, opts, get, set) => {
+    const el = $(id); el.textContent = '';
+    for (const [v, label] of opts) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+      b.setAttribute('aria-pressed', String(get() === v));
+      b.addEventListener('click', () => { set(v); saveTcfg(); renderTagSetup(); });
+      el.append(b);
+    }
+  };
+  mk('g-var', Object.keys(TAGV).map(k => [k, TAGV[k].n]), () => tcfg.v, v => { tcfg.v = v; });
+  mk('g-map', ARENAS.map(a => [a.id, a.n]), () => tcfg.map, v => { tcfg.map = v; });
+  mk('g-len', TAG_LENS.map(n => [n, (n / 60) + ' min']), () => tcfg.len, v => { tcfg.len = v; });
+  mk('g-bots', [0, 1, 2, 3, 4, 5].map(n => [n, n ? String(n) : 'None']), () => tcfg.nb, v => { tcfg.nb = v; });
+  mk('g-diff', Object.keys(PDIFF).map(k => [k, DIFF[k].n]), () => tcfg.diff, v => { tcfg.diff = v; });
+  $('g-diff-field').hidden = tcfg.nb === 0;
+  $('g-var-note').textContent = TAGV[tcfg.v].d + (tcfg.v === 'infect' ? ' With 7 or more players, two start as IT.' : '');
+  $('b-g-host').hidden = !roomApi; $('g-join').hidden = !roomApi;
+  $('b-g-start').disabled = tcfg.nb === 0;
+  $('b-g-start').title = tcfg.nb === 0 ? 'Add at least one bot to play offline' : '';
+}
+$('m-tag').addEventListener('click', () => { renderTagSetup(); $('g-err').hidden = true; show('scr-tag'); });
+$('b-g-back').addEventListener('click', () => show('scr-menu'));
+$('b-g-start').addEventListener('click', startTagOffline);
+$('b-g-host').addEventListener('click', async () => {
+  const err = $('g-err'); err.hidden = true;
+  try { await joinRoom('pvp', newCode()); pvpHost = true; pvpPm = { id: 0, st: 0, map: tcfg.map, lv: 1, teams: false, nb: tcfg.nb, df: tcfg.diff, tm: [], tag: { v: tcfg.v, len: tcfg.len } }; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = 'Could not open an online round. Try again in a moment.'; err.hidden = false; }
+});
+const tryTagJoin = async () => {
+  const err = $('g-err'); err.hidden = true;
+  const code = readCode($('g-code'));
+  if (code.length < 4) { err.textContent = 'Round codes are 5 letters and numbers.'; err.hidden = false; return; }
+  try { await joinRoom('pvp', code); pvpHost = false; lastPvpId = 0; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join round "' + code + '". Check the code and try again.'); err.hidden = false; }
+};
+$('b-g-join').addEventListener('click', tryTagJoin);
+$('g-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryTagJoin(); });
 
 // =================================================================
 // ---------- Achievements and skins ----------
@@ -5210,6 +5542,8 @@ function buildAdmGoTo() {
   for (const b of BIOMES) { const tx = Math.floor((x0 + b.x1) / 2); x0 = b.x1; admBtn(wd, b.n, () => goWorld(tx * TS + TS / 2, (world.surf[tx] - 1) * TS, b.n)); }
   const ar = $('adm-arenas'); ar.textContent = '';
   for (const a of ARENAS) admBtn(ar, a.n, () => goArena(a.id));
+  const tgEl = $('adm-tag'); tgEl.textContent = '';
+  for (const v of Object.keys(TAGV)) for (const a of ARENAS) admBtn(tgEl, TAGV[v].n + ' · ' + a.n, () => { toMenu(); const bots = $('adm-bots').checked; startPvp({ id: Date.now() % 1e9, st: Date.now() + 1500, map: a.id, lv: 1, teams: false, nb: bots ? tcfg.nb : 0, df: tcfg.diff, tm: [], tag: { v, len: tcfg.len } }, false); });
 }
 function renderAdmRoom() {
   const el = $('adm-room'); el.textContent = '';
