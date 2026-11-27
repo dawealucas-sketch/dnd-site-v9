@@ -159,6 +159,19 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 @media (max-width: 560px) { .achrow { grid-template-columns: 44px minmax(0, 1fr); } .achrow .achico { width: 44px; height: 44px; font-size: 18px; } .achrow .side { grid-column: 2; justify-items: start; text-align: left; } }
 .achtoast { position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 50; display: flex; gap: 12px; align-items: center; width: min(340px, calc(100% - 32px)); padding: 12px 14px; border-radius: 12px; background: linear-gradient(180deg, #2a2350, #1a1533); border: 1px solid rgba(255,211,77,.5); box-shadow: 0 16px 40px rgba(0,0,0,.5); transition: opacity .3s, transform .3s; pointer-events: none; }
 .achtoast.hide { opacity: 0; transform: translateY(16px); }
+/* admin console */
+.adm-sec { display: grid; gap: 10px; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.03); }
+.adm-sec h3 { margin: 0; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #ff6b7d; }
+.adm-in { font: inherit; font-size: 16px; color: var(--ink); background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; width: 140px; }
+.adm-in.wide { width: min(260px, 100%); }
+.seg.small button { padding: 6px 11px; font-size: 13px; }
+.kick { margin-left: auto; padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(255,90,110,.6); background: rgba(255,90,110,.12); color: #ffb3bd; font-size: 12px; font-weight: 700; pointer-events: auto; }
+.kick:hover { background: rgba(255,90,110,.25); }
+.adm-badge { position: fixed; left: 50%; transform: translateX(-50%); top: calc(58px + env(safe-area-inset-top, 0px)); z-index: 40; padding: 4px 12px; border-radius: 999px; background: rgba(140,10,30,.75); border: 1px solid #ff3d55; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; pointer-events: none; }
+.notice { position: fixed; top: calc(18px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 60; max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 12px; background: #2a1020; border: 1px solid #ff5a6e; color: var(--ink); font-weight: 600; box-shadow: 0 12px 30px rgba(0,0,0,.45); pointer-events: none; }
+#m-logo { cursor: default; user-select: none; }
+.adm-main { display: grid; gap: 14px; }
+.adm-main[hidden], #adm-lock[hidden] { display: none; }
 .achtoast .achico { width: 48px; height: 48px; font-size: 20px; }
 .attxt { display: grid; gap: 2px; min-width: 0; }
 .attxt b { font-size: 15px; }
@@ -231,7 +244,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 <div id="overlay">
   <section class="panel" id="scr-menu">
     <div class="head-row">
-      <h1 class="logo">Hook<span>spire</span></h1>
+      <h1 class="logo" id="m-logo">Hook<span>spire</span></h1>
       <span class="tok"><span class="coin"></span><span id="m-tokens">0</span> tokens</span>
     </div>
     <p>Aim with the mouse, hold Space to fire your grappling hook, and swing up a 780 m tower. Every checkpoint brings one new hazard.</p>
@@ -373,6 +386,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <p class="note" id="regroup-note" hidden>Regroup takes you to the highest checkpoint anyone on your team has reached.</p>
     <div class="row">
       <button class="btn" id="b-help2">Controls</button>
+      <button class="btn" id="b-pause-adm" hidden>Admin</button>
       <button class="btn" id="b-quit">Quit to menu</button>
     </div>
   </section>
@@ -571,7 +585,59 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     </ul>
     <button class="btn" id="b-help-back">Back</button>
   </section>
+
+  <section class="panel wide" id="scr-admin" hidden>
+    <div class="head-row"><h2>Admin</h2><span class="note" id="adm-where"></span></div>
+    <div id="adm-lock" class="profile">
+      <label for="adm-pw">Password</label>
+      <div class="row"><input class="adm-in wide" type="password" id="adm-pw" autocomplete="off"><button class="btn primary" id="b-adm-unlock">Unlock</button></div>
+      <p class="err" id="adm-err" hidden>That password isn't right.</p>
+    </div>
+    <div id="adm-main" class="adm-main" hidden>
+      <div class="adm-sec">
+        <h3>Give</h3>
+        <div class="row"><button class="btn primary" id="b-adm-all">Give me everything</button><span class="note" id="adm-gave"></span></div>
+        <div class="row">
+          <input class="adm-in" type="number" id="adm-tok" min="0" max="999999999" value="1000" aria-label="Tokens">
+          <button class="btn" id="b-adm-tadd">Add tokens</button><button class="btn" id="b-adm-tset">Set tokens</button>
+        </div>
+        <div class="seg small">
+          <button type="button" id="b-adm-items">All items and skins</button>
+          <button type="button" id="b-adm-skin">Admin skin (wear it)</button>
+          <button type="button" id="b-adm-abil">All abilities + whole map</button>
+          <button type="button" id="b-adm-medal">Gold on every Time Trial</button>
+          <button type="button" id="b-adm-ach">All achievements + title</button>
+        </div>
+      </div>
+      <div class="adm-sec">
+        <h3>Cheats</h3>
+        <div class="seg"><button type="button" id="b-adm-god" aria-pressed="false">God mode (G)</button><button type="button" id="b-adm-fly" aria-pressed="false">Fly / noclip (F)</button></div>
+        <p class="note">God mode: nothing can hurt you. Fly: W A S D moves you through walls, hold Shift to go faster. G and F toggle them while you play. They turn off when you reload.</p>
+      </div>
+      <div class="adm-sec">
+        <h3>Go to</h3>
+        <span class="label">Tower</span>
+        <div class="row"><input class="adm-in" type="number" id="adm-m" min="0" max="780" value="360" aria-label="Height in meters"><button class="btn" id="b-adm-tower">Go to height (m)</button><button class="btn" id="b-adm-summit">Summit</button></div>
+        <span class="label">Time Trials</span>
+        <div class="seg small" id="adm-trials"></div>
+        <span class="label">Hookworld</span>
+        <div class="seg small" id="adm-world"></div>
+        <span class="label">PvP arenas</span>
+        <div class="seg small" id="adm-arenas"></div>
+        <label class="row" style="text-transform:none;letter-spacing:0;font-size:14px;font-weight:500"><input type="checkbox" id="adm-bots"> Bring bots (uses your PvP settings)</label>
+      </div>
+      <div class="adm-sec">
+        <h3>Room</h3>
+        <div class="team" id="adm-room"></div>
+        <p class="note">Kicked players go back to the menu and can't rejoin that room for 20 seconds. Kick buttons also show in Race and PvP lobbies.</p>
+      </div>
+    </div>
+    <div class="row"><button class="btn" id="b-adm-back">Back</button><button class="link" id="b-adm-lockbtn" hidden>Lock admin on this device</button></div>
+  </section>
 </div>
+
+<div class="adm-badge" id="adm-badge" hidden></div>
+<div class="notice" id="notice" hidden role="status" aria-live="polite"></div>
 
 <div class="achtoast hide" id="achtoast" hidden role="status" aria-live="polite">
   <span class="achico" id="at-ico"></span>
@@ -737,8 +803,21 @@ for (const s of SKINS) {
   ITEMS.push(Object.assign({ cat: 'trail', id: 'k_' + s.id + '_t', n: s.n + ' Trail', k: s.trail, cols: s.cols }, base));
   ITEMS.push(Object.assign({ cat: 'aura', id: 'k_' + s.id + '_a', n: s.n + ' Aura', k: s.aura, c: s.ac || s.cols[1], cols: s.cols }, base));
 }
+// the admin skin: a black and red glitch, only from the admin console
+const ADMIN_SKIN = { id: 'admin', n: 'Admin', cols: ['#ff1f3d', '#0b0b0f', '#ff1f3d'] };
+{ const base = { r: 5, ex: true, sk: 'admin', adm: true }, cols = ADMIN_SKIN.cols;
+  ITEMS.push(Object.assign({ cat: 'hat', id: 'k_admin_h', n: 'Glitch Crown', k: 'glitch', c: '#ff1f3d' }, base));
+  ITEMS.push(Object.assign({ cat: 'color', id: 'k_admin_c', n: 'Glitch', fx: 'glitch', cols, c: '#ff1f3d', g: 12 }, base));
+  ITEMS.push(Object.assign({ cat: 'rope', id: 'k_admin_r', n: 'Glitch Rope', k: 'glitch', c: '#ff1f3d', cols }, base));
+  ITEMS.push(Object.assign({ cat: 'trail', id: 'k_admin_t', n: 'Glitch Trail', k: 'glitch', cols }, base));
+  ITEMS.push(Object.assign({ cat: 'aura', id: 'k_admin_a', n: 'Glitch Aura', k: 'glitch', c: '#ff1f3d', cols }, base)); }
 const ITEM = Object.create(null);
 for (const it of ITEMS) ITEM[it.id] = it;
+// glitch helpers: a hash of a number, and whether this instant is a glitch frame
+const ghash = (n) => { let t = Math.imul((n | 0) ^ 0x9e3779b9, 0x85ebca6b); t ^= t >>> 13; t = Math.imul(t, 0xc2b2ae35); t ^= t >>> 16; return (t >>> 0) / 4294967296; };
+const gTick = () => Math.floor(gt * 12);
+const glitching = (salt) => ghash(gTick() * 7 + (salt || 0)) < 0.3;
+const GRED = '#ff1f3d', GBLK = '#0b0b0f';
 const NOEQ = { hat: null, color: null, rope: null, trail: null, aura: null };
 function cleanEq(v) {
   const eq = { hat: null, color: null, rope: null, trail: null, aura: null };
@@ -762,7 +841,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2 };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -776,7 +855,7 @@ try {
     if (s.hTok == null) save.tokens += save.hTok; // pay out height tokens earned before tokens existed
     if (Array.isArray(s.got)) save.got = s.got.filter(n => Number.isInteger(n) && n >= 0 && n < 1e5).slice(0, 2000);
     if (s.owned && typeof s.owned === 'object') for (const id in s.owned) if (ITEM[id]) save.owned[id] = clampInt(s.owned[id], 0, 1e6);
-    if (s.skinV !== 2) for (const id of Object.keys(save.owned)) if (ITEM[id] && ITEM[id].sk) delete save.owned[id]; // skins are re-earned from Time Trials
+    if (s.skinV !== 2) for (const id of Object.keys(save.owned)) if (ITEM[id] && ITEM[id].sk && !ITEM[id].adm) delete save.owned[id]; // skins are re-earned from Time Trials
     save.eq = cleanEq(s.eq);
     for (const c of CATS) if (save.eq[c.id] && !save.owned[save.eq[c.id]]) save.eq[c.id] = null;
     save.summits = clampInt(s.summits, 0, 1e9);
@@ -787,6 +866,7 @@ try {
     if (s.pvpCfg && typeof s.pvpCfg === 'object') save.pvpCfg = s.pvpCfg;
     if (s.ach && typeof s.ach === 'object') save.ach = s.ach;
     if (s.trials && typeof s.trials === 'object') save.trials = s.trials;
+    save.adm = s.adm === true;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
 const gotSet = new Set(save.got);
@@ -937,6 +1017,7 @@ addEventListener('keydown', (e) => {
   if (state === 'play') {
     if (GAME_KEYS.has(e.code) || (mode === 'world' && e.code === 'Tab')) e.preventDefault();
     keys[e.code] = true;
+    if (save.adm && !e.repeat && (e.code === 'KeyG' || e.code === 'KeyF')) admToggle(e.code === 'KeyG' ? 'god' : 'fly');
     if (e.code === 'Escape' || e.code === 'KeyP') pause();
     else if (mode === 'world' || mode === 'pvp' || mode === 'trial') {
       if (mode === 'trial') { if (e.code === 'KeyR' && !e.repeat && trial) startTrial(trial.n); }
@@ -1032,7 +1113,7 @@ function attach(a) {
 }
 function detach() { rope = null; }
 function hurt(fx, fy) {
-  if (P.inv > 0) return;
+  if (P.inv > 0 || ADM.god) return;
   detach();
   let dx = P.x - fx, dy = P.y - fy, d = Math.hypot(dx, dy);
   if (d < 1) { dx = 0; dy = 1; d = 1; }
@@ -1062,6 +1143,7 @@ function step(dt) {
   if (rope && !grabbing) detach();
   if (!rope && grabbing && P.stun <= 0 && aim && aim.valid) attach(aim);
   if (rope && !ropeAnchor()) detach();
+  if (ADM.fly) { flyMove(dt); P.x = clamp(P.x, PR, W - PR); towerFly(); towerProgress(); return; }
 
   const near = nearChunks();
   let ax = 0;
@@ -1143,6 +1225,9 @@ function step(dt) {
     }
   }
 
+  towerProgress();
+}
+function towerProgress() {
   runHeight = heightOf(P.y);
   if (runHeight > save.best) { save.best = runHeight; saveDirty = true; }
   // 1 token for each new 10 m mark on this climb; a new climb pays again
@@ -1309,6 +1394,8 @@ const peerState = new Map();
 const CODE_CHARS = 'abcdefghjkmnpqrstuvwxyz23456789';
 function newCode() { let s = ''; for (let i = 0; i < 5; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]; return s; }
 async function joinRoom(kind, code) {
+  const wait = kickWait('hookspire-' + kind + '-' + code);
+  if (wait > 0) { const e = new Error('kicked'); e.kicked = wait; throw e; }
   const r = await roomApi.join('hookspire-' + kind + '-' + code);
   team = r; teamCode = code; teamKind = kind;
   r.onPeers(() => {}, () => { if (team === r) { team = null; peerState.clear(); } });
@@ -1376,6 +1463,7 @@ function syncPeers(dt) {
     } else s.bots.length = 0;
   }
   for (const id of [...peerState.keys()]) if (!seen.has(id)) { peerState.delete(id); if (rope && rope.kind === 'peer' && rope.ref === id) detach(); }
+  if (myPeerId) for (const s of peerState.values()) { const kk = s.raw && s.raw.kk; if (Array.isArray(kk) && kk.slice(0, 20).includes(myPeerId)) { gotKicked(); return; } }
   const k = 1 - Math.pow(1e-6, dt);
   const smooth = (o, tx, ty) => {
     if (Math.hypot(tx - o.rx, ty - o.ry) > 500) { o.rx = tx; o.ry = ty; } else { o.rx += (tx - o.rx) * k; o.ry += (ty - o.ry) * k; }
@@ -1417,6 +1505,8 @@ function sendPresence(dt) {
   }
   if (teamKind === 'world' || teamKind === 'pvp') pr.fx = (ab.active.invis > 0 ? 1 : 0) | (ab.active.shrink > 0 ? 2 : 0) | (ab.active.fly > 0 ? 4 : 0) | (ab.active.shield > 0 ? 8 : 0);
   if (teamKind === 'pvp') pvpPresence(pr);
+  const kk = admKicks();
+  if (kk.length) pr.kk = kk;
   team.presence(pr).catch(() => {});
 }
 
@@ -1516,7 +1606,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -1585,6 +1675,7 @@ function pause() {
   $('b-regroup').hidden = $('regroup-note').hidden = mode !== 'coop';
   $('pause-note').hidden = mode !== 'race';
   $('b-cp').hidden = raceCountdown() || mode === 'pvp';
+  $('b-pause-adm').hidden = !save.adm;
   $('b-cp').textContent = mode === 'world' ? 'Back to campfire' : mode === 'trial' ? 'Restart course' : 'Back to checkpoint';
   show('scr-pause');
   writeSave();
@@ -1637,12 +1728,12 @@ function renderLobby() {
   const list = $('lobby-list');
   list.textContent = '';
   const rows = [{ n: tn(save.name || 'Climber', hasTitle()) + (raceHosting ? ' (you, host)' : ' (you)'), c: COLORS[save.color] }];
-  for (const s of peerState.values()) rows.push({ n: tn(s.n, s.ti) + (s.host ? ' (host)' : ''), c: s.c });
+  for (const s of peerState.values()) rows.push({ n: tn(s.n, s.ti) + (s.host ? ' (host)' : ''), c: s.c, id: s.id });
   for (const r of rows) {
     const row = document.createElement('div'); row.className = 'team-row'; row.style.justifyContent = 'flex-start';
     const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = r.c;
     const nm = document.createElement('span'); nm.textContent = r.n;
-    row.append(dot, nm); list.append(row);
+    row.append(dot, nm); if (r.id) addKick(row, r.id); list.append(row);
   }
   $('b-lobby-start').hidden = !raceHosting;
   $('lobby-msg').textContent = raceHosting ? 'Share the code, then start when everyone is here. The race begins after a short countdown.' : 'Waiting for the host to start the race.';
@@ -1672,7 +1763,7 @@ async function coopJoin(code) {
   const err = $('coop-err'); err.hidden = true;
   $('b-create').disabled = $('b-join').disabled = true;
   try { await joinRoom('coop', code); mode = 'coop'; showStart(); }
-  catch (e) { team = null; err.textContent = 'Could not join team "' + code + '". Check the code and try again in a moment.'; err.hidden = false; }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join team "' + code + '". Check the code and try again in a moment.'); err.hidden = false; }
   finally { $('b-create').disabled = $('b-join').disabled = false; }
 }
 const readCode = (el) => el.value.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -1713,7 +1804,7 @@ const tryRaceJoin = async () => {
   const code = readCode($('race-code'));
   if (code.length < 4) { err.textContent = 'Race codes are 5 letters and numbers.'; err.hidden = false; return; }
   try { await joinRoom('race', code); raceHosting = false; mode = 'race'; lastRaceId = 0; renderLobby(); show('scr-lobby'); }
-  catch (e) { team = null; err.textContent = 'Could not join race "' + code + '". Check the code and try again.'; err.hidden = false; }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join race "' + code + '". Check the code and try again.'); err.hidden = false; }
 };
 $('b-race-join').addEventListener('click', tryRaceJoin);
 $('race-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryRaceJoin(); });
@@ -2089,6 +2180,11 @@ function bodyStyle(eq, base, xy) {
     it.cols.forEach((c, i) => g.addColorStop(i / (it.cols.length - 1), c));
     return { c: g, g: it.g || 7, gc: it.cols[1] || it.cols[0], flat: it.cols[0] };
   }
+  if (it.fx === 'glitch') {
+    // snaps between black and red, with extra flips on glitch frames
+    const red = (Math.floor(gt * 2.4) + (glitching(3) ? 1 : 0)) % 2 === 0;
+    return { c: red ? GRED : GBLK, g: red ? 10 : 14, gc: GRED, flat: GRED };
+  }
   if (it.fx === 'rainbow') { const c = `hsl(${(gt * 140 + xy * 0.3) % 360},90%,65%)`; return { c, g: 8, gc: c }; }
   if (it.fx === 'star') return { c: '#ffffff', g: 16, gc: `hsl(${(gt * 70) % 360},100%,72%)` };
   return { c: it.c, g: it.g || 0, gc: it.c };
@@ -2132,6 +2228,19 @@ function drawRope(px, py, ax, ay, L, id, alpha) {
       const cols = it.cols || [c, c];
       ctx.lineWidth = 4; ctx.shadowBlur = 8; ctx.shadowColor = cols[0];
       for (let k = 0; k < pts.length - 1; k++) { ctx.strokeStyle = blendAt(cols, k / (pts.length - 1) * 0.8 + gt * 0.35); ctx.beginPath(); ctx.moveTo(pts[k][0], pts[k][1]); ctx.lineTo(pts[k + 1][0], pts[k + 1][1]); ctx.stroke(); }
+      break;
+    }
+    case 'glitch': {
+      // red and black blocks that jump sideways and drop out
+      const tk = gTick();
+      ctx.lineCap = 'butt'; ctx.shadowBlur = 8; ctx.shadowColor = GRED;
+      for (let k = 0; k < pts.length - 1; k++) {
+        const h = ghash(tk * 31 + k);
+        if (h < 0.06) continue;
+        const off = h > 0.85 ? (ghash(tk + k * 13) - 0.5) * 12 : 0;
+        ctx.strokeStyle = (k + (h > 0.7 ? 1 : 0)) % 2 ? GBLK : GRED; ctx.lineWidth = h > 0.9 ? 6 : 4;
+        ctx.beginPath(); ctx.moveTo(pts[k][0] + off, pts[k][1] - off * 0.4); ctx.lineTo(pts[k + 1][0] + off, pts[k + 1][1] - off * 0.4); ctx.stroke();
+      }
       break;
     }
     default: ctx.strokeStyle = c; ctx.lineWidth = 3.5; poly(pts); ctx.stroke();
@@ -2180,6 +2289,21 @@ function drawAura(x, y, id) {
       const cols = it.cols || [it.c, it.c];
       ctx.lineWidth = 4; ctx.shadowBlur = 10;
       for (let k = 0; k < 16; k++) { const cc = blendAt(cols, k / 16 + t * 0.25); ctx.strokeStyle = cc; ctx.shadowColor = cc; ctx.beginPath(); ctx.arc(0, 0, 36, k * 0.3927 + t, (k + 1) * 0.3927 + t + 0.02); ctx.stroke(); }
+      break;
+    }
+    case 'glitch': {
+      // a jittering frame, with torn bars on glitch frames
+      const tk = gTick(), j = glitching(5) ? (ghash(tk) - 0.5) * 8 : 0;
+      ctx.globalAlpha = 0.85; ctx.strokeStyle = GRED; ctx.lineWidth = 2; ctx.shadowBlur = 10; ctx.shadowColor = GRED;
+      ctx.setLineDash([10, 5, 3, 5]); ctx.lineDashOffset = -t * 40;
+      ctx.strokeRect(-30 + j, -36, 60, 68); ctx.setLineDash([]);
+      ctx.shadowBlur = 0;
+      const bars = glitching(9) ? 5 : 2;
+      for (let k = 0; k < bars; k++) {
+        const h1 = ghash(tk * 17 + k), h2 = ghash(tk * 29 + k * 5);
+        ctx.globalAlpha = 0.55 + h2 * 0.35; ctx.fillStyle = k % 2 ? GBLK : GRED;
+        ctx.fillRect(-44 + h1 * 30, -34 + h2 * 64, 20 + h2 * 50, 2 + h1 * 4);
+      }
       break;
     }
     case 'void': {
@@ -2258,6 +2382,19 @@ function drawHat(id, face) {
       ctx.beginPath(); ctx.arc(0, y0, 4.5, Math.PI * 0.3, Math.PI * 1.7, false); ctx.arc(2, y0, 3.6, Math.PI * 1.6, Math.PI * 0.4, true); ctx.closePath(); ctx.fill();
       break;
     }
+    case 'glitch': {
+      // a pixel crown that tears apart on glitch frames
+      const tk = gTick(), on = glitching(7);
+      const px = [[-6, -15], [-3, -15], [0, -15], [3, -15], [-6, -18], [0, -18], [-6, -21], [0, -22], [3, -18], [3, -21]];
+      ctx.shadowBlur = 8; ctx.shadowColor = GRED;
+      px.forEach(([x0, y0], k) => {
+        const h = ghash(tk * 11 + k), dx = on && h > 0.6 ? (h - 0.8) * 10 : 0;
+        ctx.fillStyle = (k + Math.floor(gt * 2.4)) % 3 === 0 ? GBLK : GRED;
+        ctx.fillRect(x0 + dx, y0, 3, 3);
+      });
+      if (on) { ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.7; ctx.fillRect(-8 + ghash(tk) * 12, -19 + ghash(tk + 1) * 6, 6, 1.2); }
+      break;
+    }
     case 'comet': {
       ctx.shadowBlur = 10; ctx.shadowColor = '#7fe8ff'; ctx.fillStyle = c;
       ctx.beginPath(); ctx.moveTo(-6, -14); ctx.lineTo(-6, -21); ctx.lineTo(-3, -17.5); ctx.lineTo(0, -23); ctx.lineTo(3, -17.5); ctx.lineTo(6, -21); ctx.lineTo(6, -14); ctx.closePath(); ctx.fill();
@@ -2269,7 +2406,7 @@ function drawHat(id, face) {
 }
 function emitTrail(o, dt, list) {
   const it = o.eq && o.eq.trail ? ITEM[o.eq.trail] : null;
-  if (!it || it.k === 'ghost' || it.k === 'streak' || it.k === 'gstreak') return;
+  if (!it || it.k === 'ghost' || it.k === 'streak' || it.k === 'gstreak' || it.k === 'glitch') return;
   if (Math.hypot(o.vx || 0, o.vy || 0) < 150) return;
   o.trailAcc = (o.trailAcc || 0) + dt * (reduceMotion ? 12 : 55);
   while (o.trailAcc >= 1) {
@@ -2318,6 +2455,17 @@ function drawHistTrail(o) {
       ctx.beginPath(); ctx.moveTo(h[k - 2], h[k - 1]); ctx.lineTo(h[k], h[k + 1]); ctx.stroke();
     }
     ctx.restore();
+  } else if (it.k === 'glitch') {
+    // torn red and black blocks left behind, jumping around on glitch frames
+    const tk = gTick();
+    ctx.save();
+    for (let k = 0; k < h.length - 6; k += 6) {
+      const hh = ghash(tk * 5 + k), jx = hh > 0.75 ? (hh - 0.75) * 40 : 0;
+      ctx.globalAlpha = 0.12 + (k / h.length) * 0.55;
+      ctx.fillStyle = (k / 6) % 2 ? GBLK : GRED;
+      ctx.fillRect(h[k] - 7 + jx, h[k + 1] - 3 + (ghash(k + tk) - 0.5) * 8, 10 + hh * 10, 3 + hh * 3);
+    }
+    ctx.restore();
   } else if (it.k === 'ghost') {
     const bs = bodyStyle(o.eq, o.base, 0);
     ctx.save(); ctx.fillStyle = bs.flat || bs.c; ctx.strokeStyle = bs.flat || bs.c; ctx.lineWidth = 4; ctx.lineCap = 'round';
@@ -2359,9 +2507,28 @@ function drawClimber(o) {
   ctx.stroke();
   ctx.shadowBlur = 0;
   ctx.fillStyle = '#1b1631'; ctx.fillRect((o.face || 1) * 2 - 0.8, -11.5, 1.6, 2);
+  const admBody = eq.color === 'k_admin_c';
+  if (admBody) {
+    ctx.fillStyle = GRED; ctx.fillRect((o.face || 1) * 2 - 0.8, -11.5, 1.6, 2); // red eye
+    if (glitching(1)) {
+      // torn slices of the body shifted sideways
+      const tk = gTick();
+      for (let k = 0; k < 3; k++) { const h = ghash(tk * 3 + k); ctx.globalAlpha = 0.8; ctx.fillStyle = k % 2 ? GBLK : GRED; ctx.fillRect(-7 + (h - 0.5) * 10, -16 + h * 30, 14, 1.6 + h * 2); }
+      ctx.globalAlpha = (o.alpha == null ? 1 : o.alpha);
+    }
+  }
   drawHat(eq.hat, o.face || 1);
   ctx.restore();
-  if (o.label) {
+  if (admBody && (o.alpha == null || o.alpha > 0.2)) {
+    // admins show a red ADMIN tag instead of their name
+    const j = glitching(2) ? (ghash(gTick()) - 0.5) * 5 : 0;
+    ctx.font = '13px Bungee, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const w = ctx.measureText('ADMIN').width + 14;
+    ctx.fillStyle = GBLK; ctx.fillRect(o.x - w / 2 + j, o.y - 70, w, 19);
+    ctx.strokeStyle = GRED; ctx.lineWidth = 1.5; ctx.strokeRect(o.x - w / 2 + j, o.y - 70, w, 19);
+    if (j) { ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillText('ADMIN', o.x - j, o.y - 55); }
+    ctx.fillStyle = GRED; ctx.fillText('ADMIN', o.x + j, o.y - 55);
+  } else if (o.label) {
     ctx.font = '600 13px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     const w = ctx.measureText(o.label).width + 10;
     ctx.fillStyle = 'rgba(10,8,24,0.6)'; ctx.fillRect(o.x - w / 2, o.y - 66, w, 17);
@@ -2863,7 +3030,7 @@ function worldAttach(a) {
   burst(a.x, a.y, '#ffb347', 6, 120);
 }
 function worldHurt(fx, fy) {
-  if (P.inv > 0) return;
+  if (P.inv > 0 || ADM.god) return;
   if (ab.active.shield > 0) { ab.shieldHits = (ab.shieldHits || 1) - 1; if (ab.shieldHits <= 0) delete ab.active.shield; P.inv = 0.8; burst(P.x, P.y, '#ffd34d', 18, 220); return; }
   wHP--;
   if (wHP <= 0) { knockedOut(); return; }
@@ -2927,6 +3094,12 @@ function stepWorld(dt) {
   if ((mode === 'pvp' && pvp && pvpGate(dt)) || (mode === 'trial' && trial && (trial.count > 0 || trial.done))) { if (mode === 'trial') { P.vx = 0; P.vy = 0; detach(); } return; }
   if (P.stun > 0) P.stun -= dt;
   if (P.inv > 0) P.inv -= dt;
+  if (ADM.fly) {
+    flyMove(dt);
+    P.x = clamp(P.x, PR, hw.wt * TS - PR); P.y = clamp(P.y, PR, hw.ht * TS - PR);
+    if (mode === 'world') worldPickups();
+    return;
+  }
   const r = curR(), range = curRange();
   const dir = (held('KeyD', 'ArrowRight') ? 1 : 0) - (held('KeyA', 'ArrowLeft') ? 1 : 0);
   if (dir) P.face = dir;
@@ -3283,7 +3456,7 @@ $('b-map-close').addEventListener('click', resume);
 async function worldJoin(code) {
   const err = $('w-err'); err.hidden = true;
   try { await joinRoom('world', code); openWorldScreen(); }
-  catch (e) { team = null; err.textContent = 'Could not join "' + code + '". Check the code and try again.'; err.hidden = false; }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join "' + code + '". Check the code and try again.'); err.hidden = false; }
 }
 $('b-w-create').addEventListener('click', () => { if (roomApi) worldJoin(newCode()); });
 const tryWorldJoin = () => {
@@ -3695,6 +3868,7 @@ function applyFighter(f, kind, a, b, c, src, isMe) {
   if (!f.alive) return;
   if (kind === 'h') { f.hp = Math.min(P_HP, f.hp + clamp(a, 0, 2)); burst(isMe ? P.x : f.x, isMe ? P.y : f.y, '#5ee6c1', 8, 120); return; }
   if (now < f.inv || now < pvp.start) return;
+  if (isMe && ADM.god) return;
   if (kind === 'p') { f.pull = { x: a, y: b, until: now + clamp(c, 0, 4000) }; return; }
   if (isMe && ab.active.shield > 0) { ab.shieldHits = (ab.shieldHits || 1) - 1; if (ab.shieldHits <= 0) delete ab.active.shield; burst(P.x, P.y, '#ffd34d', 14, 200); return; }
   const body = isMe ? P : f;
@@ -4178,12 +4352,12 @@ function renderPvpLobby() {
   $('p-lset').textContent = pm ? pmText(pm) : 'Waiting to hear from the host…';
   const list = $('p-llist'); list.textContent = '';
   const rows = [{ n: tn(save.name || 'Climber', hasTitle()) + (pvpHost ? ' (you, host)' : ' (you)'), c: COLORS[save.color] }];
-  for (const s of peerState.values()) rows.push({ n: tn(s.n, s.ti) + (s.raw && s.raw.pm ? ' (host)' : ''), c: s.c });
+  for (const s of peerState.values()) rows.push({ n: tn(s.n, s.ti) + (s.raw && s.raw.pm ? ' (host)' : ''), c: s.c, id: s.id });
   for (const r of rows) {
     const row = document.createElement('div'); row.className = 'team-row'; row.style.justifyContent = 'flex-start';
     const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = r.c;
     const nm = document.createElement('span'); nm.textContent = r.n;
-    row.append(dot, nm); list.append(row);
+    row.append(dot, nm); if (r.id) addKick(row, r.id); list.append(row);
   }
   $('b-p-lstart').hidden = !pvpHost; $('b-p-lstart').disabled = !myPeerId;
   $('p-lmsg').textContent = (pvpHost ? 'Share the code, then start when everyone is here.' : 'Waiting for the host to start.') + ' Your ultimate: ' + ULTS[pcfg.ult].n + '.';
@@ -4232,7 +4406,7 @@ const tryPvpJoin = async () => {
   const code = readCode($('p-code'));
   if (code.length < 4) { err.textContent = 'Match codes are 5 letters and numbers.'; err.hidden = false; return; }
   try { await joinRoom('pvp', code); pvpHost = false; lastPvpId = 0; renderPvpLobby(); show('scr-pvp-lobby'); }
-  catch (e) { team = null; err.textContent = 'Could not join match "' + code + '". Check the code and try again.'; err.hidden = false; }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join match "' + code + '". Check the code and try again.'); err.hidden = false; }
 };
 $('b-p-join').addEventListener('click', tryPvpJoin);
 $('p-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryPvpJoin(); });
@@ -4525,8 +4699,9 @@ function renderSkins() {
   const s = achState(), owned = SKINS.filter(k => ownsSkin(k.id)).length;
   $('l-count').textContent = 'You own ' + owned + ' of ' + SKINS.length + ' skins. Earn them with gold medals in Time Trials. Tap one to preview it.';
   const grid = $('l-items'); grid.textContent = '';
-  for (const k of SKINS) {
-    const need = SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
+  const list = ownsSkin('admin') ? [ADMIN_SKIN, ...SKINS] : SKINS;
+  for (const k of list) {
+    const need = k === ADMIN_SKIN ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
     const eq = skinEq(k.id), wearing = own && Object.keys(eq).every(c => save.eq[c] === eq[c]);
     const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = k.cols[0];
     const t = document.createElement('b'); t.textContent = hidden && !own ? 'Secret skin' : k.n;
@@ -4735,7 +4910,7 @@ function trialTick(dt) {
   for (let ty = y0; ty <= y1 && !dead; ty++) for (let tx = x0; tx <= x1; tx++) if (hw.get(tx, ty) === TSPIKE && circleRect(P.x, P.y, r, tx * TS, ty * TS, TS, TS)) { dead = true; break; }
   for (const s of hw.saws) { const q = trialSawPos(s); if (Math.hypot(P.x - q.x, P.y - q.y) < PR + s.rad - 4) dead = true; }
   for (const l of hw.lasers) if (trialLaserOn(l) && Math.abs(P.x - l.x) < PR - 2 && P.y > l.y1 && P.y < l.y2) dead = true;
-  if (dead) { trialDie(); return; }
+  if (dead && !ADM.god) { trialDie(); return; }
   for (const cp of hw.cps) if (!trial.got.has(cp) && Math.abs(P.x - cp.x) < 90 && P.y < cp.y + 20 && P.y > cp.y - 160) {
     trial.got.add(cp); trial.cp = cp; burst(cp.x, cp.y, '#5ee6c1', 14, 180); banner('Checkpoint', fmtTime(trial.time));
   }
@@ -4869,12 +5044,226 @@ $('b-trr-retry').addEventListener('click', () => { if (trial) startTrial(trial.n
 $('b-trr-list').addEventListener('click', () => { toMenu(); openTrials(); });
 grantTrialSkins();
 
+// =================================================================
+// Admin console: hidden behind 5 clicks on the logo and a password.
+// When new modes are added, add them to "Give me everything" and "Go to" here.
+// =================================================================
+const ADM = { god: false, fly: false, kicks: new Map() };
+const ADM_HASH = 1081580569;
+function fnv(str) { let h = 0x811c9dc5; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return h; }
+const KICK_MS = 20000;
+const kickBans = Object.create(null);
+try { const kb = JSON.parse(localStorage.getItem('hookspire.kicks') || '{}'); if (kb && typeof kb === 'object') for (const k in kb) if (num(kb[k]) != null) kickBans[k] = kb[k]; } catch (e) {}
+function kickWait(room) { const u = kickBans[room] || 0, w = u - Date.now(); return w > 0 ? w : 0; }
+function joinErr(e, generic) { return e && e.kicked ? 'You were kicked from this room. You can rejoin in ' + Math.ceil(e.kicked / 1000) + ' seconds.' : generic; }
+let noticeT = 0;
+function notice(msg) { const el = $('notice'); el.textContent = msg; el.hidden = false; clearTimeout(noticeT); noticeT = setTimeout(() => { el.hidden = true; }, 4500); }
+function gotKicked() {
+  const room = 'hookspire-' + teamKind + '-' + teamCode;
+  kickBans[room] = Date.now() + KICK_MS;
+  try { localStorage.setItem('hookspire.kicks', JSON.stringify(kickBans)); } catch (e) {}
+  toMenu();
+  notice('You were kicked from the room. You can rejoin in 20 seconds.');
+}
+function admKicks() {
+  if (!save.adm || !ADM.kicks.size) return [];
+  const now = Date.now();
+  for (const [id, until] of ADM.kicks) if (until < now) ADM.kicks.delete(id);
+  return [...ADM.kicks.keys()];
+}
+function kickPeer(id) {
+  if (!save.adm || !team) return;
+  ADM.kicks.set(id, Date.now() + KICK_MS);
+  presenceClock = 0;
+  const s = peerState.get(id);
+  notice('Kicked ' + (s ? s.n : 'that player') + '.');
+  if (current === 'scr-admin') renderAdmRoom();
+}
+function addKick(row, id) {
+  if (!save.adm) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'kick'; b.textContent = ADM.kicks.has(id) ? 'Kicked' : 'Kick';
+  b.disabled = ADM.kicks.has(id);
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); kickPeer(id); });
+  b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); kickPeer(id); } });
+  row.append(b);
+}
+
+// ----- cheats -----
+function flyMove(dt) {
+  detach();
+  const sp = (keys.ShiftLeft || keys.ShiftRight) ? 1600 : 700;
+  const dx = (held('KeyD', 'ArrowRight') ? 1 : 0) - (held('KeyA', 'ArrowLeft') ? 1 : 0);
+  const dy = (held('KeyS', 'ArrowDown') ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0);
+  if (dx) P.face = dx;
+  P.vx = dx * sp; P.vy = dy * sp; P.ground = false; P.stun = 0;
+  P.x += P.vx * dt; P.y += P.vy * dt;
+}
+function towerFly() {
+  // flying still passes checkpoints and picks up tokens
+  P.y = Math.max(P.y, SUMMIT_Y - 700); P.y = Math.min(P.y, -PR - 1);
+  for (const c of nearChunks()) {
+    for (const pl of c.plats) if (P.y < pl.y - PR + 1) { if (pl.summit) reachSummit(); else if (pl.n > reachedCp) reachCheckpoint(pl); }
+    for (const tk of c.tokens) if (!gotSet.has(tk.id) && Math.hypot(P.x - tk.x, P.y - tk.y) < PR + 16) { gotSet.add(tk.id); addTokens(1, tk.x, tk.y); }
+  }
+}
+function admBadge() {
+  const on = [ADM.god && 'God mode', ADM.fly && 'Fly'].filter(Boolean);
+  const el = $('adm-badge'); el.hidden = !on.length; el.textContent = on.join(' · ');
+  $('b-adm-god').setAttribute('aria-pressed', String(ADM.god));
+  $('b-adm-fly').setAttribute('aria-pressed', String(ADM.fly));
+}
+function admToggle(k) { ADM[k] = !ADM[k]; if (k === 'fly' && !ADM.fly) { P.vx = 0; P.vy = 0; } admBadge(); }
+
+// ----- give -----
+function giveItems() { for (const it of ITEMS) save.owned[it.id] = Math.max(1, save.owned[it.id] || 0); }
+function giveAdminSkin() { const eq = skinEq('admin'); for (const id of Object.values(eq)) save.owned[id] = Math.max(1, save.owned[id] || 0); save.eq = Object.assign({}, eq); }
+function giveWorld() {
+  const h = hs();
+  h.ab = ABIL_IDS.slice();
+  h.slots = h.slots.map((v, i) => v || null);
+  for (const id of h.ab) { if (h.slots.includes(id)) continue; const e = h.slots.indexOf(null); if (e < 0) break; h.slots[e] = id; }
+  h.camps = CAMP_IDS.slice(); h.vault = true;
+  h.ex = '1'.repeat(450);
+  if (explored) explored.fill(1);
+  if (mode === 'world' && state !== 'menu') buildSlots();
+}
+function giveMedals() {
+  const ts = trState();
+  for (let n = 1; n <= 30; n++) { ts.medal[n] = 3; if (!ts.best[n]) ts.best[n] = buildCourse(n).gold; }
+  grantTrialSkins();
+}
+function giveAch() {
+  const s = achState(), now = Date.now();
+  for (const A of ACH) if (!s.u[A.id]) s.u[A.id] = now;
+  if (achRefresh) achRefresh();
+}
+function admDone(msg) { writeSave(); refreshMenu(); $('adm-gave').textContent = msg; }
+
+// ----- go to -----
+function goTower(m) {
+  m = clamp(Math.round(Number(m) || 0), 0, TOP_M);
+  if (!(mode === 'coop' && teamKind === 'coop' && state !== 'menu')) { toMenu(); mode = 'solo'; }
+  beginRun(0, false);
+  const cp = Math.min(MAX_CP, Math.floor(m / 60));
+  if (m >= TOP_M) { P.y = SUMMIT_Y - PR - 300; } else P.y = -(m * M) - PR - 1;
+  P.x = W / 2; P.vx = 0; P.vy = 0; P.inv = 1.5; P.hist.length = 0;
+  reachedCp = cp;
+  runHeight = heightOf(P.y); runTopSec = secOf(runHeight); runHTok = Math.floor(runHeight / 10); runFromBottom = false;
+  zoneName = zoneLabel(runHeight); $('h-zone').textContent = zoneName;
+  camY = P.y - viewH() * 0.58;
+  banner('Admin', m + ' m', ADM.fly ? '' : 'Press F to fly if there is nothing to grab.');
+}
+function goWorld(x, y, label) {
+  if (teamKind !== 'world') toMenu();
+  if (!(mode === 'world' && (state === 'play' || state === 'paused'))) startWorld();
+  else { state = 'play'; show(null); canvas.focus(); }
+  ensureWorld();
+  // find the nearest open spot
+  if (!circleFree(x, y, PR)) {
+    let found = false;
+    for (let rr = 1; rr <= 14 && !found; rr++) for (let k = 0; k < 16; k++) {
+      const a = -Math.PI / 2 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 8, nx = x + Math.cos(a) * rr * TS / 2, ny = y + Math.sin(a) * rr * TS / 2;
+      if (circleFree(nx, ny, PR)) { x = nx; y = ny; found = true; break; }
+    }
+  }
+  detach(); P.x = x; P.y = y; P.vx = 0; P.vy = 0; P.inv = 1.5; P.hist.length = 0;
+  const sc = wScale();
+  wcamX = clamp(P.x - cw / sc / 2, 0, WPX - cw / sc); wcamY = clamp(P.y - ch / sc * 0.55, 0, HPX - ch / sc);
+  banner('Admin', label);
+}
+function goArena(id) {
+  toMenu();
+  const bots = $('adm-bots').checked;
+  startPvp({ id: Date.now() % 1e9, st: Date.now() + 1500, map: id, lv: pcfg.lives, teams: bots && pcfg.teams, nb: bots ? pcfg.nb : 0, df: pcfg.diff, tm: [] }, false);
+}
+
+// ----- screen -----
+let admReturn = 'scr-menu', admRoomT = 0;
+function openAdmin(from) {
+  admReturn = from || 'scr-menu';
+  const unlocked = save.adm;
+  $('adm-lock').hidden = unlocked; $('adm-main').hidden = !unlocked; $('b-adm-lockbtn').hidden = !unlocked;
+  $('adm-err').hidden = true; $('adm-pw').value = ''; $('adm-gave').textContent = '';
+  $('adm-where').textContent = unlocked ? (team ? 'In an online room' : 'Offline') : '';
+  if (unlocked) { buildAdmGoTo(); renderAdmRoom(); admBadge(); }
+  show('scr-admin');
+  if (!unlocked) setTimeout(() => $('adm-pw').focus(), 30);
+}
+function admUnlock() {
+  if (fnv($('adm-pw').value) === ADM_HASH) { save.adm = true; writeSave(); openAdmin(admReturn); }
+  else { $('adm-err').hidden = false; $('adm-pw').select(); }
+}
+function admBtn(parent, label, fn) {
+  const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+  b.addEventListener('click', fn); parent.append(b); return b;
+}
+function buildAdmGoTo() {
+  const tr = $('adm-trials'); tr.textContent = '';
+  for (let n = 1; n <= 30; n++) admBtn(tr, String(n), () => { toMenu(); startTrial(n); }).title = TRIAL_NAMES[n - 1];
+  const wd = $('adm-world'); wd.textContent = '';
+  const prev = hw; ensureWorld(); const world = hw; hw = prev;
+  for (const c of world.camps) { const meta = CAMPS.find(q => q.id === c.id); admBtn(wd, '🔥 ' + (meta ? meta.n : c.id), () => goWorld(c.x + 30, c.y - PR - 2, meta ? meta.n : 'Campfire')); }
+  for (const sh of world.shrines) admBtn(wd, '✦ ' + ABIL[sh.id].n, () => goWorld(sh.x, sh.y, ABIL[sh.id].n + ' shrine'));
+  if (world.vault) admBtn(wd, '▣ The Vault', () => goWorld(world.vault.x, world.vault.y - 60, 'The Vault'));
+  if (world.treasure) admBtn(wd, '◆ Treasure', () => goWorld(world.treasure.x, world.treasure.y - 60, 'Treasure'));
+  let x0 = 0;
+  for (const b of BIOMES) { const tx = Math.floor((x0 + b.x1) / 2); x0 = b.x1; admBtn(wd, b.n, () => goWorld(tx * TS + TS / 2, (world.surf[tx] - 1) * TS, b.n)); }
+  const ar = $('adm-arenas'); ar.textContent = '';
+  for (const a of ARENAS) admBtn(ar, a.n, () => goArena(a.id));
+}
+function renderAdmRoom() {
+  const el = $('adm-room'); el.textContent = '';
+  if (!team) { const p = document.createElement('p'); p.className = 'note'; p.textContent = 'You are not in an online room right now.'; el.append(p); return; }
+  const head = document.createElement('p'); head.className = 'note'; head.textContent = ({ coop: 'Co-op team', race: 'Race', world: 'Hookworld team', pvp: 'PvP match' }[teamKind] || 'Room') + ' ' + teamCode + ' · ' + peerState.size + (peerState.size === 1 ? ' other player' : ' other players');
+  el.append(head);
+  for (const s of peerState.values()) {
+    const row = document.createElement('div'); row.className = 'team-row'; row.style.justifyContent = 'flex-start';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = s.c;
+    const nm = document.createElement('span'); nm.textContent = s.n;
+    row.append(dot, nm); addKick(row, s.id); el.append(row);
+  }
+}
+function admTick(dt) {
+  if (current !== 'scr-admin' || !save.adm) return;
+  admRoomT -= dt;
+  if (admRoomT <= 0) { admRoomT = 0.5; renderAdmRoom(); }
+}
+let logoN = 0, logoT = 0;
+$('m-logo').addEventListener('click', () => {
+  const now = Date.now();
+  logoN = now - logoT < 900 ? logoN + 1 : 1; logoT = now;
+  if (logoN >= 5) { logoN = 0; openAdmin('scr-menu'); }
+});
+$('b-adm-unlock').addEventListener('click', admUnlock);
+$('adm-pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') admUnlock(); });
+$('b-adm-back').addEventListener('click', () => { if (admReturn === 'scr-pause' && state === 'paused') show('scr-pause'); else if (state === 'play') { show(null); canvas.focus(); } else { refreshMenu(); show('scr-menu'); } });
+$('b-adm-lockbtn').addEventListener('click', () => { save.adm = false; ADM.god = ADM.fly = false; ADM.kicks.clear(); admBadge(); writeSave(); refreshMenu(); show('scr-menu'); });
+$('b-pause-adm').addEventListener('click', () => openAdmin('scr-pause'));
+$('b-adm-all').addEventListener('click', () => {
+  save.tokens = Math.max(save.tokens, 999999);
+  giveItems(); giveAdminSkin(); giveWorld(); giveMedals(); giveAch();
+  admDone('Done: tokens, every item and skin, the admin skin, all abilities and the map, all gold medals, all achievements and the title.');
+});
+const tokIn = () => clampInt($('adm-tok').value, 0, 999999999);
+$('b-adm-tadd').addEventListener('click', () => { save.tokens = Math.min(999999999, save.tokens + tokIn()); admDone('Tokens: ' + save.tokens); });
+$('b-adm-tset').addEventListener('click', () => { save.tokens = tokIn(); admDone('Tokens: ' + save.tokens); });
+$('b-adm-items').addEventListener('click', () => { giveItems(); admDone('You own every item and skin.'); });
+$('b-adm-skin').addEventListener('click', () => { giveAdminSkin(); admDone('You are wearing the admin skin.'); });
+$('b-adm-abil').addEventListener('click', () => { giveWorld(); admDone('All abilities, campfires, the Vault and the whole map.'); });
+$('b-adm-medal').addEventListener('click', () => { giveMedals(); admDone('Gold on all 30 Time Trials, and all 15 skins.'); });
+$('b-adm-ach').addEventListener('click', () => { giveAch(); admDone('Every achievement, and the title ' + TITLE + '.'); });
+$('b-adm-god').addEventListener('click', () => admToggle('god'));
+$('b-adm-fly').addEventListener('click', () => admToggle('fly'));
+$('b-adm-tower').addEventListener('click', () => goTower($('adm-m').value));
+$('b-adm-summit').addEventListener('click', () => goTower(TOP_M));
+
 // ---------- loop ----------
 let last = performance.now(), acc = 0;
 function frame(ts) {
   const dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
   st = sharedTime();
   achTick(dt);
+  admTick(dt);
   syncPeers(dt);
   if ((mode === 'world' || mode === 'pvp' || mode === 'trial') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
   const camX = (W - viewW()) / 2;
