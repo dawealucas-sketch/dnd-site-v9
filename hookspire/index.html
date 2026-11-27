@@ -99,6 +99,27 @@ button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
 .helpgrid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 14px; align-items: baseline; }
 .helpgrid kbd, .helpgrid .k { justify-self: end; font-family: var(--ui); font-weight: 700; font-size: 13px; padding: 3px 9px; border-radius: 7px; border: 1px solid var(--line); background: rgba(255,255,255,.07); white-space: nowrap; }
 .helptips { margin: 0; padding-left: 18px; color: var(--dim); display: grid; gap: 4px; line-height: 1.45; }
+/* story mode */
+.snodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.snode { text-align: left; display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04); position: relative; }
+.snode:not(:disabled):hover { border-color: var(--mint); background: rgba(94,230,193,.08); }
+.snode.boss { border-color: rgba(199,155,255,.5); background: rgba(199,155,255,.07); }
+.snode.locked { opacity: .5; }
+.snode b { font-size: 15px; }
+.snode small { color: var(--dim); font-size: 12px; }
+.sstars { color: var(--gold); letter-spacing: .12em; font-size: 15px; }
+.srow { display: flex; gap: 10px; align-items: center; color: var(--dim); font-size: 15px; }
+.srow.on { color: var(--ink); }
+.sstar { font-size: 24px; color: var(--gold); width: 28px; text-align: center; }
+.chlock { padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--line); color: var(--dim); font-size: 14px; }
+#dlg { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); width: min(720px, calc(100% - 32px)); z-index: 55; display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; align-items: center; padding: 14px 16px; border-radius: 16px; background: rgba(16,12,34,.95); border: 1px solid var(--line); box-shadow: 0 18px 40px rgba(0,0,0,.5); cursor: pointer; }
+#dlg canvas { width: 84px; height: 84px; border-radius: 12px; border: 1px solid var(--line); }
+#dlg b { font-size: 15px; letter-spacing: .02em; }
+#dlg p { color: var(--ink); font-size: 16px; line-height: 1.45; margin: 4px 0 0; max-width: none; }
+#dlg .more { justify-self: end; grid-column: 2; color: var(--dim); font-size: 12px; font-weight: 700; }
+#radio { position: fixed; left: calc(18px + env(safe-area-inset-left, 0px)); top: calc(130px + env(safe-area-inset-top, 0px)); width: min(380px, calc(100% - 36px)); z-index: 35; display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; background: rgba(16,12,34,.85); border: 1px solid var(--line); pointer-events: none; }
+#radio canvas { width: 52px; height: 52px; border-radius: 9px; }
+#radio b { font-size: 13px; } #radio p { margin: 2px 0 0; font-size: 14px; color: var(--ink); line-height: 1.35; }
 /* touch controls */
 body.touch { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
 body.touch #game { touch-action: none; }
@@ -333,7 +354,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <div class="msec"><span class="label">Explore</span>
       <div class="modes two">
         <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
-        <button class="mode soon" id="m-story" disabled aria-disabled="true"><b>Story Mode</b><small>A new adventure is on the way.</small><span class="badge">Coming soon</span></button>
+        <button class="mode" id="m-story"><b>Story Mode</b><small>The Fallen Spire. Chapter 1: The Shattered Meadow. Play solo or with a friend.</small></button>
       </div>
     </div>
     <div class="msec"><span class="label">Battle</span>
@@ -633,6 +654,39 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <button class="link" id="b-p-back">Back to menu</button>
   </section>
 
+  <section class="panel wide" id="scr-story" hidden>
+    <div class="head-row"><h2>The Fallen Spire</h2><span class="tok">★ <span id="st-total">0</span></span></div>
+    <p>A storm shattered the great Spire and scattered its pieces. You're the last climber with a working hook. Win stars by finishing a level, beating its par time and finding its hidden Spire Shard.</p>
+    <span class="label">Chapter 1 · The Shattered Meadow</span>
+    <div class="snodes" id="st-levels"></div>
+    <div class="chlock"><b>Chapter 2</b> · Coming soon. <span id="st-ch2"></span></div>
+    <div class="adm-sec">
+      <h3 style="color:var(--mint)">Co-op</h3>
+      <p class="note" id="st-coop-msg"></p>
+      <div id="st-coop-box" hidden style="display:grid;gap:8px">
+        <div class="code-box"><div><div class="label">Co-op code</div><div class="code" id="st-code"></div></div><button class="btn" id="b-st-copy">Copy code</button></div>
+        <div class="team" id="st-team"></div>
+      </div>
+      <div class="row"><button class="btn" id="b-st-host">Host co-op</button></div>
+      <div class="join" id="st-join"><label for="st-code-in">Join a friend's story</label><input type="text" id="st-code-in" maxlength="6" placeholder="Co-op code" autocomplete="off" spellcheck="false"><button class="btn" id="b-st-join">Join</button></div>
+      <p class="err" id="st-err" hidden></p>
+    </div>
+    <p class="note">Tokens: 5 for each new star and 10 for each first clear. Finishing Chapter 1 gives 50 more and the Stormbreaker skin.</p>
+    <button class="link" id="b-st-back">Back to menu</button>
+  </section>
+
+  <section class="panel" id="scr-story-res" hidden>
+    <h2 id="sr-title"></h2>
+    <div id="sr-stars" style="display:grid;gap:6px"></div>
+    <p id="sr-sub"></p>
+    <p class="note" id="sr-msg"></p>
+    <div class="row">
+      <button class="btn primary" id="b-sr-next">Next level</button>
+      <button class="btn" id="b-sr-retry">Play again</button>
+      <button class="btn" id="b-sr-map">Chapter map</button>
+    </div>
+  </section>
+
   <section class="panel wide" id="scr-tag" hidden>
     <h2>Hook Tag</h2>
     <p>Whoever is <b>IT</b> tags people by touching them or hitting them with a tag shot (<kbd>E</kbd>). Tagged players freeze for a moment. Your Hookworld abilities work on keys 1–5. No ultimates.</p>
@@ -829,6 +883,8 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <div class="seg small" id="adm-ctf"></div>
         <span class="label">Kingfall</span>
         <div class="seg small" id="adm-chess"></div>
+        <span class="label">Story Mode</span>
+        <div class="seg small" id="adm-story"></div>
         <label class="row" style="text-transform:none;letter-spacing:0;font-size:14px;font-weight:500"><input type="checkbox" id="adm-bots"> Bring bots (uses your PvP, Hook Tag or Capture the Flag settings)</label>
       </div>
       <div class="adm-sec">
@@ -856,6 +912,8 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   <div class="tpad" id="t-pad"></div>
   <div class="tturn" id="t-turn" hidden>Turn your phone sideways to play</div>
 </div>
+<div id="dlg" hidden role="dialog" aria-live="polite"><canvas id="dlg-face" width="168" height="168"></canvas><div><b id="dlg-name"></b><p id="dlg-text"></p></div><span class="more" id="dlg-more"></span></div>
+<div id="radio" hidden role="status" aria-live="polite"><canvas id="radio-face" width="104" height="104"></canvas><div><b id="radio-name"></b><p id="radio-text"></p></div></div>
 <div class="adm-badge" id="adm-badge" hidden></div>
 <button class="mutepill" id="mute-pill" type="button" aria-label="Mute sound" title="Mute (N)">🔊</button>
 <div class="notice" id="notice" hidden role="status" aria-live="polite"></div>
@@ -1006,6 +1064,7 @@ const PALETTES = [
   { id: 'ninja', n: 'Ninja', cols: ['#e0484f', '#3a3550', '#111018'], hat: 'band', hc: '#e0484f', rope: 'plain', trail: 'dot', aura: 'ring', ac: '#e0484f' },
   { id: 'astronaut', n: 'Astronaut', cols: ['#ffffff', '#9aa3b5', '#ff8a3d'], hat: 'bubble', hc: '#ff8a3d', rope: 'chain', trail: 'spark', aura: 'orbit', ac: '#ff8a3d' },
   { id: 'samurai', n: 'Samurai', cols: ['#ffd34d', '#8a1f2b', '#2a2540'], hat: 'horns', hc: '#ffd34d', rope: 'plain', trail: 'leaf', aura: 'ring' },
+  { id: 'stormbreaker', n: 'Stormbreaker', cols: ['#ffffff', '#5ee6c1', '#2f6f8f'], hat: 'halo', hc: '#5ee6c1', rope: 'bolt', rc: '#bff3ff', trail: 'spark', aura: 'gring', glow: 12, story: true },
   { id: 'celestial', n: 'Celestial', cols: ['#ffffff', '#ffd34d', '#c79bff', '#5aa8ff'], hat: 'halo', hc: '#ffd34d', rope: 'grad', trail: 'galaxy', aura: 'rainbowring', glow: 16 },
 ];
 // the 15 skins Time Trials unlock, one for every 2 gold medals, in this order
@@ -1015,7 +1074,7 @@ for (const s of PALETTES) PAL_BY[s.id] = s;
 const SKINS = SKIN_ORDER.map(id => PAL_BY[id]);
 const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon' };
 const SKIN_BY = Object.create(null);
-for (const s of SKINS) {
+for (const s of [...SKINS, PAL_BY.stormbreaker]) {
   SKIN_BY[s.id] = s;
   const base = { r: 5, ex: true, sk: s.id };
   ITEMS.push(Object.assign({ cat: 'hat', id: 'k_' + s.id + '_h', n: s.n + ' ' + HAT_NAMES[s.hat], k: s.hat, c: s.hc || s.cols[1], c2: s.cols[0] }, base));
@@ -1062,7 +1121,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0 };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0, story: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -1094,6 +1153,7 @@ try {
     if (s.set && typeof s.set === 'object') save.set = s.set;
     if (s.seen && typeof s.seen === 'object') save.seen = s.seen;
     save.kfSide = s.kfSide === 1 ? 1 : 0;
+    if (s.story && typeof s.story === 'object') save.story = s.story;
     if (typeof s.last === 'string' && /^m-[a-z]+$/.test(s.last)) save.last = s.last;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
@@ -1374,6 +1434,7 @@ addEventListener('keydown', (e0) => {
   if (typing(e0)) return;
   if (rebinding) return; // the settings screen is waiting for a new key
   const e = { code: vcode(e0.code), repeat: e0.repeat, target: e0.target, key: e0.key, preventDefault: () => e0.preventDefault() };
+  if (sDlg.lines) { if (!e.repeat && (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE' || e0.code === 'Enter')) { e.preventDefault(); dlgNext(); } return; } // story dialogue
   if (e.code === 'KeyN' && !e.repeat) { toggleMute(); return; }
   if (state === 'play' && e.code === 'KeyH' && !e.repeat) { openModeHelp(); return; }
   if (state === 'paused' && current === 'scr-mhelp' && (e.code === 'KeyH' || e.code === 'Escape') && !e.repeat) { $('b-mh-close').click(); return; }
@@ -1384,8 +1445,9 @@ addEventListener('keydown', (e0) => {
     if (save.adm && !e.repeat && (e.code === 'KeyG' || e.code === 'KeyF')) admToggle(e.code === 'KeyG' ? 'god' : 'fly');
     if (e.code === 'Escape' && (kfMenuOpen() || (pvp && pvp.chess && pvp.chess.picking))) { kfCloseMenu(); pvp.chess.picking = null; }
     else if (e.code === 'Escape' || e.code === 'KeyP') pause();
-    else if (mode === 'world' || mode === 'pvp' || mode === 'trial') {
+    else if (mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story') {
       if (mode === 'pvp' && pvp && pvp.chess) chessKey(e);
+      else if (mode === 'story') { if (e.code === 'KeyR' && !e.repeat && story && !story.done) storyRespawn(); else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1); else if (e.code === 'Tab') openLoadout(); }
       else if (mode === 'trial') { if (e.code === 'KeyR' && !e.repeat && trial) startTrial(trial.n); }
       else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
       else if (e.code === 'Tab') openLoadout();
@@ -1448,7 +1510,7 @@ function rayCircle(ox, oy, ux, uy, cx, cy, r) {
 // ---------- rope wrapping: the rope bends around corners it swings into ----------
 function ropeCorners(x0, y0, x1, y1) {
   const out = [];
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial') && hw) {
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story') && hw) {
     const vx0 = Math.floor(x0 / TS), vx1 = Math.ceil(x1 / TS), vy0 = Math.floor(y0 / TS), vy1 = Math.ceil(y1 / TS);
     if ((vx1 - vx0 + 1) * (vy1 - vy0 + 1) > 1600) return out;
     for (let vy = vy0; vy <= vy1; vy++) for (let vx = vx0; vx <= vx1; vx++) {
@@ -1469,7 +1531,7 @@ function ropeBlocked(ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
   if (d < 24) return false;
   const sx = ax + dx / d * 8, sy = ay + dy / d * 8; // skip the bit of rope right at the hook or corner
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial') && hw) return !wLos(sx, sy, bx, by);
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story') && hw) return !wLos(sx, sy, bx, by);
   return lineBlocked(sx, sy, bx, by, chunksBetween(Math.min(ay, by) - 60, Math.max(ay, by) + 60));
 }
 const triSide = (p, a, b) => (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
@@ -1751,7 +1813,7 @@ function burst(x, y, color, n, spd) {
 }
 let bannerTimer = 0;
 function banner(small, big, detail) {
-  const el = $(mode === 'world' || mode === 'pvp' || mode === 'trial' ? 'wbanner' : 'banner'); // the arena modes use the world HUD
+  const el = $(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' ? 'wbanner' : 'banner'); // the arena modes use the world HUD
   el.textContent = '';
   const s = document.createElement('small'); s.textContent = small;
   el.append(s, document.createTextNode(big));
@@ -1900,7 +1962,7 @@ function syncPeers(dt) {
     const age = Math.min(0.15, Math.max(0, (now - pe.updatedAt) / 1000));
     const vx = clamp(num(pr.vx) || 0, -MAXV, MAXV), vy = clamp(num(pr.vy) || 0, -MAXV, MAXV);
     let s = peerState.get(pe.peer);
-    const wb = teamKind === 'world' || teamKind === 'pvp', WB = hw ? hw.wt * TS : WPX, HB = hw ? hw.ht * TS : HPX;
+    const wb = teamKind === 'world' || teamKind === 'pvp' || teamKind === 'story', WB = hw ? hw.wt * TS : WPX, HB = hw ? hw.ht * TS : HPX;
     const tx = clamp(x + vx * age, 0, wb ? WB : W), ty = clamp(y + vy * age, wb ? 0 : SUMMIT_Y - 800, wb ? HB : 10);
     if (!s) { s = { id: pe.peer, rx: tx, ry: ty, hist: [], bots: [], trailAcc: 0 }; peerState.set(pe.peer, s); }
     s.tx = tx; s.ty = ty; s.vx = vx; s.vy = vy;
@@ -1977,7 +2039,8 @@ function sendPresence(dt) {
       return [Math.round(b.x), Math.round(b.y), q ? Math.round(q.x) : -1, q ? Math.round(q.y) : 0, Math.round(b.mx * 10), b.fin];
     }) : null;
   }
-  if (teamKind === 'world' || teamKind === 'pvp') pr.fx = (ab.active.invis > 0 ? 1 : 0) | (ab.active.shrink > 0 ? 2 : 0) | (ab.active.fly > 0 ? 4 : 0) | (ab.active.shield > 0 ? 8 : 0);
+  if (teamKind === 'story') storyPresence(pr);
+  if (teamKind === 'world' || teamKind === 'pvp' || teamKind === 'story') pr.fx = (ab.active.invis > 0 ? 1 : 0) | (ab.active.shrink > 0 ? 2 : 0) | (ab.active.fly > 0 ? 4 : 0) | (ab.active.shield > 0 ? 8 : 0);
   if (teamKind === 'pvp') pvpPresence(pr);
   const kk = admKicks();
   if (kk.length) pr.kk = kk;
@@ -2081,7 +2144,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-chess', 'scr-settings', 'scr-mhelp'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -2166,6 +2229,8 @@ function toMenu() {
   $('hud').hidden = true; $('h-race').hidden = true; $('whud').hidden = true;
   ab.active = {}; ab.cd = {};
   kfCloseMenu();
+  if (typeof sDlg !== 'undefined') { sDlg.lines = null; $('dlg').hidden = true; $('radio').hidden = true; }
+  story = null; storyHost = false;
   pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true; $('k-hint').hidden = true; $('k-roster').hidden = true;
   trial = null; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false;
   toCheckpoint(0);
@@ -2297,7 +2362,7 @@ $('b-sum-again').addEventListener('click', () => beginRun(0, true));
 $('b-sum-menu').addEventListener('click', toMenu);
 $('b-sum-gacha').addEventListener('click', () => { toMenu(); openGacha(); });
 $('b-resume').addEventListener('click', resume);
-$('b-cp').addEventListener('click', () => { if (mode === 'trial' && trial) { startTrial(trial.n); return; } if (mode === 'world') toCampfire(); else toCheckpoint(reachedCp); resume(); });
+$('b-cp').addEventListener('click', () => { if (mode === 'trial' && trial) { startTrial(trial.n); return; } if (mode === 'story' && story) { storyRespawn(); resume(); return; } if (mode === 'world') toCampfire(); else toCheckpoint(reachedCp); resume(); });
 $('b-regroup').addEventListener('click', () => { let best = reachedCp; for (const s of peerState.values()) best = Math.max(best, s.cp); toCheckpoint(best); resume(); });
 $('b-quit').addEventListener('click', toMenu);
 $('b-help').addEventListener('click', () => { helpReturn = 'scr-menu'; show('scr-help'); });
@@ -3571,6 +3636,7 @@ function tickAbilities(dt) {
 function stepWorld(dt) {
   gt += dt;
   tickAbilities(dt);
+  if (mode === 'story' && story && (story.count > 0 || story.done || sDlg.lines)) { P.vx = 0; P.vy = 0; detach(); return; }
   if ((mode === 'pvp' && pvp && pvpGate(dt)) || (mode === 'trial' && trial && (trial.count > 0 || trial.done))) { if (mode === 'trial') { P.vx = 0; P.vy = 0; detach(); } return; }
   if (P.stun > 0) P.stun -= dt;
   if (P.inv > 0) P.inv -= dt;
@@ -3915,10 +3981,12 @@ function updateWorldHud(dt) {
   updateSlots();
   if (mode === 'pvp' && pvp) pvpHudFast();
   if (mode === 'trial' && trial) trialHudFast();
+  if (mode === 'story' && story) storyHudFast();
   wHudT -= dt;
   if (wHudT > 0) return;
   wHudT = 0.4;
-  if (mode === 'trial' && trial) {
+  if (mode === 'story' && story) storyHudSlow();
+  else if (mode === 'trial' && trial) {
     $('w-found').textContent = 'Falls ' + trial.deaths + (trState().best[trial.n] ? ' · Best ' + fmtTime(trState().best[trial.n]) : '');
     $('w-team').textContent = '';
   } else if (mode === 'pvp' && pvp && pvp.tag) {
@@ -4105,8 +4173,8 @@ function renderWorld(dt) {
   ctx.fillStyle = '#ff5a6e';
   for (const s of hw.shots) if (inView(s.x, s.y)) { ctx.beginPath(); ctx.arc(s.x, s.y, 5, 0, 6.283); ctx.fill(); }
   // teammates
-  if (teamKind === 'world' || teamKind === 'pvp') for (const s of peerState.values()) {
-    if (!s.playing || (mode === 'pvp' && !pvpPeerVisible(s))) continue;
+  if (teamKind === 'world' || teamKind === 'pvp' || teamKind === 'story') for (const s of peerState.values()) {
+    if (!s.playing || (mode === 'pvp' && !pvpPeerVisible(s)) || (mode === 'story' && (!story || !s.raw || s.raw.ss !== story.sid))) continue;
     const fx = s.fx || 0;
     const o = { x: s.rx, y: s.ry, vx: s.vx, vy: s.vy, base: s.c, eq: s.eq, anchor: s.a ? { x: s.a[0], y: s.a[1] } : null, label: s.n, face: (s.vx || 0) < 0 ? -1 : 1, hist: s.hist, trailAcc: s.trailAcc, alpha: fx & 1 ? (mode === 'pvp' ? 0.12 : 0.3) : 1, sc: fx & 2 ? 0.55 : 1, title: s.ti ? TITLE : '' };
     emitTrail(o, dt, particles); s.trailAcc = o.trailAcc;
@@ -4142,6 +4210,7 @@ function renderWorld(dt) {
   }
   if (mode === 'pvp' && pvp) pvpRender(dt);
   if (mode === 'trial' && trial) trialRender(dt);
+  if (mode === 'story' && story) storyRender(dt);
   if (mode !== 'pvp' || (pvp && pvp.me.alive)) {
     if (A) drawRopeW(P.x, P.y, A, rope.w, rope.L, save.eq.rope);
     drawClimber(me);
@@ -4160,6 +4229,7 @@ function worldFrame(dt) {
     while (acc >= STEP) { stepWorld(STEP); acc -= STEP; }
     if (mode === 'world') { updateEnemies(dt); exploreTick(dt); }
     else if (mode === 'trial' && trial) trialTick(dt);
+    else if (mode === 'story' && story) storyTick(dt);
   } else { acc = 0; wAim = null; gt += dt; }
   if (mode === 'pvp' && pvp && (state === 'play' || (pvp.online && state !== 'menu'))) pvpTick(dt);
   sendPresence(dt);
@@ -4321,9 +4391,16 @@ function pvpPeerVisible(s) { if (pvp && pvp.chess) return false; const v = pvp &
 function hookTargets() {
   if (mode === 'pvp' && pvp) return pvpViews().filter(v => !v.me && v.alive).map(v => ({ id: v.id, x: v.x, y: v.y }));
   if (teamKind === 'world') return [...peerState.values()].filter(s => s.playing).map(s => ({ id: s.id, x: s.rx, y: s.ry }));
+  if (mode === 'story' && story) {
+    const out = [];
+    if (story.L.goal === 'boss') for (let i = 0; i < 3; i++) if (story.cores[i]) { const q = storyCorePos(i); out.push({ id: 'core' + i, x: q.x, y: q.y }); }
+    if (teamKind === 'story') for (const s of peerState.values()) if (s.playing && s.raw && s.raw.ss === story.sid) out.push({ id: s.id, x: s.rx, y: s.ry });
+    return out;
+  }
   return [];
 }
 function targetPos(id) {
+  if (mode === 'story' && story && typeof id === 'string' && /^core[0-2]$/.test(id)) { const i = +id[4]; return story.cores[i] ? storyCorePos(i) : null; }
   if (mode === 'pvp' && pvp) { const v = pvpViews().find(w => w.id === id); return v && v.alive ? { x: v.x, y: v.y } : null; }
   const s = peerState.get(id);
   return s ? { x: s.rx, y: s.ry } : null;
@@ -6453,19 +6530,21 @@ function diffTarget() {
 function canRestart() {
   if (mode === 'pvp') return !!(pvp && !pvp.online);
   if (mode === 'race') return !!(race && !race.online);
+  if (mode === 'story') return !!story && !(teamKind === 'story' && !storyHost);
   return mode === 'trial' || mode === 'solo';
 }
 function restartCurrent() {
   writeSave();
   if (mode === 'pvp' && pvp && !pvp.online) { const C = pvp; kfCloseMenu(); if (C.chess) startChessOffline(); else if (C.ctf) startCtfOffline(); else if (C.tag) startTagOffline(); else startPvpOffline(); }
   else if (mode === 'trial' && trial) startTrial(trial.n);
+  else if (mode === 'story' && story) { sDlg.lines = null; $('dlg').hidden = true; storyPick(story.id); }
   else if (mode === 'race' && race && !race.online) startRace(offlineRc(), false);
   else if (mode === 'solo') beginRun(0, true);
 }
 function renderPauseExtras() {
   const can = canRestart();
   $('b-restart').hidden = !can;
-  $('b-restart').textContent = mode === 'solo' ? 'Restart from the bottom' : mode === 'trial' ? 'Restart course' : 'Restart match';
+  $('b-restart').textContent = mode === 'solo' ? 'Restart from the bottom' : mode === 'trial' ? 'Restart course' : mode === 'story' ? 'Restart level' : 'Restart match';
   const dt = can ? diffTarget() : null, el = $('pause-diff');
   el.textContent = ''; el.hidden = !dt; $('pause-diff-note').hidden = !dt;
   if (dt) for (const k of Object.keys(PDIFF)) {
@@ -6546,7 +6625,7 @@ refreshKeyHints();
 // =================================================================
 function helpKey() {
   if (mode === 'pvp' && pvp) return pvp.chess ? 'chess' : pvp.ctf ? 'ctf' : pvp.tag ? 'tag' : 'pvp';
-  if (mode === 'world' || mode === 'trial' || mode === 'race' || mode === 'coop') return mode;
+  if (mode === 'world' || mode === 'trial' || mode === 'race' || mode === 'coop' || mode === 'story') return mode;
   return 'climb';
 }
 function modeHelp(k) {
@@ -6568,6 +6647,9 @@ function modeHelp(k) {
     world: { t: 'Hookworld', g: 'Explore an open world. Find the 12 hidden abilities, open chests, light campfires and uncover the map.',
       k: [...move, ...abil, [K('map'), 'Map'], [K('reset'), 'Back to your campfire'], ['Esc', 'Pause']],
       tips: ['Drones, turrets and watchtowers shoot at you. Five hits sends you back to the last campfire you lit.', 'Abilities are hidden in hard-to-reach places. Some need other abilities to get to.', 'Find all 12 and the Vault opens.'] },
+    story: { t: 'Story Mode' + (story ? ' · ' + story.L.n : ''), g: story ? storyGoalText() : 'Follow the story through each level.',
+      k: [...move, ...abil, [K('reset'), 'Back to your last checkpoint flag'], ['Esc', 'Pause']],
+      tips: ['Stars: finish the level, beat its par time, and find its hidden Spire Shard.', 'Space, Enter or a tap moves the story along when someone is talking.', 'In co-op, anything either of you collects counts for both.'] },
     trial: { t: 'Time Trials', g: 'Reach the finish flag as fast as you can. Bronze, silver and gold times show at the start.',
       k: [...move, [K('reset'), 'Restart the course'], ['Esc', 'Pause']],
       tips: ['Spikes, saws and lasers send you back to the last checkpoint flag.', 'Medals give 2, 5 and 10 tokens. Every 2 gold medals unlock a skin.', 'Your best run shows as a ghost.'] },
@@ -6672,7 +6754,7 @@ function touchSeen() { if (!touchUsed) { touchUsed = true; touchRefresh(); } }
 addEventListener('touchstart', touchSeen, { passive: true, capture: true });
 function snapAim() {
   // touch aim assist: snap to the nearest ring within a thumb's width of your finger
-  const R2 = 70, tower = !(mode === 'world' || mode === 'pvp' || mode === 'trial') || !hw;
+  const R2 = 70, tower = !(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story') || !hw;
   let best = null, bd = R2;
   const consider = (x, y, toScreen) => {
     if (Math.hypot(x - P.x, y - P.y) > (tower ? RANGE : curRange()) * 0.97) return;
@@ -6742,13 +6824,13 @@ function touchLayout() {
     if (!tag) tbtn(pad, 'big', 'Ult', keyOf('special'), { tap: true });
     tbtn(pad, 'big', tag ? 'Tag<br>shot' : 'Shoot', keyOf('attack'));
   }
-  if (mode === 'world' || (pv && !kf)) {
+  if (mode === 'world' || mode === 'story' || (pv && !kf)) {
     const h = hs();
     for (let i = 0; i < 5; i++) { const id = h.slots[i]; const b = tbtn(abl, 'ab', '<b>' + (i + 1) + '</b>' + (id ? ABIL[id].n.split(' ')[0] : '—'), 'Digit' + (i + 1), { tap: true }); if (!id) b.style.opacity = '.4'; }
   }
   if (mode === 'world') tbtn(side, 'sm', '⚙', keyOf('equip'), { tap: true }).title = 'Equip';
   if (mode === 'world' || pv) tbtn(side, 'sm', '🗺', keyOf('map'), { tap: true }).title = 'Map';
-  if (mode === 'world' || mode === 'trial' || mode === 'solo' || mode === 'coop' || (mode === 'race' && !raceCountdown())) tbtn(side, 'sm', mode === 'world' ? '🔥' : '↺', keyOf('reset'), { tap: true }).title = mode === 'world' ? 'Campfire' : mode === 'trial' ? 'Restart' : 'Checkpoint';
+  if (mode === 'world' || mode === 'trial' || mode === 'story' || mode === 'solo' || mode === 'coop' || (mode === 'race' && !raceCountdown())) tbtn(side, 'sm', mode === 'world' ? '🔥' : '↺', keyOf('reset'), { tap: true }).title = mode === 'world' ? 'Campfire' : mode === 'trial' ? 'Restart' : 'Checkpoint';
   tbtn(side, 'sm', SET.mute ? '🔇' : '🔊', keyOf('mute'), { tap: true }).title = 'Mute';
   tbtn(side, 'sm', '?', keyOf('help'), { tap: true }).title = 'How to play';
   tbtn(side, 'sm', 'II', 'Escape', { tap: true }).title = 'Pause';
@@ -6765,6 +6847,528 @@ function touchTick(dt) {
   $('t-turn').hidden = innerWidth >= innerHeight;
 }
 touchRefresh();
+
+// =================================================================
+// ---------- Story Mode: The Fallen Spire ----------
+// =================================================================
+const STORY_MAPS = {"1-1":["=##############################################################################################################################=","=##############################################################################################################################=","=..............................................................................................................................=","=..............................................................................................................................=","=..............................................................................................................................=","=...................................................................o..........................................................=","=..............................................................................................................................=","=..............................................................................................................................=","=...................................................................*..........................................................=","=.................................................................o............................................................=","=..............................................................................................................................=","=..............................................................................................................................=","=..............................................................................................................................=","=.....................................................o......o.................................................................=","=...............................................................o.............................................o.....o..........=","=...........................o.......................................................o..........................................=","=.................................o.......................................................o....................................=","=.......................................................####...................................................................=","=.................o...o.................o...o...o.......####..........o...o...o.................o...o...o.......###............=","=.......................................................####..........................###.......................###............=","=.............................###.......................####..........................###.......................###............=","=.............................###.......................####..........................###.......................###............=","=.............................###.......................####..........................###.......................###............=","=..S..........................###....C..................####......C...................###...C...................###.......F....=","##################.......###############.........#####################..........################.........#######################","##################.......###############.........#####################..........################.........#######################","##################^^^^^^^###############^^^^^^^^^#####################^^^^^^^^^^################^^^^^^^^^#######################","##################=======###############=========#####################==========################=========#######################"],"1-2":["=######################################################################################################################=","=######################################################################################################################=","=......................................................................................................................=","=......................................................................................................................=","=......................................................................................................................=","=......................................................................................................................=","=...............o......................................................................................................=","=......................................................................................................................=","=...............*..........................................................o...........................................=","=......................................................................................................................=","=...............................................................................................o......................=","=.............o.........................................................k..............................................=","=...................................................................o.#####...............o.==.........................=","=...........................................................................................==.........................=","=...........................................................................................==.........................=","=...........................................................................................==.....o...................=","=...........................................................................................==.........................=","=...........o.....................................................o.........................==.........................=","=.....................o...o...o.........................................................o...==.........................=","=..............................................................o............................==.........................=","=...........................................................................................==.........................=","=...........................................................................................==.........................=","=...........................................................................................==.........................=","=..S.P.............................C..........................C.....................C.......==...k................F....=","######################.......###########....###########..###############################################################","######################.......############...............################################################################","######################^^^^^^^#############...........k.#################################################################","######################=======###########################################################################################"],"1-3":["=################################=","=################################=","=................................=","=................................=","=................................=","=...............F................=","=...........##########...........=","=......................o.........=","=................................=","=.........................#######=","=................................=","=................o...............=","=................................=","=................................=","=................................=","=..........o.....................=","=................................=","=...C............................=","=#######.........................=","=................o...............=","=................................=","=................................=","=................................=","=......................o.........=","=................................=","=................................=","=................................=","=................o...............=","=.........................#######=","=..........................o.....=","=................................=","=..........o...................*.=","=............................####=","=................................=","=................................=","=................o...............=","=................................=","=...C............................=","=#######.........................=","=......................o.........=","=................................=","=................................=","=................................=","=................o...............=","=................................=","=................................=","=................................=","=..........o.................C...=","=.........................#######=","=................................=","=................................=","=................o...............=","=................................=","=................................=","=................................=","=......................o.........=","=................................=","=................................=","=#######.........................=","=................o...............=","=................................=","=................................=","=................................=","=..........o.....................=","=................................=","=................................=","=................................=","=...............S................=","##################################","##################################","##################################","##################################"],"1-4":["=##############################################################################################################=","=##############################################################################################################=","=...............................................................................................GG.............=","=.....................................................................o.........................GG.............=","=.......................................................................*.......................GG.............=","=...............................................................................................GG.............=","=...............................................................................................GG.............=","=....................................o..........................................................GG.............=","=...................................................................o...........................GG.............=","=...............................................................................o...............GG.............=","=............................o...s........................................o.....................GG.............=","=.............................######............................................................GG.............=","=............................................................................s..................GG.............=","=...........................................................................===.................GG.............=","=...........................................................................===.................GG.............=","=...........................................................................===....o............GG.............=","=..........................o............................................o...===.................GG.............=","=...........................................................................===...........o.....GG...o.........=","=...............o...o...o.....................o...........o...o...o.........===.................GG.............=","=...........................................................................===.................GG.............=","=...........................................................................===.................GG.............=","=...........................................................................===.................GG.............=","=...........................................................................===.................GG.............=","=..S....................................C...................................===.......C.........GG......K..F...=","################.......#####################....##########.........#############################################","################.......#####################....##########.........#############################################","################^^^^^^^#####################.s..##########^^^^^^^^^#############################################","################=======###################################=========#############################################"],"1-5":["=##############################################=","=##############################################=","=..............................................=","=..............................................=","=...........o...........o......................=","=..............................................=","=...........*..................................=","=..............................................=","=..............................................=","=.......o..........##########...........o......=","=..............................................=","=..............................................=","=..............................................=","=.......................B......................=","=..............................................=","=....#######....o...............o...#######....=","=..............................................=","=..............................................=","=..o........................................o..=","=..............................................=","=..............................................=","=...S..........................................=","################################################","################################################","################################################","################################################"]};
+const SCHARS = {
+  rook: { n: 'Old Rook', c: '#ffb347' }, pip: { n: 'Pip', c: '#5ee6c1' }, tempest: { n: 'The Tempest', c: '#b77cff' },
+  bram: { n: 'Bram, Meadow Keeper', c: '#9be15d' }, you: { n: '', c: '#f3ecdf' },
+};
+const MEADOW = { top: '#8fd36b', rock: '#7a6a58', deep: '#574b3f' }, SHAFT = { top: '#a7c7d8', rock: '#5d6a7c', deep: '#3e4858' }, STORMP = { top: '#c79bff', rock: '#4d4166', deep: '#2e2645' };
+const STORY = [{
+  id: 1, n: 'The Shattered Meadow', skin: 'stormbreaker',
+  levels: [
+    { id: '1-1', n: 'Broken Steps', goal: 'finish', par: 30, pal: MEADOW,
+      intro: [['rook', 'Broken Steps. Swing over the pits and keep your eyes open for Spire Shards.']],
+      radio: [[10, 'rook', 'Aim at a ring and hold your hook. Let go near the top of the swing to fly farther.'], [36, 'rook', 'Flags save your spot. Fall in the spikes and you\'re back at the last one.'], [60, 'rook', 'See that glint up near the ceiling? A Spire Shard. They hide all over.'], [94, 'rook', 'Almost there. Steady now.']],
+      outro: [['rook', 'Not bad for your first climb, kid.'], ['rook', 'Hear that beeping? Something\'s stuck in the grass up ahead.']] },
+    { id: '1-2', n: 'Pip\'s Parts', goal: 'collect', need: 3, item: 'battery', par: 75, pal: MEADOW,
+      intro: [['pip', 'Bzzt... hello? Is someone there? The storm blew my batteries clean out of me!'], ['you', 'Hang on. I\'ll find them.'], ['pip', 'Three of them! One fell in a cave, one\'s on a high ledge, and one flew over a big steel wall.'], ['pip', 'Steel can\'t be hooked, so go over it, not up it!']],
+      radio: [[30, 'pip', 'Beep! Battery signal... somewhere down below.'], [60, 'pip', 'Up high! One is glowing on that ledge!'], [86, 'pip', 'Over the wall! Hook the rings, not the steel!']],
+      done: ['pip', 'Fully charged! The exit\'s open, let\'s go!'],
+      outro: [['pip', 'Pip, at your service! I\'ll float along with you and point out secrets.'], ['rook', 'Kid! The river dam broke in the storm. The water\'s coming. Climb!']] },
+    { id: '1-3', n: 'Flood Run', goal: 'top', chase: { delay: 4, speed: 46 }, par: 50, pal: SHAFT,
+      intro: [['pip', 'The water\'s rising fast! Up, up, UP!'], ['rook', 'The old well shaft goes straight to the top. Zigzag between the rings and don\'t stop.']],
+      radio: [[-48, 'pip', 'Don\'t look down! Okay, maybe look a little.'], [-30, 'pip', 'Halfway! Keep going!'], [-14, 'pip', 'I can see the sky!']],
+      outro: [['tempest', 'Little climber... you think one hook can undo MY storm?'], ['you', 'Watch me.'], ['pip', 'Eep. That was the Tempest. Let\'s not meet them again soon.']] },
+    { id: '1-4', n: 'Keeper\'s Gate', goal: 'switches', need: 3, item: 'switch', par: 80, pal: MEADOW,
+      intro: [['rook', 'Bram, the Meadow Keeper, lives past the old gate. The storm jammed it shut.'], ['pip', 'Three switches open it. One high up, one down a shaft, one on a steel pillar.']],
+      radio: [[27, 'pip', 'One switch is up on that high platform!'], [43, 'pip', 'Another is at the bottom of this shaft. No spikes, promise.'], [72, 'pip', 'The last one sits on top of the steel pillar. Swing onto it!']],
+      done: ['rook', 'That\'s the gate! Go find Bram.'],
+      outro: [['bram', 'You opened the gate! The storm had me trapped in here for days.'], ['bram', 'Take this: an old Keeper\'s trick. Press 1 to Dash.'], ['bram', 'The Tempest is gathering right above the Meadow. Break the three storm cores around its eye and the Meadow will be free.']],
+      gift: 'dash' },
+    { id: '1-5', n: 'Eye of the Tempest', goal: 'boss', par: 100, pal: STORMP,
+      intro: [['tempest', 'So the little climber comes to me. Come then. I\'ll blow you right back down!'], ['pip', 'See the glowing cores spinning around it? Hook one, then reel in to rip it out!'], ['rook', 'And mind the lightning. When the ground glows, move!']],
+      outro: [['tempest', 'This isn\'t over... I\'ve broken more than one Spire, climber. Find the rest, if you dare!'], ['rook', 'You did it, kid! The Meadow is free, and look: the first piece of the Spire is glowing again.'], ['pip', 'Chapter 1 complete! And that new Stormbreaker look suits you!']] },
+  ],
+}];
+const SLEVELS = STORY[0].levels;
+const SLV = Object.create(null); for (const L of SLEVELS) SLV[L.id] = L;
+const PROLOGUE = [['tempest', 'The Spire stood for a thousand years. One night of my storm was all it took.'], ['rook', 'Wake up, kid. The storm has passed, and so has the Spire.'], ['rook', 'Its pieces are scattered across the land. Every hook in the world broke with it... except yours.'], ['you', 'Then I\'ll put it back together.'], ['rook', 'Ha! That\'s the spirit. Start with the Meadow. Hold Space to hook and swing.']];
+
+function sState() {
+  if (!save.story || typeof save.story !== 'object') save.story = {};
+  const S = save.story;
+  if (!S.lv || typeof S.lv !== 'object') S.lv = {};
+  for (const k of Object.keys(S.lv)) if (!SLV[k] || typeof S.lv[k] !== 'object') delete S.lv[k];
+  if (!S.ch || typeof S.ch !== 'object') S.ch = {};
+  return S;
+}
+const sStars = (id) => { const r = sState().lv[id]; return r ? clampInt(r.s, 0, 7) : 0; };
+const starCount = (bits) => (bits & 1) + ((bits >> 1) & 1) + ((bits >> 2) & 1);
+const sUnlocked = (i) => i === 0 || (sStars(SLEVELS[i - 1].id) & 1) === 1;
+const pipWithYou = () => (sStars('1-2') & 1) === 1;
+
+// ----- level geometry from the hand-made maps -----
+const storyCache = {};
+function buildStoryLevel(id) {
+  if (storyCache[id]) return storyCache[id];
+  const rows = STORY_MAPS[id], L = SLV[id], ht = rows.length, wt = rows[0].length;
+  const g = new Uint8Array(wt * ht);
+  const get = (x, y) => (x >= 0 && y >= 0 && x < wt && y < ht) ? g[y * wt + x] : TMETAL;
+  const c = { name: L.id + ' ' + L.n, id, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(Object.assign({ n: L.n }, L.pal)),
+    rings: [], items: [], cps: [], gate: [], start: null, finish: null, pip: null, bram: null, boss: null,
+    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
+  const px = (x) => x * TS + TS / 2, py = (y) => y * TS + TS / 2;
+  for (let y = 0; y < ht; y++) for (let x = 0; x < wt; x++) {
+    const ch = rows[y][x], i = y * wt + x;
+    if (ch === '#') g[i] = TROCK; else if (ch === '=') g[i] = TMETAL; else if (ch === '^') g[i] = TSPIKE;
+    else if (ch === 'G') { g[i] = TMETAL; c.gate.push(i); }
+    else if (ch === 'o') c.rings.push({ x: px(x), y: py(y) });
+    else if (ch === 'S') c.start = { x: px(x), y: (y + 1) * TS - PR - 2 };
+    else if (ch === 'C') c.cps.push({ id: 'cp' + c.cps.length, x: px(x), y: (y + 1) * TS - PR - 2 });
+    else if (ch === 'F') c.finish = { x: px(x), y: py(y) };
+    else if (ch === 'k') c.items.push({ id: 'k' + x + '_' + y, k: 'battery', x: px(x), y: py(y) });
+    else if (ch === 's') c.items.push({ id: 's' + x + '_' + y, k: 'switch', x: px(x), y: (y + 1) * TS - 8 });
+    else if (ch === '*') c.items.push({ id: 'shard', k: 'shard', x: px(x), y: py(y) });
+    else if (ch === 'P') c.pip = { x: px(x), y: (y + 1) * TS - 14 };
+    else if (ch === 'K') c.bram = { x: px(x), y: (y + 1) * TS - PR - 2 };
+    else if (ch === 'B') c.boss = { x: px(x), y: py(y) };
+  }
+  storyCache[id] = c;
+  return c;
+}
+
+// ----- the run -----
+let story = null, storyHost = false, storyLast = 0;
+const sDlg = { lines: null, i: 0, done: null };
+function startStory(id, coopSid) {
+  $('radio').hidden = true;
+  const L = SLV[id], c = buildStoryLevel(id);
+  for (const i of c.gate) c.g[i] = TMETAL; // gates start shut
+  hw = c; mode = 'story';
+  ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0;
+  story = { id, L, sid: coopSid || 0, time: 0, count: 1.4, cp: c.start, got: new Set(), deaths: 0, done: false, radio: new Set(), msgT: 0,
+    water: L.chase ? (c.ht - 3) * TS : 0, hp: W_HP, cores: [true, true, true], gateOpen: c.gate.length === 0, inv: 0, pipX: c.start.x - 40, pipY: c.start.y - 60, res: null };
+  detach(); P.x = c.start.x; P.y = c.start.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.inv = 0; P.stun = 0;
+  particles.length = 0; runHeight = 0; wHP = W_HP; lastHP = -1;
+  const sc = wScale();
+  wcamX = clamp(P.x - cw / sc / 2, 0, Math.max(0, c.wt * TS - cw / sc)); wcamY = clamp(P.y - ch / sc * 0.55, 0, Math.max(0, c.ht * TS - ch / sc));
+  wRegion = c.name; $('w-region').textContent = c.name; regionT = gt;
+  state = 'play'; show(null);
+  $('hud').hidden = true; $('whud').hidden = false;
+  $('w-ult').hidden = true; $('w-mini').hidden = true; $('w-hint').hidden = true; $('p-hint').hidden = true;
+  $('t-hint').hidden = false; $('t-timer').hidden = false; $('w-hp').hidden = L.goal !== 'boss'; $('w-slots').hidden = !hs().ab.length;
+  buildSlots();
+  canvas.focus();
+  const S = sState(), lines = [];
+  if (id === '1-1' && !S.pro) { S.pro = 1; writeSave(); lines.push(...PROLOGUE); }
+  lines.push(...L.intro);
+  storyDialog(lines, () => banner('Chapter ' + id[0], L.n, storyGoalText()));
+}
+function storyGoalText() {
+  const L = story.L;
+  return L.goal === 'collect' ? 'Find Pip\'s 3 batteries, then reach the exit.' : L.goal === 'switches' ? 'Hit the 3 switches to open the gate, then find Bram.' : L.goal === 'top' ? 'Climb to the top before the water catches you.' : L.goal === 'boss' ? 'Hook the 3 storm cores and reel in to rip them out.' : 'Reach the flag at the end.';
+}
+const sHave = (k) => { let n = 0; for (const it of hw.items) if (it.k === k && story.got.has(it.id)) n++; return n; };
+function storyRespawn() {
+  burst(P.x, P.y, '#ff5a6e', 16, 240); sfx('hurt');
+  if (!reduceMotion) shake = 0.2;
+  detach(); P.x = story.cp.x; P.y = story.cp.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.inv = 1;
+  story.deaths++;
+  if (story.L.chase) story.water = Math.max(story.water, story.cp.y + 7 * TS); // the water drops back below your flag
+}
+function storyGain(it, fromPeer) {
+  if (story.got.has(it.id)) return;
+  story.got.add(it.id);
+  if (it.k === 'shard') { burst(it.x, it.y, '#bff3ff', 26, 260); sfx('rare'); banner('Found it', 'Spire Shard', fromPeer ? 'Your partner found it.' : 'A hidden piece of the Spire.'); }
+  else if (it.k === 'battery') { burst(it.x, it.y, '#ffd34d', 20, 220); sfx('pickup'); banner('Battery', sHave('battery') + ' of 3'); }
+  else if (it.k === 'switch') { burst(it.x, it.y, '#5ee6c1', 20, 220); sfx('checkpoint'); banner('Switch', sHave('switch') + ' of 3'); }
+  const L = story.L;
+  if (L.need && sHave(L.item) >= L.need && !story.gateOpen) {
+    story.gateOpen = true;
+    for (const i of hw.gate) hw.g[i] = TAIR;
+    if (hw.gate.length) { sfx('capture'); if (!reduceMotion) shake = 0.4; }
+    if (L.done) setTimeout(() => storyRadio(L.done[0], L.done[1]), 900);
+  }
+  presenceClock = 0;
+}
+// ----- the boss -----
+const coreSpeed = () => [1.7, 1.25, 0.9][story.cores.filter(Boolean).length - 1] || 1.7;
+function storyCorePos(i) {
+  const b = hw.boss, t = story.time, n = story.cores.filter(Boolean).length;
+  const a = t * (n === 3 ? 0.9 : n === 2 ? 1.25 : 1.7) + i * 2.094;
+  return { x: b.x + Math.cos(a) * 200, y: b.y + Math.sin(a) * 120 + Math.sin(t * 2) * 10 };
+}
+function bossPhase() { return 3 - story.cores.filter(Boolean).length; } // 0, 1, 2
+function boltSlot(k) {
+  // lightning: every slot picks a few columns; warn first, then strike
+  const r = mulberry(7717 + k * 131), n = 2 + bossPhase() + (r() < 0.5 ? 0 : 1), xs = [];
+  for (let i = 0; i < n; i++) xs.push((2 + r() * (hw.wt - 4)) * TS);
+  if (r() < 0.5) xs.push(P.x + (r() - 0.5) * 60); // one aimed near you
+  return xs;
+}
+function bossTick(dt) {
+  const per = [2.6, 1.9, 1.35][bossPhase()], t = story.time - 1.5;
+  if (t > 0) {
+    const k = Math.floor(t / per), f = (t - k * per) / per;
+    story.bolts = { xs: boltSlot(k), f, per };
+    if (f > 0.62 && f < 0.75 && story.inv <= 0 && !ADM.god) {
+      for (const x of story.bolts.xs) if (Math.abs(P.x - x) < 30 && P.y > hw.boss.y - 40) {
+        story.hp--; story.inv = 1.2; sfx('hurt'); detach(); P.vx = (P.x < x ? -1 : 1) * 500; P.vy = -400; if (!reduceMotion) shake = 0.3;
+        if (story.hp <= 0) { banner('Struck down', 'Try again', 'The cores reset.'); story.hp = W_HP; story.cores = [true, true, true]; story.got = new Set([...story.got].filter(g => !g.startsWith('core'))); storyRespawn(); }
+        break;
+      }
+    }
+    if (bossPhase() === 2) { const g2 = Math.floor(t / 5) % 2 === 1; story.gust = g2 ? (Math.floor(t / 10) % 2 ? 1 : -1) : 0; if (g2 && !rope) P.vx += story.gust * 900 * dt; }
+    else story.gust = 0;
+  }
+  story.inv -= dt;
+  // rip a core out by reeling in close to it
+  if (rope && rope.kind === 'peer' && typeof rope.ref === 'string' && rope.ref.startsWith('core')) {
+    const i = +rope.ref.slice(4), q = storyCorePos(i);
+    if (story.cores[i] && Math.hypot(P.x - q.x, P.y - q.y) < 80) breakCore(i, false);
+  }
+}
+function breakCore(i, fromPeer) {
+  if (!story.cores[i]) return;
+  story.cores[i] = false; story.got.add('core' + i);
+  const q = storyCorePos(i);
+  if (rope && rope.ref === 'core' + i) detach();
+  burst(q.x, q.y, '#c79bff', 40, 320); burst(q.x, q.y, '#ffffff', 20, 260); sfx('ko'); if (!reduceMotion) shake = 0.4;
+  const left = story.cores.filter(Boolean).length;
+  if (left === 2) storyRadio('tempest', 'Grrr! A lucky swing!');
+  else if (left === 1) storyRadio('tempest', 'Enough! FEEL THE STORM!');
+  if (!left) storyWin();
+  presenceClock = 0;
+}
+// ----- the per-frame tick -----
+function storyTick(dt) {
+  if (!story || story.done || sDlg.lines) return;
+  if (story.count > 0) { story.count -= dt; if (story.count <= 0) banner(story.L.n, 'Go!'); return; }
+  story.time += dt;
+  const L = story.L, c = hw;
+  // co-op: share pickups, cores and the finish
+  if (teamKind === 'story') for (const s of peerState.values()) {
+    const r = s.raw; if (!r || r.ss !== story.sid || !story.sid) continue;
+    if (Array.isArray(r.sg)) for (const id of r.sg.slice(0, 40)) {
+      if (typeof id !== 'string' || story.got.has(id)) continue;
+      if (id.startsWith('core')) { const i = +id.slice(4); if (i >= 0 && i < 3) breakCore(i, true); continue; }
+      const it = c.items.find(q => q.id === id); if (it) storyGain(it, true);
+    }
+    if (r.sd === 1) { storyWin(true); return; }
+  }
+  // hazards
+  const r0 = curR() + 2, tx0 = Math.floor((P.x - r0) / TS), tx1 = Math.floor((P.x + r0) / TS), ty0 = Math.floor((P.y - r0) / TS), ty1 = Math.floor((P.y + r0) / TS);
+  let dead = false;
+  for (let ty = ty0; ty <= ty1 && !dead; ty++) for (let tx = tx0; tx <= tx1; tx++) if (c.get(tx, ty) === TSPIKE && circleRect(P.x, P.y, r0, tx * TS, ty * TS, TS, TS)) { dead = true; break; }
+  if (L.chase) { if (story.time > L.chase.delay) story.water -= L.chase.speed * dt; if (P.y + PR > story.water + 6) dead = true; }
+  if (dead && !ADM.god) { storyRespawn(); return; }
+  // pickups and checkpoints
+  for (const it of c.items) if (!story.got.has(it.id) && Math.hypot(P.x - it.x, P.y - it.y) < (it.k === 'switch' ? 40 : 36)) storyGain(it, false);
+  for (const cp of c.cps) if (story.cp !== cp && Math.hypot(P.x - cp.x, P.y - cp.y) < 70 && (!L.chase || cp.y < story.cp.y)) { story.cp = cp; burst(cp.x, cp.y - 30, '#5ee6c1', 14, 180); sfx('checkpoint'); banner('Checkpoint', fmtTime(story.time)); }
+  // radio calls by position (negative numbers mean a height, for the climb)
+  for (let k = 0; k < (L.radio || []).length; k++) {
+    if (story.radio.has(k)) continue;
+    const [at, who, text] = L.radio[k];
+    if (at >= 0 ? P.x > at * TS : P.y < (c.ht + at) * TS) { story.radio.add(k); storyRadio(who, text); }
+  }
+  if (L.goal === 'boss') { bossTick(dt); wHP = story.hp; }
+  // the goal
+  if (L.goal === 'boss') return;
+  const f = c.finish;
+  let atEnd = false;
+  if (L.goal === 'top') atEnd = P.y < f.y + TS;
+  else if (L.goal === 'switches') atEnd = !!c.bram && story.gateOpen && Math.hypot(P.x - c.bram.x, P.y - c.bram.y) < 70;
+  else atEnd = P.x > f.x - 30 && Math.abs(P.y - f.y) < 4 * TS;
+  if (atEnd) {
+    if (L.goal === 'collect' && sHave('battery') < 3) { if (gt - story.msgT > 3) { story.msgT = gt; banner('Not yet', 'Batteries ' + sHave('battery') + ' / 3', 'Pip needs all three before the exit opens.'); } }
+    else storyWin();
+  }
+  // Pip floats along behind you once he's fixed
+  story.pipX += ((P.x - P.face * 46) - story.pipX) * Math.min(1, dt * 3); story.pipY += ((P.y - 58) - story.pipY) * Math.min(1, dt * 3);
+}
+function storyWin(fromPeer) {
+  if (story.done) return;
+  story.done = true; detach(); for (const k in keys) keys[k] = false;
+  presenceClock = 0;
+  const L = story.L, S = sState(), rec = S.lv[L.id] || (S.lv[L.id] = { s: 0, best: 0 });
+  const bits = 1 | (story.time <= L.par ? 2 : 0) | (story.got.has('shard') ? 4 : 0);
+  const before = rec.s, firstClear = !(before & 1);
+  rec.s = before | bits;
+  if (!rec.best || story.time < rec.best) rec.best = Math.round(story.time * 10) / 10;
+  const newStars = starCount(rec.s) - starCount(before);
+  let tok = newStars * 5 + (firstClear ? 10 : 0), extra = [];
+  if (L.gift && !hs().ab.includes(L.gift)) { const h = hs(); h.ab.push(L.gift); const e = h.slots.indexOf(null); if (e >= 0) h.slots[e] = L.gift; extra.push('New ability: ' + ABIL[L.gift].n); }
+  const ch = STORY[0];
+  if (L.id === SLEVELS[SLEVELS.length - 1].id && !S.ch[ch.id]) {
+    S.ch[ch.id] = 1; tok += 50;
+    for (const iid of Object.values(skinEq(ch.skin))) save.owned[iid] = Math.max(1, save.owned[iid] || 0);
+    extra.push('Chapter bonus: +50 tokens', 'New skin: ' + PAL_BY[ch.skin].n);
+  }
+  if (tok) addTokens(tok, P.x, P.y);
+  story.res = { bits, newBits: rec.s & ~before, tok, extra, time: story.time, best: rec.best, fromPeer };
+  writeSave();
+  sfx('win');
+  banner('Level complete', L.n);
+  state = 'over';
+  setTimeout(() => { if (story && story.done) storyDialog(L.outro, showStoryResult); }, 1300);
+}
+// ----- dialogue -----
+function storyDialog(lines, done) {
+  if (!lines || !lines.length) { if (done) done(); return; }
+  sDlg.lines = lines; sDlg.i = 0; sDlg.done = done;
+  for (const k in keys) keys[k] = false; detach();
+  renderDlg();
+}
+function renderDlg() {
+  const box = $('dlg'), [who, text] = sDlg.lines[sDlg.i], C = SCHARS[who];
+  box.hidden = false;
+  $('dlg-name').textContent = who === 'you' ? (save.name || 'You') : C.n; $('dlg-name').style.color = who === 'you' ? COLORS[save.color] : C.c;
+  $('dlg-text').textContent = text;
+  $('dlg-more').textContent = sDlg.i < sDlg.lines.length - 1 ? 'Next ▸' : 'Continue ▸';
+  drawPortrait($('dlg-face'), who);
+}
+function dlgNext() {
+  if (!sDlg.lines) return;
+  sDlg.i++;
+  sfx('click');
+  if (sDlg.i >= sDlg.lines.length) { const d = sDlg.done; sDlg.lines = null; sDlg.done = null; $('dlg').hidden = true; if (d) d(); canvas.focus(); return; }
+  renderDlg();
+}
+let radioT = 0;
+function storyRadio(who, text) {
+  const C = SCHARS[who];
+  $('radio').hidden = false;
+  $('radio-name').textContent = (who === 'you' ? (save.name || 'You') : C.n) + (who === 'rook' ? ' (radio)' : '');
+  $('radio-name').style.color = C.c;
+  $('radio-text').textContent = text;
+  drawPortrait($('radio-face'), who);
+  sfx(who === 'tempest' ? 'alert' : 'click');
+  clearTimeout(radioT); radioT = setTimeout(() => { $('radio').hidden = true; }, 5200);
+}
+function drawPortrait(cv, who) {
+  const c2 = cv.getContext('2d'), S = cv.width, u = S / 64;
+  c2.setTransform(u, 0, 0, u, 0, 0); c2.clearRect(0, 0, 64, 64);
+  const bg = c2.createRadialGradient(32, 28, 4, 32, 32, 40); bg.addColorStop(0, '#2a2350'); bg.addColorStop(1, '#120f24');
+  c2.fillStyle = bg; c2.fillRect(0, 0, 64, 64);
+  if (who === 'rook') {
+    c2.fillStyle = '#e0b48a'; c2.beginPath(); c2.arc(32, 32, 15, 0, 6.283); c2.fill();
+    c2.fillStyle = '#d9d4cc'; c2.beginPath(); c2.moveTo(19, 36); c2.quadraticCurveTo(32, 62, 45, 36); c2.quadraticCurveTo(32, 44, 19, 36); c2.fill();
+    c2.fillStyle = '#ffb347'; c2.beginPath(); c2.arc(32, 25, 15, Math.PI, 0); c2.fill(); c2.fillRect(32, 22, 20, 4);
+    c2.fillStyle = '#1b1631'; c2.fillRect(25, 31, 4, 3); c2.fillRect(36, 31, 4, 3);
+    c2.fillStyle = '#d9d4cc'; c2.fillRect(23, 28, 7, 2); c2.fillRect(35, 28, 7, 2);
+  } else if (who === 'pip') {
+    c2.fillStyle = '#9aa3b5'; c2.beginPath(); c2.arc(32, 34, 16, 0, 6.283); c2.fill();
+    c2.fillStyle = '#5ee6c1'; c2.shadowBlur = 8; c2.shadowColor = '#5ee6c1'; c2.beginPath(); c2.arc(32, 34, 7, 0, 6.283); c2.fill(); c2.shadowBlur = 0;
+    c2.fillStyle = '#12101f'; c2.beginPath(); c2.arc(33, 33, 3, 0, 6.283); c2.fill();
+    c2.strokeStyle = '#9aa3b5'; c2.lineWidth = 3; c2.beginPath(); c2.moveTo(32, 18); c2.lineTo(32, 10); c2.stroke();
+    c2.fillStyle = '#ffd34d'; c2.beginPath(); c2.arc(32, 9, 3, 0, 6.283); c2.fill();
+    c2.strokeStyle = '#c9ccd6'; c2.lineWidth = 2; c2.beginPath(); c2.ellipse(32, 51, 14, 3, 0, 0, 6.283); c2.stroke();
+  } else if (who === 'tempest') {
+    c2.fillStyle = '#3a2f5a';
+    for (const [x, y, rr] of [[20, 34, 12], [32, 28, 15], [45, 34, 12], [28, 40, 11], [38, 40, 11]]) { c2.beginPath(); c2.arc(x, y, rr, 0, 6.283); c2.fill(); }
+    c2.fillStyle = '#ffe58a'; c2.shadowBlur = 10; c2.shadowColor = '#ffe58a';
+    c2.beginPath(); c2.moveTo(22, 30); c2.lineTo(30, 33); c2.lineTo(22, 35); c2.fill();
+    c2.beginPath(); c2.moveTo(42, 30); c2.lineTo(34, 33); c2.lineTo(42, 35); c2.fill(); c2.shadowBlur = 0;
+    c2.strokeStyle = '#c79bff'; c2.lineWidth = 2; c2.beginPath(); c2.moveTo(30, 48); c2.lineTo(26, 56); c2.lineTo(31, 55); c2.lineTo(27, 63); c2.stroke();
+  } else if (who === 'bram') {
+    c2.fillStyle = '#3f7a3a'; c2.beginPath(); c2.moveTo(32, 10); c2.lineTo(52, 52); c2.lineTo(12, 52); c2.closePath(); c2.fill();
+    c2.fillStyle = '#c9a27a'; c2.beginPath(); c2.arc(32, 34, 11, 0, 6.283); c2.fill();
+    c2.fillStyle = '#1b1631'; c2.fillRect(27, 32, 3, 3); c2.fillRect(35, 32, 3, 3);
+    c2.fillStyle = '#9be15d'; c2.beginPath(); c2.ellipse(44, 18, 6, 3, -0.6, 0, 6.283); c2.fill();
+  } else {
+    const col = COLORS[save.color];
+    c2.strokeStyle = col; c2.fillStyle = col; c2.lineWidth = 4; c2.lineCap = 'round';
+    c2.beginPath(); c2.arc(32, 22, 9, 0, 6.283); c2.fill();
+    c2.beginPath(); c2.moveTo(32, 31); c2.lineTo(32, 48); c2.moveTo(32, 36); c2.lineTo(20, 44); c2.moveTo(32, 36); c2.lineTo(44, 30); c2.stroke();
+  }
+}
+// ----- drawing in the level -----
+function storyRender(dt) {
+  const c = hw, t = story.time, L = story.L;
+  for (const cp of c.cps) {
+    const got = story.cp === cp;
+    ctx.fillStyle = '#d8d2e6'; ctx.fillRect(cp.x, cp.y - 40, 3, 56);
+    ctx.fillStyle = got ? '#5ee6c1' : '#ffb347'; ctx.beginPath(); ctx.moveTo(cp.x + 3, cp.y - 40); ctx.lineTo(cp.x + 30, cp.y - 32); ctx.lineTo(cp.x + 3, cp.y - 24); ctx.fill();
+  }
+  if (c.finish && L.goal !== 'boss' && L.goal !== 'switches') {
+    const f = c.finish, locked = L.goal === 'collect' && sHave('battery') < 3;
+    ctx.fillStyle = '#d8d2e6'; ctx.fillRect(f.x, f.y - 50, 4, 70);
+    for (let k = 0; k < 4; k++) for (let j = 0; j < 3; j++) { ctx.fillStyle = (k + j) % 2 ? (locked ? '#6a6380' : '#ffffff') : '#1b1631'; ctx.fillRect(f.x + 4 + k * 9, f.y - 50 + j * 9, 9, 9); }
+    if (locked) { ctx.font = '700 13px "Chakra Petch", sans-serif'; ctx.fillStyle = '#ffd34d'; ctx.textAlign = 'center'; ctx.fillText('🔒 ' + sHave('battery') + '/3', f.x + 20, f.y - 58); }
+  }
+  for (const i of c.gate) if (!story.gateOpen) {
+    const x = (i % c.wt) * TS, y = Math.floor(i / c.wt) * TS;
+    ctx.fillStyle = 'rgba(255,90,110,' + (0.25 + 0.15 * Math.sin(gt * 4)) + ')'; ctx.fillRect(x + 6, y, 6, TS); ctx.fillRect(x + 26, y, 6, TS);
+  }
+  for (const it of c.items) {
+    const got = story.got.has(it.id), bob = Math.sin(gt * 3 + it.x) * 4;
+    if (it.k === 'switch') {
+      ctx.fillStyle = '#4b5b75'; ctx.fillRect(it.x - 14, it.y - 4, 28, 8);
+      ctx.fillStyle = got ? '#5ee6c1' : '#ff5a6e'; ctx.shadowBlur = 12; ctx.shadowColor = ctx.fillStyle;
+      ctx.beginPath(); ctx.arc(it.x, it.y - 8, got ? 6 : 9, Math.PI, 0); ctx.fill(); ctx.shadowBlur = 0;
+      continue;
+    }
+    if (got) continue;
+    if (it.k === 'battery') {
+      ctx.save(); ctx.translate(it.x, it.y + bob);
+      ctx.shadowBlur = 14; ctx.shadowColor = '#ffd34d'; ctx.fillStyle = '#ffd34d'; ctx.fillRect(-8, -12, 16, 24); ctx.fillRect(-4, -15, 8, 3);
+      ctx.shadowBlur = 0; ctx.fillStyle = '#1b1631'; ctx.fillRect(-2, -6, 4, 12); ctx.fillRect(-5, -2, 10, 4);
+      ctx.restore();
+    } else if (it.k === 'shard') {
+      ctx.save(); ctx.translate(it.x, it.y + bob); ctx.rotate(Math.sin(gt) * 0.2);
+      ctx.shadowBlur = 16; ctx.shadowColor = '#bff3ff'; ctx.fillStyle = '#e8fbff';
+      ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(8, 0); ctx.lineTo(0, 14); ctx.lineTo(-8, 0); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+  // Pip: broken at the start of 1-2, then floating along with you
+  if (c.pip && !pipWithYou() && sHave('battery') < 3) drawPip(c.pip.x, c.pip.y, true);
+  else if (pipWithYou() || (c.pip && sHave('battery') >= 3)) drawPip(story.pipX, story.pipY + Math.sin(gt * 3) * 4, false);
+  if (c.bram) drawBram(c.bram.x, c.bram.y);
+  if (L.chase) {
+    const wy = story.water;
+    ctx.fillStyle = 'rgba(40,120,200,0.55)'; ctx.fillRect(0, wy, c.wt * TS, c.ht * TS - wy + 40);
+    ctx.strokeStyle = '#8fd3ff'; ctx.lineWidth = 3; ctx.beginPath();
+    for (let x = 0; x <= c.wt * TS; x += 20) { const y = wy + Math.sin(x / 40 + gt * 4) * 4; if (x) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+    ctx.stroke();
+  }
+  if (L.goal === 'boss') drawBoss();
+}
+function drawPip(x, y, broken) {
+  ctx.save(); ctx.translate(x, y);
+  if (broken) ctx.rotate(0.5);
+  ctx.fillStyle = '#9aa3b5'; ctx.beginPath(); ctx.arc(0, 0, 11, 0, 6.283); ctx.fill();
+  ctx.fillStyle = broken ? '#444' : '#5ee6c1'; if (!broken) { ctx.shadowBlur = 8; ctx.shadowColor = '#5ee6c1'; }
+  ctx.beginPath(); ctx.arc(1, -1, 5, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#c9ccd6'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, 13, 10, 2, 0, 0, 6.283); ctx.stroke();
+  if (broken && Math.random() < 0.15) { ctx.fillStyle = '#ffd34d'; ctx.fillRect((Math.random() - 0.5) * 20, -14, 3, 3); }
+  ctx.restore();
+}
+function drawBram(x, y) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#3f7a3a'; ctx.beginPath(); ctx.moveTo(0, -34); ctx.lineTo(16, 16); ctx.lineTo(-16, 16); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#c9a27a'; ctx.beginPath(); ctx.arc(0, -14, 8, 0, 6.283); ctx.fill();
+  ctx.strokeStyle = '#8a6d52'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(20, -30); ctx.lineTo(20, 16); ctx.stroke();
+  ctx.fillStyle = '#9be15d'; ctx.beginPath(); ctx.arc(20, -32, 5, 0, 6.283); ctx.fill();
+  ctx.font = '600 13px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = story.gateOpen ? '#9be15d' : 'rgba(243,236,223,.5)';
+  ctx.fillText(story.gateOpen ? 'Bram' : 'Bram (trapped)', 0, -46);
+  ctx.restore();
+}
+function drawBoss() {
+  const b = hw.boss, t = story.time, left = story.cores.filter(Boolean).length;
+  // lightning: a glowing warning on the ground, then the bolt
+  if (story.bolts) for (const x of story.bolts.xs) {
+    const f = story.bolts.f, floorY = (hw.ht - 4) * TS;
+    if (f < 0.62) { ctx.fillStyle = 'rgba(255,229,138,' + (0.12 + 0.35 * f) + ')'; ctx.fillRect(x - 30, b.y, 60, floorY - b.y); ctx.fillStyle = 'rgba(255,229,138,0.8)'; ctx.fillRect(x - 30, floorY - 6, 60, 6); }
+    else if (f < 0.75) {
+      ctx.strokeStyle = '#fff6c9'; ctx.lineWidth = 6; ctx.shadowBlur = 20; ctx.shadowColor = '#ffe58a';
+      ctx.beginPath(); ctx.moveTo(x, b.y); for (let y = b.y; y < floorY; y += 40) ctx.lineTo(x + (Math.random() - 0.5) * 30, y); ctx.lineTo(x, floorY); ctx.stroke(); ctx.shadowBlur = 0;
+    }
+  }
+  if (story.gust) { ctx.strokeStyle = 'rgba(200,225,255,0.35)'; ctx.lineWidth = 2; for (let k = 0; k < 30; k++) { const y = (k * 97) % (hw.ht * TS), x = ((gt * 600 * story.gust + k * 213) % (hw.wt * TS) + hw.wt * TS) % (hw.wt * TS); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - story.gust * 60, y); ctx.stroke(); } }
+  // the eye
+  ctx.save(); ctx.translate(b.x, b.y + Math.sin(t * 1.5) * 8);
+  const rage = 3 - left;
+  for (let k = 0; k < 9; k++) { const a = k / 9 * 6.283 + t * (0.4 + rage * 0.3); ctx.fillStyle = 'rgba(58,47,90,0.85)'; ctx.beginPath(); ctx.arc(Math.cos(a) * 52, Math.sin(a) * 30, 34, 0, 6.283); ctx.fill(); }
+  ctx.fillStyle = '#2a2145'; ctx.beginPath(); ctx.arc(0, 0, 46, 0, 6.283); ctx.fill();
+  ctx.fillStyle = rage === 2 ? '#ff5a6e' : '#ffe58a'; ctx.shadowBlur = 18; ctx.shadowColor = ctx.fillStyle;
+  ctx.beginPath(); ctx.ellipse(0, 0, 22, 12 - rage * 2, 0, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.fillStyle = '#12101f'; ctx.beginPath(); ctx.ellipse(Math.max(-12, Math.min(12, (P.x - b.x) / 30)), 0, 6, 9, 0, 0, 6.283); ctx.fill();
+  ctx.restore();
+  for (let i = 0; i < 3; i++) if (story.cores[i]) {
+    const q = storyCorePos(i), tg = rope && rope.ref === 'core' + i;
+    ctx.fillStyle = '#c79bff'; ctx.shadowBlur = 18; ctx.shadowColor = '#c79bff';
+    ctx.beginPath(); ctx.arc(q.x, q.y, 16 + Math.sin(gt * 6 + i) * 2, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.strokeStyle = tg ? '#ffd34d' : '#ffffff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(q.x, q.y, 22, 0, 6.283); ctx.stroke();
+  }
+}
+// ----- HUD -----
+function storyHudFast() {
+  const txt = story.L.id + ' ' + story.L.n + ' · ' + fmtTime(story.time);
+  const el = $('t-timer'); if (el.textContent !== txt) el.textContent = txt;
+}
+function storyHudSlow() {
+  const L = story.L, sh = story.got.has('shard') ? ' · ✦ Shard found' : '';
+  $('w-found').textContent = (L.goal === 'collect' ? 'Batteries ' + sHave('battery') + ' / 3' : L.goal === 'switches' ? (story.gateOpen ? 'Gate open: find Bram' : 'Switches ' + sHave('switch') + ' / 3') : L.goal === 'boss' ? 'Storm cores left: ' + story.cores.filter(Boolean).length : L.goal === 'top' ? 'Climb!' : 'Reach the flag') + ' · Par ' + fmtTime(L.par) + sh;
+  if (teamKind === 'story') renderWorldTeam($('w-team')); else $('w-team').textContent = '';
+}
+// ----- results and the chapter map -----
+function showStoryResult() {
+  $('radio').hidden = true;
+  const r = story.res, L = story.L, i = SLEVELS.indexOf(L);
+  $('sr-title').textContent = L.id + ' ' + L.n + ' complete!';
+  const st = $('sr-stars'); st.textContent = '';
+  [['Finish the level', 1], ['Beat par time (' + fmtTime(L.par) + ')', 2], ['Find the Spire Shard', 4]].forEach(([t, b]) => {
+    const row = document.createElement('div'); row.className = 'srow' + (r.bits & b ? ' on' : '');
+    const s2 = document.createElement('span'); s2.className = 'sstar'; s2.textContent = r.bits & b ? '★' : '☆';
+    const tx = document.createElement('span'); tx.textContent = t + (r.newBits & b ? '  · new!' : '');
+    row.append(s2, tx); st.append(row);
+  });
+  $('sr-sub').textContent = 'Time ' + fmtTime(r.time) + ' · Best ' + fmtTime(r.best) + (r.tok ? ' · +' + r.tok + ' tokens' : '') + (r.extra.length ? ' · ' + r.extra.join(' · ') : '');
+  const next = SLEVELS[i + 1], joiner = teamKind === 'story' && !storyHost;
+  $('b-sr-next').hidden = !next || joiner; $('b-sr-retry').hidden = joiner;
+  $('sr-msg').textContent = joiner ? 'The host picks the next level.' : !next ? 'That\'s the end of Chapter 1 for now. More chapters are coming!' : '';
+  show('scr-story-res');
+}
+function renderStoryMap() {
+  const S = sState(), el = $('st-levels'); el.textContent = '';
+  let total = 0;
+  SLEVELS.forEach((L, i) => {
+    const bits = sStars(L.id), open = sUnlocked(i); total += starCount(bits);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'snode' + (open ? '' : ' locked') + (L.goal === 'boss' ? ' boss' : '');
+    const n = document.createElement('b'); n.textContent = L.id + '  ' + (open ? L.n : '???');
+    const s2 = document.createElement('span'); s2.className = 'sstars'; s2.textContent = open ? [1, 2, 4].map(x => bits & x ? '★' : '☆').join('') : '🔒';
+    const sm = document.createElement('small'); sm.textContent = open ? ({ finish: 'Platform run', collect: 'Find 3 batteries', top: 'Escape the flood', switches: 'Open the gate', boss: 'Boss fight' })[L.goal] + (S.lv[L.id] && S.lv[L.id].best ? ' · best ' + fmtTime(S.lv[L.id].best) : '') : 'Finish the level before to unlock';
+    b.append(n, s2, sm); b.disabled = !open || (teamKind === 'story' && !storyHost);
+    if (open) b.addEventListener('click', () => storyPick(L.id));
+    el.append(b);
+  });
+  $('st-total').textContent = total + ' / ' + SLEVELS.length * 3;
+  $('st-ch2').textContent = S.ch[1] ? 'Chapter 2 is on the way. Stormbreaker is waiting in your Locker!' : 'Beat the Eye of the Tempest to finish Chapter 1.';
+  const inRoom = teamKind === 'story';
+  $('st-coop-box').hidden = !inRoom; $('st-code').textContent = teamCode;
+  $('b-st-host').hidden = inRoom || !roomApi; $('st-join').hidden = inRoom || !roomApi;
+  $('st-coop-msg').textContent = inRoom ? (storyHost ? 'You\'re the host: pick a level and your partner joins you.' : 'The host picks the level. You\'ll join it automatically.') : 'Play together: one of you hosts, the other joins with the code.';
+  if (inRoom) renderWorldTeam($('st-team'));
+}
+function storyPick(id) {
+  if (teamKind === 'story') { if (!storyHost) return; storyLast = Date.now() % 1e9; presenceClock = 0; startStory(id, storyLast); }
+  else startStory(id, 0);
+}
+function openStory() { renderStoryMap(); show('scr-story'); }
+function storyLobbyTick() {
+  // the partner follows the host into levels
+  if (teamKind !== 'story' || storyHost) return;
+  for (const s of peerState.values()) {
+    const sl = s.raw && s.raw.sl;
+    if (!Array.isArray(sl) || !SLV[sl[0]] || num(sl[1]) == null || sl[1] === storyLast) continue;
+    if (story && story.sid === sl[1]) continue;
+    storyLast = sl[1];
+    if (sDlg.lines) { sDlg.lines = null; $('dlg').hidden = true; }
+    startStory(sl[0], sl[1]);
+  }
+  if (current === 'scr-story') renderStoryMap();
+}
+function storyPresence(pr) {
+  if (storyHost && storyLast && story) pr.sl = [story.id, storyLast];
+  pr.sh = storyHost ? 1 : 0;
+  if (story && story.sid) { pr.ss = story.sid; pr.sg = [...story.got].slice(0, 40); pr.sd = story.done && !(story.res && story.res.fromPeer) ? 1 : 0; }
+}
+$('m-story').addEventListener('click', openStory);
+$('b-st-back').addEventListener('click', () => { if (teamKind === 'story') toMenu(); else show('scr-menu'); });
+$('b-sr-next').addEventListener('click', () => { const i = SLEVELS.indexOf(story.L); if (SLEVELS[i + 1]) storyPick(SLEVELS[i + 1].id); });
+$('b-sr-retry').addEventListener('click', () => storyPick(story.L.id));
+$('b-sr-map').addEventListener('click', () => { const room = teamKind === 'story'; story = null; state = 'menu'; mode = 'solo'; $('whud').hidden = true; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false; refreshMenu(); openStory(); if (!room) { /* nothing else */ } });
+$('b-st-host').addEventListener('click', async () => {
+  const err = $('st-err'); err.hidden = true;
+  try { await joinRoom('story', newCode()); storyHost = true; renderStoryMap(); }
+  catch (e) { team = null; err.textContent = 'Could not open a co-op room. Try again in a moment.'; err.hidden = false; }
+});
+const tryStoryJoin = async () => {
+  const err = $('st-err'); err.hidden = true;
+  const code = readCode($('st-code-in'));
+  if (code.length < 4) { err.textContent = 'Codes are 5 letters and numbers.'; err.hidden = false; return; }
+  try { await joinRoom('story', code); storyHost = false; storyLast = 0; renderStoryMap(); }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join "' + code + '". Check the code and try again.'); err.hidden = false; }
+};
+$('b-st-join').addEventListener('click', tryStoryJoin);
+$('st-code-in').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryStoryJoin(); });
+$('b-st-copy').addEventListener('click', () => copyCode($('b-st-copy'), $('st-code')));
+$('dlg').addEventListener('pointerdown', (e) => { e.preventDefault(); dlgNext(); });
 
 // =================================================================
 // ---------- Achievements and skins ----------
@@ -6913,14 +7517,14 @@ function renderSkins() {
   const s = achState(), owned = SKINS.filter(k => ownsSkin(k.id)).length;
   $('l-count').textContent = 'You own ' + owned + ' of ' + SKINS.length + ' skins. Earn them with gold medals in Time Trials. Tap one to preview it.';
   const grid = $('l-items'); grid.textContent = '';
-  const list = ownsSkin('admin') ? [ADMIN_SKIN, ...SKINS] : SKINS;
+  const list = [...(ownsSkin('admin') ? [ADMIN_SKIN] : []), PAL_BY.stormbreaker, ...SKINS];
   for (const k of list) {
-    const need = k === ADMIN_SKIN ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
+    const need = k === ADMIN_SKIN || k.story ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
     const eq = skinEq(k.id), wearing = own && Object.keys(eq).every(c => save.eq[c] === eq[c]);
     const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = k.cols[0];
     const t = document.createElement('b'); t.textContent = hidden && !own ? 'Secret skin' : k.n;
     const sm = document.createElement('small'); sm.style.color = own ? 'var(--mint)' : 'var(--dim)';
-    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : 'Unlock: ' + need + ' gold medals';
+    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : k.story ? 'Unlock: finish Chapter 1 of Story Mode' : 'Unlock: ' + need + ' gold medals';
     const strip = document.createElement('span'); strip.className = 'strip'; strip.style.background = 'linear-gradient(90deg, ' + k.cols.join(', ') + ')';
     b.append(t, sm, strip);
     b.setAttribute('aria-pressed', String(wearing));
@@ -7427,6 +8031,9 @@ function buildAdmGoTo() {
   const ar = $('adm-arenas'); ar.textContent = '';
   for (const a of ARENAS) admBtn(ar, a.n, () => goArena(a.id));
   const tgEl = $('adm-tag'); tgEl.textContent = '';
+  const stEl = $('adm-story'); stEl.textContent = '';
+  for (const L of SLEVELS) admBtn(stEl, L.id + ' ' + L.n, () => { toMenu(); startStory(L.id, 0); });
+  admBtn(stEl, 'Unlock all levels', () => { const S = sState(); for (const L of SLEVELS) { const r = S.lv[L.id] || (S.lv[L.id] = { s: 0, best: 0 }); r.s |= 1; } writeSave(); $('adm-gave').textContent = 'All story levels unlocked.'; });
   const kfEl = $('adm-chess'); kfEl.textContent = '';
   admBtn(kfEl, 'Kingfall vs bot', () => { toMenu(); startChessOffline(); });
   const cfEl = $('adm-ctf'); cfEl.textContent = '';
@@ -7548,7 +8155,7 @@ $('b-adm-tower').addEventListener('click', () => goTower($('adm-m').value));
 $('b-adm-summit').addEventListener('click', () => goTower(TOP_M));
 
 // ---------- loop ----------
-let last = performance.now(), acc = 0;
+let last = performance.now(), acc = 0, storyLobbyT = 0;
 function frame(ts) {
   const dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
   st = sharedTime();
@@ -7556,7 +8163,8 @@ function frame(ts) {
   touchTick(dt);
   admTick(dt);
   syncPeers(dt);
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
+  if (teamKind === 'story') { storyLobbyT -= dt; if (storyLobbyT <= 0) { storyLobbyT = 0.3; storyLobbyTick(); } }
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
   const camX = (W - viewW()) / 2;
   mouse.wx = camX + mouse.sx / scale; mouse.wy = camY + mouse.sy / scale;
   if (state === 'play') {
