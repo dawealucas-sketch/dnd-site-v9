@@ -137,6 +137,32 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 .item small { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
 .item[aria-pressed=true] { background: rgba(94,230,193,.14); outline: 2px solid var(--mint); }
 .item:disabled { opacity: .45; cursor: default; }
+.strip { display: block; height: 6px; border-radius: 3px; margin-top: 4px; }
+/* Achievements */
+.achbar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.1); overflow: hidden; }
+.achbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--mint), var(--gold)); }
+.achlist { list-style: none; margin: 0; padding: 0 4px 0 0; display: grid; gap: 6px; max-height: min(58vh, 620px); overflow-y: auto; }
+.achrow { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px 14px; border-radius: 10px; background: rgba(255,255,255,.05); }
+.achrow.locked { background: rgba(255,255,255,.02); }
+.achrow.locked .achico { filter: grayscale(1) brightness(.55); }
+.achrow.locked .t b { color: var(--dim); }
+.achico { width: 56px; height: 56px; border-radius: 8px; display: grid; place-items: center; box-shadow: inset 0 0 0 2px rgba(255,255,255,.18); font-family: var(--display); font-size: 22px; color: rgba(255,255,255,.95); text-shadow: 0 2px 0 rgba(0,0,0,.4); flex: none; }
+.achrow .t { display: grid; gap: 3px; min-width: 0; }
+.achrow .t b { font-size: 16px; }
+.achrow .t span { color: var(--dim); font-size: 14px; line-height: 1.35; }
+.achrow .t .rw { font-size: 12px; color: var(--gold); }
+.achrow .side { display: grid; gap: 5px; justify-items: end; text-align: right; font-size: 13px; color: var(--dim); min-width: 130px; font-variant-numeric: tabular-nums; }
+.tier { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
+.pbar { width: 140px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; display: block; }
+.pbar i { display: block; height: 100%; background: var(--mint); }
+@media (max-width: 560px) { .achrow { grid-template-columns: 44px minmax(0, 1fr); } .achrow .achico { width: 44px; height: 44px; font-size: 18px; } .achrow .side { grid-column: 2; justify-items: start; text-align: left; } }
+.achtoast { position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 50; display: flex; gap: 12px; align-items: center; width: min(340px, calc(100% - 32px)); padding: 12px 14px; border-radius: 12px; background: linear-gradient(180deg, #2a2350, #1a1533); border: 1px solid rgba(255,211,77,.5); box-shadow: 0 16px 40px rgba(0,0,0,.5); transition: opacity .3s, transform .3s; pointer-events: none; }
+.achtoast.hide { opacity: 0; transform: translateY(16px); }
+.achtoast .achico { width: 48px; height: 48px; font-size: 20px; }
+.attxt { display: grid; gap: 2px; min-width: 0; }
+.attxt b { font-size: 15px; }
+.attxt span:last-child { font-size: 13px; color: var(--dim); }
+@media (prefers-reduced-motion: reduce) { .achtoast { transition: none; } }
 /* Hookworld */
 #whud { position: fixed; inset: 0; pointer-events: none; }
 .region { font-family: var(--display); font-size: 26px; line-height: 1.1; text-shadow: 0 2px 0 rgba(0,0,0,.35); }
@@ -216,15 +242,17 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
       <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
     </div>
-    <div class="modes two">
+    <div class="modes">
       <button class="mode shop" id="m-gacha"><b>Gacha</b><small>Spend 5 tokens to spin for hats, colors, ropes, trails and auras.</small></button>
-      <button class="mode shop" id="m-locker"><b>Locker</b><small>Equip the items you've won.</small></button>
+      <button class="mode shop" id="m-locker"><b>Locker</b><small>Equip items and skins you've won.</small></button>
+      <button class="mode shop" id="m-ach"><b>Achievements</b><small>30 to earn. Each one unlocks a themed skin.</small></button>
     </div>
     <dl class="stats">
       <div><dt>Best height</dt><dd id="s-best">0 m</dd></div>
       <div><dt>Checkpoint</dt><dd id="s-cp">Ground</dd></div>
       <div><dt>Summits</dt><dd id="s-sum">0</dd></div>
       <div><dt>Race wins</dt><dd id="s-wins">0</dd></div>
+      <div><dt>Achievements</dt><dd id="s-ach">0/30</dd></div>
     </dl>
     <button class="link" id="b-help">Controls and tower guide</button>
     <p class="note">Progress, tokens and items save in this browser on this device. Needs a keyboard and mouse.</p>
@@ -477,6 +505,17 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     </div>
   </section>
 
+  <section class="panel wide" id="scr-ach" hidden>
+    <div class="head-row"><h2>Achievements</h2><span class="note" id="ach-sum"></span></div>
+    <div class="achbar"><i id="ach-bar"></i></div>
+    <div class="tabs" id="ach-tabs" role="tablist" aria-label="Show achievements"></div>
+    <ol class="achlist" id="ach-list"></ol>
+    <div class="row">
+      <button class="btn" id="b-ach-skins">See skins in the locker</button>
+      <button class="link" id="b-ach-back">Back to menu</button>
+    </div>
+  </section>
+
   <section class="panel" id="scr-help" hidden>
     <h2>How to climb</h2>
     <dl class="keys">
@@ -500,6 +539,11 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     </ul>
     <button class="btn" id="b-help-back">Back</button>
   </section>
+</div>
+
+<div class="achtoast hide" id="achtoast" hidden role="status" aria-live="polite">
+  <span class="achico" id="at-ico"></span>
+  <div class="attxt"><span class="label">Achievement unlocked</span><b id="at-name"></b><span id="at-sub"></span></div>
 </div>
 
 <script>
@@ -612,6 +656,50 @@ const ITEMS = [
   ['hat', 'h_world', 'World Crown', 5, { k: 'crown', c: '#5ee6c1', ex: true }],
   ['aura', 'a_world', 'Compass Aura', 5, { k: 'orbit', c: '#ffd34d', ex: true }],
 ].map(([cat, id, n, r, p]) => Object.assign({ cat, id, n, r }, p));
+// themed skins: a hat, a color blend, a rope, a trail and an aura each, unlocked by achievements
+const SKINS = [
+  { id: 'comet', n: 'Comet', cols: ['#ffffff', '#bff3ff', '#7fb2ff'], hat: 'comet', rope: 'bolt', trail: 'galaxy', aura: 'orbit' },
+  { id: 'lava', n: 'Lava', cols: ['#ffd25a', '#ff6a1f', '#8a1f10'], hat: 'flame', rope: 'glow', trail: 'flame', aura: 'fire' },
+  { id: 'frost', n: 'Frost', cols: ['#ffffff', '#bff3ff', '#4a8bea'], hat: 'shards', rope: 'glow', trail: 'dot', aura: 'frost' },
+  { id: 'toxic', n: 'Toxic', cols: ['#e8ff8a', '#a6ff3d', '#1f8a3d'], hat: 'beanie', rope: 'glow', trail: 'ring', aura: 'pulse' },
+  { id: 'neon', n: 'Neon', cols: ['#ff4fd8', '#7a3dff', '#38f3ff'], hat: 'cap', rope: 'grad', trail: 'spark', aura: 'gring' },
+  { id: 'galaxy', n: 'Galaxy', cols: ['#ff4fa3', '#b77cff', '#2a1f6e'], hat: 'moon', hc: '#ffd34d', rope: 'grad', trail: 'galaxy', aura: 'void' },
+  { id: 'ocean', n: 'Ocean', cols: ['#bff3ff', '#3fb4e8', '#0e4a7a'], hat: 'bucket', rope: 'grad', trail: 'ring', aura: 'pulse' },
+  { id: 'forest', n: 'Forest', cols: ['#c9e86b', '#5fae4f', '#2f5a2f'], hat: 'flower', rope: 'vine', trail: 'leaf', aura: 'glow' },
+  { id: 'desert', n: 'Desert', cols: ['#f4e3b0', '#e3b45f', '#c25e45'], hat: 'bucket', rope: 'plain', trail: 'dot', aura: 'glow' },
+  { id: 'storm', n: 'Storm', cols: ['#e9f2ff', '#7fb2ff', '#2a2f4a'], hat: 'antenna', hc: '#9aa3b5', rope: 'bolt', trail: 'spark', aura: 'gring' },
+  { id: 'shadow', n: 'Shadow', cols: ['#7a6a9a', '#3a3550', '#0d0a18'], hat: 'band', hc: '#7a6a9a', rope: 'chain', trail: 'ghost', aura: 'void' },
+  { id: 'candy', n: 'Candy', cols: ['#ff7ac8', '#ffffff', '#7fd8ff'], hat: 'prop', hc: '#ff7ac8', rope: 'candy', trail: 'sq', aura: 'orbit', ac: '#ff7ac8' },
+  { id: 'royal', n: 'Royal', cols: ['#ffd34d', '#b77cff', '#5b45c9'], hat: 'crown', hc: '#ffd34d', rope: 'chain', rc: '#ffd34d', trail: 'star', aura: 'ring' },
+  { id: 'pirate', n: 'Pirate', cols: ['#e0484f', '#7a3f2b', '#2a2540'], hat: 'tricorn', hc: '#2a2540', rope: 'plain', trail: 'star', aura: 'glow' },
+  { id: 'robot', n: 'Robot', cols: ['#38f3ff', '#9aa3b5', '#5a6c8c'], hat: 'antenna', hc: '#9aa3b5', rope: 'chain', trail: 'spark', aura: 'ring', ac: '#38f3ff' },
+  { id: 'ghost', n: 'Ghost', cols: ['#ffffff', '#c8d3ff', '#8a8fbf'], hat: 'halo', hc: '#ffffff', rope: 'glow', trail: 'ghost', aura: 'glow' },
+  { id: 'phoenix', n: 'Phoenix', cols: ['#fff3b0', '#ff8a3d', '#ff3d6e'], hat: 'crown', hc: '#ff8a3d', rope: 'grad', trail: 'flame', aura: 'gring' },
+  { id: 'dragon', n: 'Dragon', cols: ['#ffd34d', '#3fae6a', '#1f4a2f'], hat: 'horns', hc: '#ffd34d', rope: 'chain', trail: 'flame', aura: 'fire' },
+  { id: 'sakura', n: 'Sakura', cols: ['#ffffff', '#ffb7d5', '#ff7ac8'], hat: 'flower', rope: 'vine', trail: 'leaf', aura: 'orbit' },
+  { id: 'prism', n: 'Prism', cols: ['#ff6b8b', '#ffd34d', '#5ee6c1', '#7fb2ff', '#c79bff'], hat: 'shards', hc: '#c8f1ff', rope: 'rainbow', trail: 'gstreak', aura: 'rainbowring' },
+  { id: 'sunset', n: 'Sunset', cols: ['#ffd25a', '#ff8a3d', '#ff4fa3', '#7a3dff'], hat: 'cap', rope: 'grad', trail: 'gstreak', aura: 'glow' },
+  { id: 'aurora', n: 'Aurora', cols: ['#5ee6c1', '#7fb2ff', '#c79bff'], hat: 'halo', hc: '#5ee6c1', rope: 'grad', trail: 'gstreak', aura: 'gring' },
+  { id: 'crystal', n: 'Crystal', cols: ['#e8fbff', '#7fd8ff', '#b77cff'], hat: 'shards', rope: 'glow', trail: 'star', aura: 'frost' },
+  { id: 'golden', n: 'Golden', cols: ['#fff3b0', '#ffd34d', '#c98a1f'], hat: 'crown', hc: '#ffd34d', rope: 'chain', trail: 'spark', aura: 'glow' },
+  { id: 'vapor', n: 'Vapor', cols: ['#ff71ce', '#b967ff', '#01cdfe'], hat: 'top', hc: '#b967ff', rope: 'grad', trail: 'sq', aura: 'gring' },
+  { id: 'moonlight', n: 'Moonlight', cols: ['#ffffff', '#c8d3ff', '#1b1f4a'], hat: 'moon', hc: '#ffffff', rope: 'glow', trail: 'star', aura: 'pulse' },
+  { id: 'ninja', n: 'Ninja', cols: ['#e0484f', '#3a3550', '#111018'], hat: 'band', hc: '#e0484f', rope: 'plain', trail: 'dot', aura: 'ring', ac: '#e0484f' },
+  { id: 'astronaut', n: 'Astronaut', cols: ['#ffffff', '#9aa3b5', '#ff8a3d'], hat: 'bubble', hc: '#ff8a3d', rope: 'chain', trail: 'spark', aura: 'orbit', ac: '#ff8a3d' },
+  { id: 'samurai', n: 'Samurai', cols: ['#ffd34d', '#8a1f2b', '#2a2540'], hat: 'horns', hc: '#ffd34d', rope: 'plain', trail: 'leaf', aura: 'ring' },
+  { id: 'celestial', n: 'Celestial', cols: ['#ffffff', '#ffd34d', '#c79bff', '#5aa8ff'], hat: 'halo', hc: '#ffd34d', rope: 'grad', trail: 'galaxy', aura: 'rainbowring', glow: 16 },
+];
+const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon' };
+const SKIN_BY = Object.create(null);
+for (const s of SKINS) {
+  SKIN_BY[s.id] = s;
+  const base = { r: 5, ex: true, sk: s.id };
+  ITEMS.push(Object.assign({ cat: 'hat', id: 'k_' + s.id + '_h', n: s.n + ' ' + HAT_NAMES[s.hat], k: s.hat, c: s.hc || s.cols[1], c2: s.cols[0] }, base));
+  ITEMS.push(Object.assign({ cat: 'color', id: 'k_' + s.id + '_c', n: s.n + ' Blend', fx: 'blend', cols: s.cols, c: s.cols[1], g: s.glow || 7 }, base));
+  ITEMS.push(Object.assign({ cat: 'rope', id: 'k_' + s.id + '_r', n: s.n + ' Rope', k: s.rope, c: s.rc || s.cols[1], cols: s.cols }, base));
+  ITEMS.push(Object.assign({ cat: 'trail', id: 'k_' + s.id + '_t', n: s.n + ' Trail', k: s.trail, cols: s.cols }, base));
+  ITEMS.push(Object.assign({ cat: 'aura', id: 'k_' + s.id + '_a', n: s.n + ' Aura', k: s.aura, c: s.ac || s.cols[1], cols: s.cols }, base));
+}
 const ITEM = Object.create(null);
 for (const it of ITEMS) ITEM[it.id] = it;
 const NOEQ = { hat: null, color: null, rope: null, trail: null, aura: null };
@@ -637,7 +725,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -659,6 +747,7 @@ try {
     if (s.raceCfg && typeof s.raceCfg === 'object') save.raceCfg = s.raceCfg;
     if (s.hw && typeof s.hw === 'object') save.hw = s.hw;
     if (s.pvpCfg && typeof s.pvpCfg === 'object') save.pvpCfg = s.pvpCfg;
+    if (s.ach && typeof s.ach === 'object') save.ach = s.ach;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
 const gotSet = new Set(save.got);
@@ -918,6 +1007,7 @@ function circleRect(px, py, r, x, y, w, h) {
 }
 function addTokens(n, x, y) {
   save.tokens += n; runTokens += n; saveDirty = true;
+  achStat('earned', n);
   if (x != null) particles.push({ k: 'text', text: '+' + n, x, y: y - 30, vx: 0, vy: -50, life: 1.1, color: '#ffd34d' });
 }
 
@@ -1017,7 +1107,7 @@ function step(dt) {
   if (runHeight > save.best) { save.best = runHeight; saveDirty = true; }
   // 1 token for each new 10 m mark on this climb; a new climb pays again
   const ht = Math.floor(runHeight / 10);
-  if (ht > runHTok) { addTokens(ht - runHTok, P.x, P.y); runHTok = ht; }
+  if (ht > runHTok) { achStat('marks', ht - runHTok); addTokens(ht - runHTok, P.x, P.y); runHTok = ht; }
   if (race && race.start <= Date.now() && !race.ended) {
     race.myMax = Math.max(race.myMax, runHeight);
     if (race.type === 'height' && runHeight >= race.goal - 1) { race.myFin = Date.now() - race.start; endMyRace(); }
@@ -1031,6 +1121,7 @@ function step(dt) {
 }
 function reachCheckpoint(pl) {
   reachedCp = pl.n;
+  if (mode === 'coop' && peerState.size > 0) unlockAch('coop');
   if (pl.n > save.cp && pl.n <= MAX_CP) { save.cp = pl.n; writeSave(); }
   if (secOf(pl.m) <= runTopSec) banner('Checkpoint', pl.m + ' m');
   burst(P.x, pl.y, '#5ee6c1', 20, 220);
@@ -1042,6 +1133,8 @@ function reachSummit() {
   save.summits++;
   const t = gt - runStartGt;
   if (runFromBottom && !race && (!save.fastest || t < save.fastest)) save.fastest = t;
+  if (runFromBottom && !race && runHits === 0) unlockAch('nohit');
+  if (runFromBottom && !race && t < 480) unlockAch('speed');
   gotSet.clear();
   writeSave();
   burst(P.x, P.y, '#ffd34d', 40, 320); burst(P.x, P.y, '#5ee6c1', 30, 260);
@@ -1334,6 +1427,7 @@ function endMyRace() {
     const reward = rows.length >= 2 ? ([5, 3, 1][race.place - 1] || 0) : 0;
     if (reward) addTokens(reward, P.x, P.y);
     if (race.place === 1 && rows.length >= 2) save.raceWins++;
+    if (race.place === 1 && race.type === 'height' && race.goal >= TOP_M && race.nb >= 3 && race.df === 'hard') unlockAch('racehard');
     race.reward = reward;
     writeSave();
   }
@@ -1381,7 +1475,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -1394,6 +1488,7 @@ function refreshMenu() {
   $('s-sum').textContent = String(save.summits);
   $('s-wins').textContent = String(save.raceWins);
   $('m-tokens').textContent = String(save.tokens);
+  if (achRefresh) achRefresh();
 }
 function refreshCoopScreen() {
   const msg = $('coop-msg'), ui = $('coop-ui');
@@ -1600,17 +1695,17 @@ $('b-help-back').addEventListener('click', () => show(helpReturn));
 // ---------- gacha ----------
 let gCat = 'hat', gRolling = false, gShown = null;
 const previewParticles = [];
-function tabs(id, sel, onPick) {
+function tabs(id, sel, onPick, extra) {
   const el = $(id);
   el.textContent = '';
-  for (const c of CATS) {
+  for (const c of CATS.concat(extra || [])) {
     const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab');
     b.textContent = c.n; b.setAttribute('aria-selected', String(c.id === sel));
     b.addEventListener('click', () => onPick(c.id));
     el.append(b);
   }
 }
-function ownedCount(cat, noEx) { const all = ITEMS.filter(i => i.cat === cat && !(noEx && i.ex)); return [all.filter(i => save.owned[i.id]).length, all.length]; }
+function ownedCount(cat, noEx) { const all = ITEMS.filter(i => i.cat === cat && !i.sk && !(noEx && i.ex)); return [all.filter(i => save.owned[i.id]).length, all.length]; }
 function renderGacha() {
   $('g-tokens').textContent = String(save.tokens);
   tabs('g-tabs', gCat, (c) => { if (gRolling) return; gCat = c; gShown = null; $('g-pulls').textContent = ''; setResult(null); renderGacha(); });
@@ -1655,6 +1750,7 @@ function rollPull(cat) {
   const dup = !!save.owned[it.id];
   save.owned[it.id] = (save.owned[it.id] || 0) + 1;
   if (dup) save.tokens += RAR[r].refund;
+  achStat('pulls', 1);
   return { it, dup };
 }
 function spin(times) {
@@ -1700,7 +1796,8 @@ $('g-locker').addEventListener('click', () => { if (!gRolling) openLocker(gCat);
 let lCat = 'hat';
 function openLocker(cat) { if (cat) lCat = cat; renderLocker(); show('scr-locker'); }
 function renderLocker() {
-  tabs('l-tabs', lCat, (c) => { lCat = c; renderLocker(); });
+  tabs('l-tabs', lCat, (c) => { lCat = c; lockerPreview = null; renderLocker(); }, [{ id: 'skins', n: 'Skins' }]);
+  if (lCat === 'skins') { renderSkins(); return; }
   const [have, all] = ownedCount(lCat);
   $('l-count').textContent = 'You own ' + have + ' of ' + all + '.';
   const grid = $('l-items'); grid.textContent = '';
@@ -1710,7 +1807,7 @@ function renderLocker() {
   none.append(nb, ns); none.setAttribute('aria-pressed', String(!save.eq[lCat]));
   none.addEventListener('click', () => { save.eq[lCat] = null; writeSave(); renderLocker(); });
   grid.append(none);
-  for (const it of ITEMS.filter(i => i.cat === lCat).sort((a, b) => a.r - b.r)) {
+  for (const it of ITEMS.filter(i => i.cat === lCat && !i.sk).sort((a, b) => a.r - b.r)) {
     const own = !!save.owned[it.id], r = RAR[it.r];
     const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = r.c;
     const t = document.createElement('b'); t.textContent = own ? it.n : '???';
@@ -1723,7 +1820,7 @@ function renderLocker() {
   }
 }
 $('l-back').addEventListener('click', () => { refreshMenu(); show('scr-menu'); });
-$('l-gacha').addEventListener('click', () => { gCat = lCat; openGacha(); });
+$('l-gacha').addEventListener('click', () => { if (lCat !== 'skins') gCat = lCat; openGacha(); });
 refreshMenu();
 
 // ---------- rendering ----------
@@ -1933,10 +2030,23 @@ function drawPlat(pl) {
 }
 
 // ----- cosmetics -----
+function hexRGB(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+function blendAt(cols, u) {
+  // smooth color between the stops of a looping palette
+  const n = cols.length, p = (((u % 1) + 1) % 1) * n, i = Math.floor(p), f = p - i;
+  const a = hexRGB(cols[i % n]), b = hexRGB(cols[(i + 1) % n]);
+  return 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * f) + ',' + Math.round(a[1] + (b[1] - a[1]) * f) + ',' + Math.round(a[2] + (b[2] - a[2]) * f) + ')';
+}
 function pushHist(h, x, y) { h.push(x, y); if (h.length > 48) h.splice(0, h.length - 48); }
 function bodyStyle(eq, base, xy) {
   const it = eq && eq.color ? ITEM[eq.color] : null;
   if (!it) return { c: base, g: 0, gc: base };
+  if (it.fx === 'blend') {
+    // a shimmering gradient from head to feet (drawn in the climber's own coordinates)
+    const sw = Math.sin(gt * 1.5) * 9, g = ctx.createLinearGradient(sw, -17, -sw, 16);
+    it.cols.forEach((c, i) => g.addColorStop(i / (it.cols.length - 1), c));
+    return { c: g, g: it.g || 7, gc: it.cols[1] || it.cols[0], flat: it.cols[0] };
+  }
   if (it.fx === 'rainbow') { const c = `hsl(${(gt * 140 + xy * 0.3) % 360},90%,65%)`; return { c, g: 8, gc: c }; }
   if (it.fx === 'star') return { c: '#ffffff', g: 16, gc: `hsl(${(gt * 70) % 360},100%,72%)` };
   return { c: it.c, g: it.g || 0, gc: it.c };
@@ -1976,6 +2086,12 @@ function drawRope(px, py, ax, ay, L, id, alpha) {
       ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
       for (let k = 1; k < pts.length - 1; k++) ctx.lineTo(pts[k][0] + (Math.random() - 0.5) * 10, pts[k][1] + (Math.random() - 0.5) * 10);
       ctx.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]); ctx.stroke(); break;
+    case 'grad': {
+      const cols = it.cols || [c, c];
+      ctx.lineWidth = 4; ctx.shadowBlur = 8; ctx.shadowColor = cols[0];
+      for (let k = 0; k < pts.length - 1; k++) { ctx.strokeStyle = blendAt(cols, k / (pts.length - 1) * 0.8 + gt * 0.35); ctx.beginPath(); ctx.moveTo(pts[k][0], pts[k][1]); ctx.lineTo(pts[k + 1][0], pts[k + 1][1]); ctx.stroke(); }
+      break;
+    }
     default: ctx.strokeStyle = c; ctx.lineWidth = 3.5; poly(pts); ctx.stroke();
   }
   ctx.restore();
@@ -2018,6 +2134,12 @@ function drawAura(x, y, id) {
       ctx.lineWidth = 4; ctx.shadowBlur = 10;
       for (let k = 0; k < 12; k++) { const c = `hsl(${(k * 30 + t * 120) % 360},90%,65%)`; ctx.strokeStyle = c; ctx.shadowColor = c; ctx.beginPath(); ctx.arc(0, 0, 36, k * 0.5236, (k + 1) * 0.5236 + 0.02); ctx.stroke(); }
       break;
+    case 'gring': {
+      const cols = it.cols || [it.c, it.c];
+      ctx.lineWidth = 4; ctx.shadowBlur = 10;
+      for (let k = 0; k < 16; k++) { const cc = blendAt(cols, k / 16 + t * 0.25); ctx.strokeStyle = cc; ctx.shadowColor = cc; ctx.beginPath(); ctx.arc(0, 0, 36, k * 0.3927 + t, (k + 1) * 0.3927 + t + 0.02); ctx.stroke(); }
+      break;
+    }
     case 'void': {
       const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 48);
       g.addColorStop(0, 'rgba(0,0,0,0.85)'); g.addColorStop(0.55, 'rgba(30,8,60,0.55)'); g.addColorStop(1, 'rgba(60,20,110,0)');
@@ -2058,6 +2180,42 @@ function drawHat(id, face) {
       const w = Math.cos(t * 25) * 8; ctx.strokeStyle = '#ff5a6e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-w, -20); ctx.lineTo(w, -20); ctx.stroke(); break;
     }
     case 'halo': ctx.strokeStyle = c; ctx.lineWidth = 1.8; ctx.shadowBlur = 10; ctx.shadowColor = '#ffd34d'; ctx.beginPath(); ctx.ellipse(0, -22 + Math.sin(t * 3) * 0.8, 6.8, 2.1, 0, 0, 6.283); ctx.stroke(); break;
+    case 'flame':
+      for (let k = 0; k < 3; k++) { const f = 0.8 + 0.2 * Math.sin(t * 10 + k * 2); ctx.fillStyle = [c, it.c2 || '#ffd25a', '#fff3b0'][k]; ctx.beginPath(); ctx.ellipse(0, -18 - k * 2, (5.5 - k * 1.6) * f, (8 - k * 2) * f, 0, 0, 6.283); ctx.fill(); }
+      break;
+    case 'antenna':
+      ctx.fillStyle = c; ctx.fillRect(-5, -16.5, 10, 2.5);
+      ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(0, -23); ctx.stroke();
+      ctx.fillStyle = it.c2 || '#38f3ff'; ctx.shadowBlur = 8; ctx.shadowColor = ctx.fillStyle; ctx.beginPath(); ctx.arc(0, -24, 2.4 + Math.sin(t * 6) * 0.5, 0, 6.283); ctx.fill();
+      break;
+    case 'tricorn':
+      ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(-10, -13); ctx.quadraticCurveTo(0, -27, 10, -13); ctx.quadraticCurveTo(0, -17, -10, -13); ctx.fill();
+      ctx.fillStyle = it.c2 || '#ffd34d'; ctx.fillRect(-1.5, -20, 3, 3);
+      break;
+    case 'flower':
+      for (let k = 0; k < 5; k++) { const a = k * 1.257 + t * 0.5; ctx.fillStyle = c; ctx.beginPath(); ctx.arc(4 + Math.cos(a) * 2.6, -16 + Math.sin(a) * 2.6, 1.9, 0, 6.283); ctx.fill(); }
+      ctx.fillStyle = it.c2 || '#ffd34d'; ctx.beginPath(); ctx.arc(4, -16, 1.4, 0, 6.283); ctx.fill();
+      break;
+    case 'horns':
+      ctx.fillStyle = c;
+      for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * 3, -14); ctx.quadraticCurveTo(s * 10, -18, s * 7, -27); ctx.quadraticCurveTo(s * 6, -19, s * 1, -15.5); ctx.fill(); }
+      break;
+    case 'bubble':
+      ctx.fillStyle = 'rgba(191,243,255,0.18)'; ctx.strokeStyle = 'rgba(220,240,255,0.9)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(0, -10, 8.5, 0, 6.283); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillRect(-5, -15, 2, 3);
+      ctx.fillStyle = c; ctx.fillRect(-6.5, -2.5, 13, 2.2);
+      break;
+    case 'shards':
+      ctx.fillStyle = c; ctx.shadowBlur = 6; ctx.shadowColor = c;
+      for (const [x0, h0] of [[-4, 7], [0, 11], [4, 7]]) { ctx.beginPath(); ctx.moveTo(x0 - 2, -14); ctx.lineTo(x0, -14 - h0); ctx.lineTo(x0 + 2, -14); ctx.fill(); }
+      break;
+    case 'moon': {
+      const y0 = -24 + Math.sin(t * 2) * 1.2;
+      ctx.fillStyle = c; ctx.shadowBlur = 10; ctx.shadowColor = c;
+      ctx.beginPath(); ctx.arc(0, y0, 4.5, Math.PI * 0.3, Math.PI * 1.7, false); ctx.arc(2, y0, 3.6, Math.PI * 1.6, Math.PI * 0.4, true); ctx.closePath(); ctx.fill();
+      break;
+    }
     case 'comet': {
       ctx.shadowBlur = 10; ctx.shadowColor = '#7fe8ff'; ctx.fillStyle = c;
       ctx.beginPath(); ctx.moveTo(-6, -14); ctx.lineTo(-6, -21); ctx.lineTo(-3, -17.5); ctx.lineTo(0, -23); ctx.lineTo(3, -17.5); ctx.lineTo(6, -21); ctx.lineTo(6, -14); ctx.closePath(); ctx.fill();
@@ -2069,7 +2227,7 @@ function drawHat(id, face) {
 }
 function emitTrail(o, dt, list) {
   const it = o.eq && o.eq.trail ? ITEM[o.eq.trail] : null;
-  if (!it || it.k === 'ghost' || it.k === 'streak') return;
+  if (!it || it.k === 'ghost' || it.k === 'streak' || it.k === 'gstreak') return;
   if (Math.hypot(o.vx || 0, o.vy || 0) < 150) return;
   o.trailAcc = (o.trailAcc || 0) + dt * (reduceMotion ? 12 : 55);
   while (o.trailAcc >= 1) {
@@ -2110,17 +2268,17 @@ function drawHistTrail(o) {
   const it = o.eq && o.eq.trail ? ITEM[o.eq.trail] : null;
   if (!it || !o.hist || o.hist.length < 8) return;
   const h = o.hist;
-  if (it.k === 'streak') {
+  if (it.k === 'streak' || it.k === 'gstreak') {
     ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = 6;
     for (let k = 2; k < h.length; k += 2) {
       ctx.globalAlpha = (k / h.length) * 0.7;
-      ctx.strokeStyle = `hsl(${(k * 15 + gt * 200) % 360},90%,62%)`;
+      ctx.strokeStyle = it.k === 'gstreak' ? blendAt(it.cols, k / h.length + gt * 0.3) : `hsl(${(k * 15 + gt * 200) % 360},90%,62%)`;
       ctx.beginPath(); ctx.moveTo(h[k - 2], h[k - 1]); ctx.lineTo(h[k], h[k + 1]); ctx.stroke();
     }
     ctx.restore();
   } else if (it.k === 'ghost') {
     const bs = bodyStyle(o.eq, o.base, 0);
-    ctx.save(); ctx.fillStyle = bs.c; ctx.strokeStyle = bs.c; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.save(); ctx.fillStyle = bs.flat || bs.c; ctx.strokeStyle = bs.flat || bs.c; ctx.lineWidth = 4; ctx.lineCap = 'round';
     for (let k = 0; k < h.length - 8; k += 12) {
       ctx.globalAlpha = 0.08 + (k / h.length) * 0.22;
       const x = h[k], y = h[k + 1];
@@ -2274,7 +2432,7 @@ function renderPreview(cv, eq, dt) {
   ctx = mainCtx;
 }
 function previewEq() {
-  if (current === 'scr-locker') return save.eq;
+  if (current === 'scr-locker') return lockerPreview || save.eq;
   if (current === 'scr-gacha' && gShown) { const e = Object.assign({}, NOEQ); e[gShown.cat] = gShown.id; return e; }
   if (current === 'scr-gacha') return save.eq;
   return null;
@@ -2669,6 +2827,7 @@ function worldHurt(fx, fy) {
   hurt(fx, fy);
 }
 function knockedOut() {
+  achStat('hwko', 1);
   burst(P.x, P.y, '#ff5a6e', 30, 300);
   if (!reduceMotion) shake = 0.4;
   hw.shots.length = 0;
@@ -3466,6 +3625,7 @@ function applyFighter(f, kind, a, b, c, src, isMe) {
   if (f.hp <= 0) {
     f.hp = 0; f.lives = Math.max(0, f.lives - 1); f.alive = false;
     f.kb[src] = (f.kb[src] || 0) + 1;
+    if (kind === 'y' && !isMe && src === selfId()) unlockAch('yank');
     f.respawnAt = f.lives > 0 ? now + 3000 : 0;
     burst(body.x, body.y, '#ffd34d', 26, 300);
     if (isMe) { detach(); banner(f.lives > 0 ? 'Knocked out' : 'Out of lives', f.lives > 0 ? 'Back in 3' : 'Spectating', f.lives > 0 ? f.lives + (f.lives === 1 ? ' life' : ' lives') + ' left.' : 'Last one standing wins.'); }
@@ -3576,7 +3736,7 @@ function useUlt(src, f, body, id, ax, ay) {
   }
   pvp.fx.push(fx);
   burst(body.x, body.y, ULTS[id].c, 24, 260);
-  if (isMe) banner('Ultimate', ULTS[id].n);
+  if (isMe) { banner('Ultimate', ULTS[id].n); achStat('ults', 1); }
 }
 function updateFx(now, dt) {
   for (let i = pvp.fx.length - 1; i >= 0; i--) {
@@ -3816,6 +3976,7 @@ function finishPvp(win) {
   const won = win != null && win === pvp.me.team, tok = kosOf(selfId()) * 2 + (won ? 10 : 0);
   if (tok) addTokens(tok, P.x, P.y);
   pvp.reward = tok; pvp.won = won;
+  achPvp(won);
   writeSave();
   detach(); for (const k in keys) keys[k] = false;
   state = 'over';
@@ -4085,11 +4246,184 @@ function pvpHudFast() {
   const reg = $('w-region'); if (reg.textContent !== txt) reg.textContent = txt;
 }
 
+// =================================================================
+// ---------- Achievements and skins ----------
+// =================================================================
+const ACH = [
+  { id: 'summit1', n: 'Top of the Spire', d: 'Reach the summit of the tower.', cat: 'climb', tier: 'medium', sk: 'golden', prog: () => [save.summits, 1] },
+  { id: 'summit5', n: 'Spire Regular', d: 'Reach the summit 5 times.', cat: 'climb', tier: 'hard', sk: 'crystal', prog: () => [save.summits, 5] },
+  { id: 'nohit', n: 'Untouchable', d: 'Climb from the bottom to the summit without taking a single hit.', cat: 'climb', tier: 'hard', sk: 'ghost' },
+  { id: 'speed', n: 'Speedrunner', d: 'Climb from the bottom to the summit in under 8 minutes.', cat: 'climb', tier: 'hard', sk: 'storm' },
+  { id: 'marks', n: 'Mountain Legs', d: 'Climb 5,000 m in total across all your climbs.', cat: 'climb', tier: 'medium', sk: 'desert', unit: ' m', prog: () => [stat('marks') * 10, 5000] },
+  { id: 'coop', n: 'Better Together', d: 'Reach a checkpoint in Co-op Climb with a friend on your team.', cat: 'climb', tier: 'medium', sk: 'sakura' },
+  { id: 'race1', n: 'Podium Finish', d: 'Win a race.', cat: 'race', tier: 'medium', sk: 'neon', prog: () => [save.raceWins, 1] },
+  { id: 'race10', n: 'Champion', d: 'Win 10 races.', cat: 'race', tier: 'hard', sk: 'royal', prog: () => [save.raceWins, 10] },
+  { id: 'racehard', n: 'Bot Breaker', d: 'Win a race to the summit against 3 hard bots.', cat: 'race', tier: 'hard', sk: 'robot' },
+  { id: 'pull50', n: 'Collector', d: 'Spin the gacha 50 times.', cat: 'gacha', tier: 'medium', sk: 'candy', prog: () => [stat('pulls'), 50] },
+  { id: 'mythic', n: 'Mythic Luck', d: 'Win a Mythic item from the gacha.', cat: 'gacha', tier: 'medium', sk: 'prism', prog: () => [ITEMS.filter(i => !i.ex && i.r === 5 && save.owned[i.id]).length, 1] },
+  { id: 'hats', n: 'Hat Trick', d: 'Own every hat from the hat machine.', cat: 'gacha', tier: 'hard', sk: 'pirate', prog: () => gachaSet('hat') },
+  { id: 'allgacha', n: 'Completionist', d: 'Own every item from all five gacha machines.', cat: 'gacha', tier: 'hard', sk: 'vapor', prog: () => gachaSet(null) },
+  { id: 'earned', n: 'Token Hoarder', d: 'Earn 1,000 tokens in total.', cat: 'gacha', tier: 'medium', sk: 'sunset', prog: () => [stat('earned'), 1000] },
+  { id: 'abil6', n: 'Half the Secrets', d: 'Find 6 abilities in Hookworld.', cat: 'world', tier: 'medium', sk: 'forest', prog: () => [hs().ab.length, 6] },
+  { id: 'abil12', n: 'Master of Hooks', d: 'Find every ability hidden in Hookworld.', cat: 'world', tier: 'hard', secret: true, sk: 'galaxy', prog: () => [hs().ab.length, ABIL_IDS.length] },
+  { id: 'vault', n: 'The Vault', d: 'Open the Vault deep under Sunny Meadow.', cat: 'world', tier: 'hard', secret: true, sk: 'dragon', prog: () => [hs().vault ? 1 : 0, 1] },
+  { id: 'chests', n: 'Treasure Hunter', d: 'Open 20 chests in Hookworld.', cat: 'world', tier: 'medium', sk: 'ocean', prog: () => [hs().ch.length, 20] },
+  { id: 'camps', n: 'Wanderer', d: 'Light every campfire in Hookworld.', cat: 'world', tier: 'medium', sk: 'aurora', prog: () => [hs().camps.length, CAMPS.length] },
+  { id: 'explore', n: 'Cartographer', d: 'Explore three quarters of the Hookworld map.', cat: 'world', tier: 'hard', sk: 'moonlight', unit: '%', prog: () => [Math.round((hs().ex.split('1').length - 1) / 4.5), 75] },
+  { id: 'hwko', n: 'Glutton for Punishment', d: 'Get knocked out 10 times in Hookworld.', cat: 'world', tier: 'medium', secret: true, sk: 'toxic', prog: () => [stat('hwko'), 10] },
+  { id: 'pvpwin', n: 'Victor', d: 'Win a PvP match.', cat: 'pvp', tier: 'medium', sk: 'lava', prog: () => [stat('pvpwins'), 1] },
+  { id: 'pvpko', n: 'Brawler', d: 'Knock out 50 players or bots in PvP.', cat: 'pvp', tier: 'hard', sk: 'ninja', prog: () => [stat('pvpko'), 50] },
+  { id: 'flawless', n: 'Flawless', d: 'Win a PvP match with 3 or more lives without losing one, against at least 3 opponents.', cat: 'pvp', tier: 'hard', sk: 'samurai' },
+  { id: 'pvphard', n: 'Bot Slayer', d: 'Win a free-for-all match against 5 hard bots.', cat: 'pvp', tier: 'hard', sk: 'shadow' },
+  { id: 'ults', n: 'Ultimate Power', d: 'Use your ultimate 25 times.', cat: 'pvp', tier: 'medium', sk: 'phoenix', prog: () => [stat('ults'), 25] },
+  { id: 'yank', n: 'Get Over Here', d: 'Knock out an opponent with a yank.', cat: 'pvp', tier: 'medium', secret: true, sk: 'frost' },
+  { id: 'teamwins', n: 'Team Player', d: 'Win 5 team matches.', cat: 'pvp', tier: 'hard', sk: 'astronaut', prog: () => [stat('teamwins'), 5] },
+  { id: 'colossus', n: 'King of the Colossus', d: 'Win a free-for-all match on Colossus against at least 4 opponents.', cat: 'pvp', tier: 'hard', sk: 'comet' },
+  { id: 'legend', n: 'Legend of Hookspire', d: 'Unlock every other achievement.', cat: 'legend', tier: 'legend', sk: 'celestial', prog: () => [ACH.filter(a => a.id !== 'legend' && achState().u[a.id]).length, ACH.length - 1] },
+];
+const ACH_BY = Object.create(null);
+for (const a of ACH) ACH_BY[a.id] = a;
+const ACH_STATS = ['marks', 'pulls', 'earned', 'hwko', 'pvpko', 'pvpwins', 'ults', 'teamwins'];
+const TIER = { medium: { n: 'Medium', c: '#7fb2ff', tok: 30 }, hard: { n: 'Hard', c: '#ff8a3d', tok: 75 }, legend: { n: 'Ultimate flex', c: '#ffd34d', tok: 300 } };
+const CAT_GLYPH = { climb: '▲', race: '»', gacha: '◆', world: '✦', pvp: '✕', legend: '★' };
+let achOk = false, achT = 0, achFilter = 'all', lockerPreview = null, toastBusy = false;
+const toastQ = [];
+var achRefresh = null;
+function achState() {
+  if (!save.ach || typeof save.ach !== 'object') { save.ach = {}; achOk = false; }
+  const a = save.ach;
+  if (!achOk) {
+    const u = Object.create(null), s = Object.create(null);
+    if (a.u && typeof a.u === 'object') for (const k of Object.keys(a.u)) if (ACH_BY[k] && num(a.u[k]) != null) u[k] = a.u[k];
+    for (const k of ACH_STATS) s[k] = a.s && typeof a.s === 'object' ? clampInt(a.s[k], 0, 1e9) : 0;
+    a.u = u; a.s = s; achOk = true;
+  }
+  return a;
+}
+const stat = (k) => achState().s[k] || 0;
+function achStat(k, n) { const s = achState().s; s[k] = (s[k] || 0) + n; saveDirty = true; }
+function gachaSet(cat) { const pool = ITEMS.filter(i => !i.ex && (!cat || i.cat === cat)); return [pool.filter(i => save.owned[i.id]).length, pool.length]; }
+const achTok = (A) => TIER[A.tier].tok + (A.secret ? 25 : 0);
+const skinEq = (id) => ({ hat: 'k_' + id + '_h', color: 'k_' + id + '_c', rope: 'k_' + id + '_r', trail: 'k_' + id + '_t', aura: 'k_' + id + '_a' });
+const ownsSkin = (id) => Object.values(skinEq(id)).every(i => save.owned[i]);
+function unlockAch(id) {
+  const A = ACH_BY[id], s = achState();
+  if (!A || s.u[id]) return;
+  s.u[id] = Date.now();
+  for (const iid of Object.values(skinEq(A.sk))) save.owned[iid] = (save.owned[iid] || 0) + 1;
+  addTokens(achTok(A));
+  writeSave();
+  queueToast(A);
+  if (achRefresh) achRefresh();
+  if (current === 'scr-ach') renderAch();
+}
+function achPvp(won) {
+  const views = pvpViews(), m = pvp.me;
+  achStat('pvpko', kosOf(selfId(), views));
+  if (!won) return;
+  achStat('pvpwins', 1);
+  const opp = views.filter(v => v.team !== m.team).length;
+  if (pvp.cfg.lv >= 3 && m.lives === pvp.cfg.lv && opp >= 3) unlockAch('flawless');
+  if (!pvp.cfg.teams && pvp.cfg.nb === 5 && pvp.cfg.df === 'hard') unlockAch('pvphard');
+  if (pvp.cfg.teams) achStat('teamwins', 1);
+  if (!pvp.cfg.teams && pvp.cfg.map === 'colossus' && opp >= 4) unlockAch('colossus');
+}
+function achTick(dt) {
+  achT -= dt;
+  if (achT > 0) return;
+  achT = 1;
+  const u = achState().u;
+  for (const A of ACH) if (A.prog && !u[A.id]) { const [c, mx] = A.prog(); if (c >= mx) unlockAch(A.id); }
+}
+function setIcon(el, A) {
+  el.className = 'achico';
+  el.style.background = 'linear-gradient(135deg, ' + SKIN_BY[A.sk].cols.join(', ') + ')';
+  el.textContent = CAT_GLYPH[A.cat] || '★';
+}
+function queueToast(A) { toastQ.push(A); if (!toastBusy) nextToast(); }
+function nextToast() {
+  const el = $('achtoast'), A = toastQ.shift();
+  if (!A) { toastBusy = false; el.classList.add('hide'); setTimeout(() => { if (!toastBusy) el.hidden = true; }, 350); return; }
+  toastBusy = true;
+  setIcon($('at-ico'), A);
+  $('at-name').textContent = A.n;
+  $('at-sub').textContent = SKIN_BY[A.sk].n + ' skin unlocked · +' + achTok(A) + ' tokens';
+  el.hidden = false;
+  requestAnimationFrame(() => el.classList.remove('hide'));
+  setTimeout(nextToast, 4200);
+}
+function fmtDate(ms) { const d = new Date(ms); return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) + ' at ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); }
+function renderAch() {
+  const s = achState(), n = ACH.filter(a => s.u[a.id]).length;
+  $('ach-sum').textContent = n + ' of ' + ACH.length + ' unlocked (' + Math.round(n / ACH.length * 100) + '%)';
+  $('ach-bar').style.width = (n / ACH.length * 100).toFixed(1) + '%';
+  const tb = $('ach-tabs'); tb.textContent = '';
+  for (const [id, label] of [['all', 'All'], ['done', 'Unlocked'], ['todo', 'Locked']]) {
+    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.textContent = label;
+    b.setAttribute('aria-selected', String(achFilter === id));
+    b.addEventListener('click', () => { achFilter = id; renderAch(); });
+    tb.append(b);
+  }
+  const list = $('ach-list'); list.textContent = '';
+  const rows = ACH.filter(a => achFilter === 'all' || (achFilter === 'done') === !!s.u[a.id]);
+  rows.sort((a, b) => (s.u[b.id] ? 1 : 0) - (s.u[a.id] ? 1 : 0) || (s.u[b.id] || 0) - (s.u[a.id] || 0));
+  for (const A of rows) {
+    const done = !!s.u[A.id], hidden = A.secret && !done, T = TIER[A.tier], skin = SKIN_BY[A.sk];
+    const li = document.createElement('li'); li.className = 'achrow' + (done ? '' : ' locked');
+    const ico = document.createElement('span'); setIcon(ico, A); if (hidden) ico.textContent = '?';
+    const t = document.createElement('div'); t.className = 't';
+    const nm = document.createElement('b'); nm.textContent = hidden ? 'Secret achievement' : A.n;
+    const ds = document.createElement('span'); ds.textContent = hidden ? 'Keep playing to discover this one.' : A.d;
+    const rw = document.createElement('span'); rw.className = 'rw'; rw.textContent = 'Reward: ' + (hidden ? 'a secret skin' : skin.n + ' skin') + ' + ' + achTok(A) + ' tokens';
+    t.append(nm, ds, rw);
+    const side = document.createElement('div'); side.className = 'side';
+    const tier = document.createElement('span'); tier.className = 'tier'; tier.style.color = A.secret ? '#c79bff' : T.c; tier.textContent = A.secret ? 'Secret · ' + T.n : T.n;
+    side.append(tier);
+    if (done) { const d = document.createElement('span'); d.textContent = 'Unlocked ' + fmtDate(s.u[A.id]); side.append(d); }
+    else if (A.prog && !hidden) {
+      const [c, mx] = A.prog(), cc = Math.min(c, mx);
+      const bar = document.createElement('span'); bar.className = 'pbar'; const fi = document.createElement('i'); fi.style.width = (cc / mx * 100).toFixed(1) + '%'; bar.append(fi);
+      const tx = document.createElement('span'); tx.textContent = cc.toLocaleString() + ' / ' + mx.toLocaleString() + (A.unit || '');
+      side.append(bar, tx);
+    } else { const d = document.createElement('span'); d.textContent = 'Locked'; side.append(d); }
+    li.append(ico, t, side); list.append(li);
+  }
+}
+function renderSkins() {
+  const s = achState(), owned = SKINS.filter(k => ownsSkin(k.id)).length;
+  $('l-count').textContent = 'You own ' + owned + ' of ' + SKINS.length + ' skins. Tap a skin to preview it.';
+  const grid = $('l-items'); grid.textContent = '';
+  for (const k of SKINS) {
+    const A = ACH.find(a => a.sk === k.id), own = ownsSkin(k.id), hidden = A.secret && !s.u[A.id];
+    const eq = skinEq(k.id), wearing = own && Object.keys(eq).every(c => save.eq[c] === eq[c]);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = k.cols[0];
+    const t = document.createElement('b'); t.textContent = hidden && !own ? 'Secret skin' : k.n;
+    const sm = document.createElement('small'); sm.style.color = own ? 'var(--mint)' : 'var(--dim)';
+    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : 'Unlock: ' + (hidden ? 'secret achievement' : A.n);
+    const strip = document.createElement('span'); strip.className = 'strip'; strip.style.background = 'linear-gradient(90deg, ' + k.cols.join(', ') + ')';
+    b.append(t, sm, strip);
+    b.setAttribute('aria-pressed', String(wearing));
+    b.addEventListener('click', () => {
+      if (own) { save.eq = Object.assign({}, eq); lockerPreview = null; writeSave(); }
+      else lockerPreview = hidden ? null : eq;
+      renderSkins();
+    });
+    grid.append(b);
+  }
+}
+function openAch() { renderAch(); show('scr-ach'); }
+achRefresh = () => { const s = achState(); $('s-ach').textContent = ACH.filter(a => s.u[a.id]).length + '/' + ACH.length; };
+$('m-ach').addEventListener('click', openAch);
+$('b-ach-back').addEventListener('click', () => { refreshMenu(); show('scr-menu'); });
+$('b-ach-skins').addEventListener('click', () => { lCat = 'skins'; lockerPreview = null; openLocker(); });
+achRefresh();
+
 // ---------- loop ----------
 let last = performance.now(), acc = 0;
 function frame(ts) {
   const dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
   st = sharedTime();
+  achTick(dt);
   syncPeers(dt);
   if ((mode === 'world' || mode === 'pvp') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
   const camX = (W - viewW()) / 2;
