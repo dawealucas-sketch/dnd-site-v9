@@ -904,7 +904,7 @@ addEventListener('keydown', (e) => {
     else if (mode === 'world' || mode === 'pvp') {
       if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
       else if (e.code === 'Tab') openLoadout();
-      else if (mode === 'pvp') { if (e.code === 'KeyE') pvpShoot(); else if (e.code === 'KeyQ' && !e.repeat) pvpUltKey(); else if (e.code === 'KeyW' && !e.repeat) pvpYank(); else if (e.code === 'KeyM' && !e.repeat) openMap(); }
+      else if (mode === 'pvp') { if (e.code === 'KeyE') pvpShoot(); else if (e.code === 'KeyQ' && !e.repeat) pvpUltKey(); else if (e.code === 'KeyW' && !e.repeat) pvpYank(); else if (e.code === 'KeyM' && !e.repeat) openMap(); else if (!e.repeat && pvp && !pvp.me.alive && (e.code === 'KeyA' || e.code === 'KeyD' || e.code === 'ArrowLeft' || e.code === 'ArrowRight')) specCycle(e.code === 'KeyA' || e.code === 'ArrowLeft' ? -1 : 1); }
       else if (e.code === 'KeyM') openMap();
       else if (e.code === 'KeyR' && !e.repeat) toCampfire();
     }
@@ -3221,7 +3221,7 @@ function updateWorldHud(dt) {
   if (wHudT > 0) return;
   wHudT = 0.4;
   if (mode === 'pvp' && pvp) {
-    $('w-found').textContent = 'Lives ' + Math.max(0, pvp.me.lives) + ' · KOs ' + kosOf(selfId());
+    $('w-found').textContent = pvp.me.alive ? 'Lives ' + Math.max(0, pvp.me.lives) + ' · KOs ' + kosOf(selfId()) : (specTarget() ? 'Watching ' + specTarget().name + ' · A / D to switch' : 'Knocked out');
     renderPvpBoard($('w-team'));
     pvpLobbyTick();
   } else {
@@ -3600,8 +3600,24 @@ function targetPos(id) {
   const s = peerState.get(id);
   return s ? { x: s.rx, y: s.ry } : null;
 }
+// spectating: while you're knocked out the camera follows someone else; A / D switches who
+function specList() { return pvpViews().filter(w => !w.me && w.alive); }
+function specTarget() {
+  const list = specList();
+  if (!list.length) return null;
+  let v = list.find(w => w.id === pvp.spec);
+  if (!v) { v = list[0]; pvp.spec = v.id; }
+  return v;
+}
+function specCycle(d) {
+  const list = specList();
+  if (!list.length) return;
+  let i = list.findIndex(w => w.id === pvp.spec);
+  i = (i + d + list.length) % list.length;
+  pvp.spec = list[i].id;
+}
 function camFocus() {
-  if (mode === 'pvp' && pvp && !pvp.me.alive && pvp.me.lives <= 0) { const v = pvpViews().find(w => !w.me && w.alive); if (v) return v; }
+  if (mode === 'pvp' && pvp && !pvp.me.alive) { const v = specTarget(); if (v) return v; }
   return P;
 }
 function respawnSpot(team) {
@@ -3645,7 +3661,7 @@ function applyFighter(f, kind, a, b, c, src, isMe) {
     if (kind === 'y' && !isMe && src === selfId()) unlockAch('yank');
     f.respawnAt = f.lives > 0 ? now + 3000 : 0;
     burst(body.x, body.y, '#ffd34d', 26, 300);
-    if (isMe) { detach(); banner(f.lives > 0 ? 'Knocked out' : 'Out of lives', f.lives > 0 ? 'Back in 3' : 'Spectating', f.lives > 0 ? f.lives + (f.lives === 1 ? ' life' : ' lives') + ' left.' : 'Last one standing wins.'); }
+    if (isMe) { pvp.spec = src; detach(); banner(f.lives > 0 ? 'Knocked out' : 'Out of lives', f.lives > 0 ? 'Back in 3' : 'Spectating', f.lives > 0 ? f.lives + (f.lives === 1 ? ' life' : ' lives') + ' left. A / D to watch someone else.' : 'A / D switches who you watch.'); }
   }
 }
 function deal(src, tid, kind, a, b, c) {
@@ -3835,44 +3851,62 @@ function collideBody(b, r, dt) {
   }
   PB = P;
 }
-function botFindHook(b, dir, ty) {
+function botFindHook(b, dir, ty, now) {
+  // the best ring ahead of the bot (toward its target), skipping the one it just let go of
   let best = null, bs = -1e9;
+  const banned = (x, y) => now < b.banUntil && Math.hypot(x - b.banX, y - b.banY) < 90;
   for (const rg of hw.rings) {
     const dx = rg.x - b.x, dy = rg.y - b.y;
-    if (Math.abs(dx) > RANGE || dy > -30 || dy < -RANGE) continue;
+    if (Math.abs(dx) > RANGE || dy > 40 || dy < -RANGE) continue;
     const d = Math.hypot(dx, dy);
-    if (d > RANGE * 0.95 || d < 60) continue;
-    const s = dx * dir * 0.6 - Math.abs(rg.y - ty) * 0.25 - dy * 0.2 + Math.random() * 40;
+    if (d > RANGE * 0.95 || d < 90 || banned(rg.x, rg.y)) continue;
+    const ahead = dx * dir;
+    let s = ahead - Math.abs(rg.y - (ty - 60)) * 0.3 + (dy < 0 ? 40 : 0) + Math.random() * 30;
+    if (ahead < -40) s -= 400;
     if (s > bs && wLos(b.x, b.y, rg.x, rg.y)) { bs = s; best = rg; }
   }
   if (best) return best;
   for (let k = 0; k < 7; k++) {
-    const a = -Math.PI / 2 + dir * (0.15 + k * 0.17), ux = Math.cos(a), uy = Math.sin(a), hit = gridRay(b.x, b.y, ux, uy, RANGE);
-    if (hit && hit.t > 60 && HOOKABLE[hit.v]) return { x: b.x + ux * hit.t, y: b.y + uy * hit.t };
+    const a = -Math.PI / 2 + dir * (0.3 + k * 0.17), ux = Math.cos(a), uy = Math.sin(a), hit = gridRay(b.x, b.y, ux, uy, RANGE);
+    if (hit && hit.t > 100 && HOOKABLE[hit.v] && !banned(b.x + ux * hit.t, b.y + uy * hit.t)) return { x: b.x + ux * hit.t, y: b.y + uy * hit.t };
   }
   return null;
 }
 function botBrain(b, tgt, dt, now) {
   const tx = tgt ? tgt.x : b.x + Math.sin(now / 2000) * 300, ty = tgt ? tgt.y - 40 : b.y - 120;
   b.dir = Math.sign(tx - b.x) || 1;
-  if (Math.hypot(b.vx, b.vy) < 30) b.stuck += dt; else b.stuck = 0;
-  if (b.stuck > 2.5) { b.stuck = 0; b.rope = null; b.vy = -800; b.vx = -b.dir * 300; }
+  const letGo = () => { b.banX = b.rope.x; b.banY = b.rope.y; b.banUntil = now + 1200; b.rope = null; b.think = 0.1 + Math.random() * 0.15; };
+  // stuck check: if it hasn't got any closer in 3 seconds, jump toward the target and try another hook
+  const td = tgt ? Math.hypot(tgt.x - b.x, tgt.y - b.y) : 0;
+  if (!b.progT || now > b.progT) {
+    if (tgt && b.progD != null && td > 250 && td > b.progD - 60) { if (b.rope) letGo(); b.vy = -650; b.vx = b.dir * 450; }
+    b.progD = td; b.progT = now + 3000;
+  }
   if (b.rope) {
     b.ropeT += dt;
-    if ((b.vx * b.dir > 250 && b.vy < -80) || b.ropeT > 2.4 || b.rope.y > b.y + 10) { b.rope = null; b.think = 0.15 + Math.random() * 0.3; }
+    const past = (b.x - b.rope.x) * b.dir > 30;           // swung past the ring, toward the target
+    const fast = b.vx * b.dir > 220;
+    const dropTo = tgt && tgt.y > b.y + 160 && Math.abs(tgt.x - b.x) < 260;
+    if ((fast && past && b.vy < 80) || b.ropeT > 2.6 || (dropTo && b.ropeT > 0.4)) letGo();
   } else {
     b.think -= dt;
     if (b.think <= 0) {
-      b.think = 0.25;
-      const hk = now < b.netUntil ? null : botFindHook(b, b.dir, ty);
-      if (hk) { b.rope = { x: hk.x, y: hk.y, L: Math.max(MINL, Math.hypot(hk.x - b.x, hk.y - b.y) * 0.92) }; b.ropeT = 0; }
+      b.think = 0.2;
+      const hk = now < b.netUntil ? null : botFindHook(b, b.dir, ty, now);
+      if (hk) { const d = Math.hypot(hk.x - b.x, hk.y - b.y); b.rope = { x: hk.x, y: hk.y, L: clamp(d * 0.95, 110, RANGE) }; b.ropeT = 0; }
     }
   }
   b.wantUp = ty < b.y - 60;
 }
 function botPhysics(b, dt, now) {
   let ax = 0, ay = G;
-  if (b.rope) { ax = b.dir * SWING * 0.9 * (b.od > now ? 1.5 : 1); if (b.wantUp && b.rope.L > MINL + 10) b.rope.L -= REEL_IN * dt * 0.6; }
+  if (b.rope) {
+    // pump with the swing to build it up, then the brain lets go toward the target
+    const push = Math.abs(b.vx) > 40 ? Math.sign(b.vx) : b.dir;
+    ax = push * SWING * 0.95 * (b.od > now ? 1.5 : 1);
+    if (b.rope.L > 230) b.rope.L -= REEL_IN * dt * 0.5;
+    else if (b.wantUp && b.rope.L > 130) b.rope.L -= REEL_IN * dt * 0.3;
+  }
   else if (b.ground) { b.vx += (b.dir * WALKMAX - b.vx) * Math.min(1, 10 * dt); if (Math.random() < dt * 1.5) b.vy = -JUMP_V; }
   else ax = b.dir * AIR;
   if (b.pull && now < b.pull.until) { const dx = b.pull.x - b.x, dy = b.pull.y - b.y, d = Math.hypot(dx, dy) || 1; ax += dx / d * 1600; ay += dy / d * 1600; }
@@ -4260,7 +4294,8 @@ function pvpHudFast() {
   const el = (now - pvp.start) / 1000, bn = $('wbanner');
   if (el < 0 && el > -3.2) { const n = String(Math.ceil(-el)); if (bn.dataset.cd !== n) { bn.dataset.cd = n; banner('Get ready', n); } }
   else if (el >= 0 && bn.dataset.cd && bn.dataset.cd !== 'go') { bn.dataset.cd = 'go'; banner(hw.name, 'Fight!'); }
-  const txt = !m.alive ? (m.lives > 0 ? 'Back in ' + Math.max(1, Math.ceil((m.respawnAt - now) / 1000)) : 'Out · spectating') : hw.name;
+  const sv = !m.alive ? specTarget() : null;
+  const txt = !m.alive ? (m.lives > 0 ? 'Back in ' + Math.max(1, Math.ceil((m.respawnAt - now) / 1000)) : 'Watching ' + (sv ? sv.name : 'nobody')) : hw.name;
   const reg = $('w-region'); if (reg.textContent !== txt) reg.textContent = txt;
   drawArenaMap($('w-mini'), false);
 }
