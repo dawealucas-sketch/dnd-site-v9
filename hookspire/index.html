@@ -1064,7 +1064,7 @@ const PALETTES = [
   { id: 'ninja', n: 'Ninja', cols: ['#e0484f', '#3a3550', '#111018'], hat: 'band', hc: '#e0484f', rope: 'plain', trail: 'dot', aura: 'ring', ac: '#e0484f' },
   { id: 'astronaut', n: 'Astronaut', cols: ['#ffffff', '#9aa3b5', '#ff8a3d'], hat: 'bubble', hc: '#ff8a3d', rope: 'chain', trail: 'spark', aura: 'orbit', ac: '#ff8a3d' },
   { id: 'samurai', n: 'Samurai', cols: ['#ffd34d', '#8a1f2b', '#2a2540'], hat: 'horns', hc: '#ffd34d', rope: 'plain', trail: 'leaf', aura: 'ring' },
-  { id: 'stormbreaker', n: 'Stormbreaker', cols: ['#ffffff', '#5ee6c1', '#2f6f8f'], hat: 'halo', hc: '#5ee6c1', rope: 'bolt', rc: '#bff3ff', trail: 'spark', aura: 'gring', glow: 12, story: true },
+  { id: 'stormbreaker', n: 'Stormbreaker', cols: ['#fff6c9', '#ffe14a', '#38bdf8', '#1e3a8a'], hat: 'boltcrown', hc: '#ffe14a', rope: 'bolt', rc: '#fff6c9', trail: 'zap', aura: 'zap', ac: '#7fd8ff', glow: 16, story: true },
   { id: 'celestial', n: 'Celestial', cols: ['#ffffff', '#ffd34d', '#c79bff', '#5aa8ff'], hat: 'halo', hc: '#ffd34d', rope: 'grad', trail: 'galaxy', aura: 'rainbowring', glow: 16 },
 ];
 // the 15 skins Time Trials unlock, one for every 2 gold medals, in this order
@@ -1072,7 +1072,7 @@ const SKIN_ORDER = ['forest', 'ocean', 'candy', 'toxic', 'pirate', 'frost', 'lav
 const PAL_BY = Object.create(null);
 for (const s of PALETTES) PAL_BY[s.id] = s;
 const SKINS = SKIN_ORDER.map(id => PAL_BY[id]);
-const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon' };
+const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon', boltcrown: 'Bolt Crown' };
 const SKIN_BY = Object.create(null);
 for (const s of [...SKINS, PAL_BY.stormbreaker]) {
   SKIN_BY[s.id] = s;
@@ -1093,6 +1093,7 @@ const ADMIN_SKIN = { id: 'admin', n: 'Admin', cols: ['#ff1f3d', '#0b0b0f', '#ff1
   ITEMS.push(Object.assign({ cat: 'aura', id: 'k_admin_a', n: 'Glitch Aura', k: 'glitch', c: '#ff1f3d', cols }, base)); }
 const ITEM = Object.create(null);
 for (const it of ITEMS) ITEM[it.id] = it;
+ITEM.k_stormbreaker_c.fx = 'zap'; ITEM.k_stormbreaker_c.n = 'Stormbreaker Charge'; ITEM.k_stormbreaker_r.n = 'Stormbreaker Bolt'; ITEM.k_stormbreaker_t.n = 'Stormbreaker Arc'; ITEM.k_stormbreaker_a.n = 'Stormbreaker Field';
 // glitch helpers: a hash of a number, and whether this instant is a glitch frame
 const ghash = (n) => { let t = Math.imul((n | 0) ^ 0x9e3779b9, 0x85ebca6b); t ^= t >>> 13; t = Math.imul(t, 0xc2b2ae35); t ^= t >>> 16; return (t >>> 0) / 4294967296; };
 const gTick = () => Math.floor(gt * 12);
@@ -2725,6 +2726,14 @@ function bodyStyle(eq, base, xy) {
     it.cols.forEach((c, i) => g.addColorStop(i / (it.cols.length - 1), c));
     return { c: g, g: it.g || 7, gc: it.cols[1] || it.cols[0], flat: it.cols[0] };
   }
+  if (it.fx === 'zap') {
+    // charged: a crackling yellow-to-blue blend that flashes white
+    const flash = (Math.floor(gt * 14) * 2654435761 >>> 0) % 100 < 12;
+    if (flash) return { c: '#ffffff', g: 24, gc: '#7fd8ff', flat: '#ffe14a' };
+    const sw = Math.sin(gt * 3) * 9, g = ctx.createLinearGradient(sw, -17, -sw, 16);
+    it.cols.forEach((c, i) => g.addColorStop(i / (it.cols.length - 1), c));
+    return { c: g, g: 14 + Math.sin(gt * 20) * 4, gc: '#38bdf8', flat: '#ffe14a' };
+  }
   if (it.fx === 'glitch') {
     // snaps between black and red, with extra flips on glitch frames
     const red = (Math.floor(gt * 2.4) + (glitching(3) ? 1 : 0)) % 2 === 0;
@@ -2836,6 +2845,20 @@ function drawAura(x, y, id) {
       for (let k = 0; k < 16; k++) { const cc = blendAt(cols, k / 16 + t * 0.25); ctx.strokeStyle = cc; ctx.shadowColor = cc; ctx.beginPath(); ctx.arc(0, 0, 36, k * 0.3927 + t, (k + 1) * 0.3927 + t + 0.02); ctx.stroke(); }
       break;
     }
+    case 'zap': {
+      // forks of lightning jumping around you
+      const arcs = 3 + (Math.random() < 0.3 ? 2 : 0);
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (let k = 0; k < arcs; k++) {
+        const a0 = Math.random() * 6.283, a1 = a0 + 0.6 + Math.random() * 1.2, r0 = 26 + Math.random() * 14;
+        ctx.strokeStyle = k % 2 ? '#ffe14a' : '#7fd8ff'; ctx.shadowBlur = 14; ctx.shadowColor = '#38bdf8'; ctx.lineWidth = 2 + Math.random() * 1.5; ctx.globalAlpha = 0.6 + Math.random() * 0.4;
+        ctx.beginPath();
+        for (let j = 0; j <= 6; j++) { const a = a0 + (a1 - a0) * j / 6, rr = r0 + (Math.random() - 0.5) * 12; if (j) ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr * 1.1); else ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr * 1.1); }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 0.18 + 0.1 * Math.sin(t * 9); ctx.fillStyle = '#38bdf8'; ctx.shadowBlur = 0; ctx.beginPath(); ctx.arc(0, 0, 40, 0, 6.283); ctx.fill();
+      break;
+    }
     case 'glitch': {
       // a jittering frame, with torn bars on glitch frames
       const tk = gTick(), j = glitching(5) ? (ghash(tk) - 0.5) * 8 : 0;
@@ -2927,6 +2950,16 @@ function drawHat(id, face) {
       ctx.beginPath(); ctx.arc(0, y0, 4.5, Math.PI * 0.3, Math.PI * 1.7, false); ctx.arc(2, y0, 3.6, Math.PI * 1.6, Math.PI * 0.4, true); ctx.closePath(); ctx.fill();
       break;
     }
+    case 'boltcrown': {
+      // three lightning bolts standing up like a crown, crackling
+      ctx.fillStyle = c; ctx.shadowBlur = 12; ctx.shadowColor = '#38bdf8';
+      ctx.fillRect(-6.5, -14.5, 13, 2.5);
+      for (const [x0, h, s0] of [[-4.5, 7, 1], [0, 10, -1], [4.5, 7, 1]]) {
+        ctx.beginPath(); ctx.moveTo(x0 - 1.6, -14); ctx.lineTo(x0 + s0 * 1.8, -14 - h * 0.55); ctx.lineTo(x0 - s0 * 0.4, -14 - h * 0.5); ctx.lineTo(x0 + s0 * 1.4, -14 - h); ctx.lineTo(x0 + 1.6, -14); ctx.closePath(); ctx.fill();
+      }
+      if (Math.random() < 0.35) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.beginPath(); const x = (Math.random() - 0.5) * 14; ctx.moveTo(x, -26); ctx.lineTo(x + 3, -22); ctx.lineTo(x - 1, -20); ctx.stroke(); }
+      break;
+    }
     case 'glitch': {
       // a pixel crown that tears apart on glitch frames
       const tk = gTick(), on = glitching(7);
@@ -2952,6 +2985,7 @@ function drawHat(id, face) {
 function emitTrail(o, dt, list) {
   const it = o.eq && o.eq.trail ? ITEM[o.eq.trail] : null;
   if (!it || it.k === 'ghost' || it.k === 'streak' || it.k === 'gstreak' || it.k === 'glitch') return;
+  if (it.k === 'zap') { if (Math.hypot(o.vx || 0, o.vy || 0) > 150 && SET.fx && Math.random() < 0.5 * SET.fx) list.push({ k: 'spark', x: o.x + (Math.random() - 0.5) * 16, y: o.y + (Math.random() - 0.5) * 16, vx: (Math.random() - 0.5) * 220, vy: (Math.random() - 0.5) * 220, life: 0.25 + Math.random() * 0.2, color: Math.random() < 0.5 ? '#ffe14a' : '#7fd8ff' }); return; }
   if (Math.hypot(o.vx || 0, o.vy || 0) < 150 || !SET.fx) return;
   o.trailAcc = (o.trailAcc || 0) + dt * (reduceMotion ? 12 : 55) * SET.fx;
   while (o.trailAcc >= 1) {
@@ -2998,6 +3032,16 @@ function drawHistTrail(o) {
       ctx.globalAlpha = (k / h.length) * 0.7;
       ctx.strokeStyle = it.k === 'gstreak' ? blendAt(it.cols, k / h.length + gt * 0.3) : `hsl(${(k * 15 + gt * 200) % 360},90%,62%)`;
       ctx.beginPath(); ctx.moveTo(h[k - 2], h[k - 1]); ctx.lineTo(h[k], h[k + 1]); ctx.stroke();
+    }
+    ctx.restore();
+  } else if (it.k === 'zap') {
+    // a lightning streak following your path, re-forked every frame
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const [w, col, a] of [[6, '#38bdf8', 0.35], [2.5, '#fff6c9', 0.9]]) {
+      ctx.lineWidth = w; ctx.strokeStyle = col; ctx.shadowBlur = 12; ctx.shadowColor = '#38bdf8';
+      ctx.beginPath();
+      for (let k = 0; k < h.length; k += 4) { const j = k < h.length - 6 ? (Math.random() - 0.5) * 12 : 0, x = h[k] + j, y = h[k + 1] + j; ctx.globalAlpha = a; if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+      ctx.stroke();
     }
     ctx.restore();
   } else if (it.k === 'glitch') {
@@ -6881,7 +6925,7 @@ const STORY = [{
       gift: 'dash' },
     { id: '1-5', n: 'Eye of the Tempest', goal: 'boss', par: 100, pal: STORMP,
       intro: [['tempest', 'So the little climber comes to me. Come then. I\'ll blow you right back down!'], ['pip', 'See the glowing cores spinning around it? Hook one, then reel in to rip it out!'], ['rook', 'And mind the lightning. When the ground glows, move!']],
-      outro: [['tempest', 'This isn\'t over... I\'ve broken more than one Spire, climber. Find the rest, if you dare!'], ['rook', 'You did it, kid! The Meadow is free, and look: the first piece of the Spire is glowing again.'], ['pip', 'Chapter 1 complete! And that new Stormbreaker look suits you!']] },
+      outro: [['tempest', 'This isn\'t over... I\'ve broken more than one Spire, climber. Find the rest, if you dare!'], ['rook', 'You did it, kid! The Meadow is free, and look: the first piece of the Spire is glowing again.'], ['pip', 'Chapter 1 complete! Whoa, the Tempest left some of its lightning behind... and it\'s crackling all over you. Stormbreaker suits you!']] },
   ],
 }];
 const SLEVELS = STORY[0].levels;
