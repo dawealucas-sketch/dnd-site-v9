@@ -3754,7 +3754,7 @@ const ARENAS = [
 const ARENA_IDS = ARENAS.map(a => a.id);
 const TEAM_COLORS = ['#ff6b8b', '#7fb2ff'], TEAM_NAMES = ['Red team', 'Blue team'];
 const PVP_BOT_NAMES = ['Bot Pip', 'Bot Juno', 'Bot Rook', 'Bot Vex', 'Bot Moss', 'Bot Zed', 'Bot Kit', 'Bot Ash'];
-const PDIFF = { easy: { rate: 1.7, err: 0.28, yank: false }, medium: { rate: 1.15, err: 0.13, yank: true }, hard: { rate: 0.8, err: 0.05, yank: true } };
+const PDIFF = { easy: { rate: 2.0, err: 0.36, yank: false, mv: 0.76, think: 0.3 }, medium: { rate: 1.4, err: 0.17, yank: true, mv: 0.8, think: 0.27 }, hard: { rate: 0.98, err: 0.07, yank: true, mv: 0.85, think: 0.24 } };
 const SHOT_V = 900, SHOT_CD = 0.55, YANK_CD = 2, ULT_TIME = 40, P_HP = 5;
 let pvp = null, pvpHost = false, pvpPm = null, lastPvpId = 0, myPeerId = null, PB = P, claimN = 0;
 const pvpSid = Math.random().toString(36).slice(2, 8);
@@ -4198,7 +4198,7 @@ function botBrain(b, tgt, dt, now) {
   } else {
     b.think -= dt;
     if (b.think <= 0) {
-      b.think = 0.2;
+      b.think = (PDIFF[b.diff] || PDIFF.medium).think;
       const hk = now < b.netUntil ? null : botFindHook(b, b.dir, ty, now);
       if (hk) { const d = Math.hypot(hk.x - b.x, hk.y - b.y); b.rope = { x: hk.x, y: hk.y, L: clamp(d * 0.95, 110, RANGE) }; b.ropeT = 0; }
     }
@@ -4210,12 +4210,12 @@ function botPhysics(b, dt, now) {
   if (b.rope) {
     // pump with the swing to build it up, then the brain lets go toward the target
     const push = Math.abs(b.vx) > 40 ? Math.sign(b.vx) : b.dir;
-    ax = push * SWING * 0.95 * (b.od > now ? 1.5 : 1);
+    ax = push * SWING * 0.95 * (PDIFF[b.diff] || PDIFF.medium).mv * (b.od > now ? 1.5 : 1);
     if (b.rope.L > 230) b.rope.L -= REEL_IN * dt * 0.5;
     else if (b.wantUp && b.rope.L > 130) b.rope.L -= REEL_IN * dt * 0.3;
   }
-  else if (b.ground) { b.vx += (b.dir * WALKMAX - b.vx) * Math.min(1, 10 * dt); if (Math.random() < dt * 1.5) b.vy = -JUMP_V; }
-  else ax = b.dir * AIR;
+  else if (b.ground) { b.vx += (b.dir * WALKMAX * (0.6 + 0.4 * (PDIFF[b.diff] || PDIFF.medium).mv) - b.vx) * Math.min(1, 10 * dt); if (Math.random() < dt * 1.5) b.vy = -JUMP_V; }
+  else ax = b.dir * AIR * (PDIFF[b.diff] || PDIFF.medium).mv;
   if (b.pull && now < b.pull.until) { const dx = b.pull.x - b.x, dy = b.pull.y - b.y, d = Math.hypot(dx, dy) || 1; ax += dx / d * 1600; ay += dy / d * 1600; }
   b.vx += ax * dt; b.vy += ay * dt;
   b.vx *= 1 - 0.1 * dt; b.vy *= 1 - 0.1 * dt;
