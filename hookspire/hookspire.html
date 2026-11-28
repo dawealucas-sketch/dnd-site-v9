@@ -1525,7 +1525,7 @@ addEventListener('keydown', (e0) => {
     if (GAME_KEYS.has(e.code) || ((mode === 'world' || (mode === 'pvp' && pvp && pvp.chess)) && e.code === 'Tab')) e.preventDefault();
     keys[e.code] = true;
     if (e.code === 'KeyS' && !e.repeat) { gb.sAt = gt; gb.rs = []; }
-    if (e.code === 'KeyR' && gbReady()) { if (!e.repeat) gbKey(); return; } // R counts toward the Grit Blast while S is held
+    if (e.code === 'KeyC' && gbReady()) { if (!e.repeat) gbKey(); return; } // C fires the Grit Blast while S is held
     if (save.adm && !e.repeat && (e.code === 'KeyG' || e.code === 'KeyF')) admToggle(e.code === 'KeyG' ? 'god' : 'fly');
     if (e.code === 'Escape' && (kfMenuOpen() || (pvp && pvp.chess && pvp.chess.picking))) { kfCloseMenu(); pvp.chess.picking = null; }
     else if (e.code === 'Escape' || e.code === 'KeyP') pause();
@@ -1783,9 +1783,9 @@ function step(dt) {
   if (rope) {
     const wl = rope.w && rope.w.length ? ropeWrapLen(rope, ropeAnchor() || rope) : 0;
     if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL + wl, rope.L - REEL_IN * dt);
-    if (held('KeyS', 'ArrowDown')) rope.L = Math.min(RANGE * gRng() + wl, rope.L + REEL_OUT * dt);
+    if (held('KeyS', 'ArrowDown') && !gbCharging()) rope.L = Math.min(RANGE * gRng() + wl, rope.L + REEL_OUT * dt);
   }
-  const damp = 1 - 0.1 * dt;
+  const damp = gbCharging() ? 1 - Math.min(1, 3 * dt) : 1 - 0.1 * dt; // bracing for the Grit Blast
   P.vx *= damp; P.vy *= damp;
   const sp = Math.hypot(P.vx, P.vy);
   if (sp > MAXV) { P.vx *= MAXV / sp; P.vy *= MAXV / sp; }
@@ -3969,7 +3969,7 @@ function stepWorld(dt) {
   // water (Story Mode, the Sunken Ruins): you float up unless you swim; currents push, bubbles lift
   const wk = mode === 'story' && story ? storyWaterAt(P.x, P.y) : 0;
   if (wk && !fly) {
-    const up = (held('KeyS', 'ArrowDown') ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0);
+    const up = (held('KeyS', 'ArrowDown') && !gbCharging() ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0);
     ay = up ? up * 1250 : -140;
     if (!rope) ax = dir * 1000;
     if (wk === 2) ax += 640; else if (wk === 3) ax -= 640; else if (wk === 4) ay -= 1500;
@@ -3983,11 +3983,12 @@ function stepWorld(dt) {
   if (rope) {
     const wl = rope.w && rope.w.length ? ropeWrapLen(rope, ropeAnchor() || rope) : 0;
     if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL + wl, rope.L - REEL_IN * dt);
-    if (held('KeyS', 'ArrowDown')) rope.L = Math.min(range + wl, rope.L + REEL_OUT * dt);
+    if (held('KeyS', 'ArrowDown') && !gbCharging()) rope.L = Math.min(range + wl, rope.L + REEL_OUT * dt);
   }
   const damp = fly && !rope ? 1 - 2.2 * dt : 1 - 0.1 * dt;
   P.vx *= damp; P.vy *= damp;
   if (wk && !fly) { const wd = 1 - Math.min(1, 2.4 * dt); P.vx *= wd; P.vy *= wd; }
+  if (gbCharging()) { const bd = 1 - Math.min(1, 3 * dt); P.vx *= bd; P.vy *= bd; } // bracing for the Grit Blast
   if (feather && P.vy > 170) P.vy = 170;
   const sp = Math.hypot(P.vx, P.vy), mx = fly && !rope ? 640 : MAXV;
   if (sp > mx) { P.vx *= mx / sp; P.vy *= mx / sp; }
@@ -7182,7 +7183,7 @@ function tbtn(parent, cls, html, code, opts) {
   parent.append(b);
   return b;
 }
-// the Grit Blast on touch: hold the button to charge (it holds S), let go to fire (it presses R three times)
+// the Grit Blast on touch: hold the button to charge (it holds S), let go to fire (it presses C three times)
 let tBlast = null;
 function blastButton(parent) {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'big blast'; b.innerHTML = '💥<br>Blast';
@@ -7190,7 +7191,7 @@ function blastButton(parent) {
   let held = false;
   const up = () => {
     if (!held) return; held = false; b.classList.remove('on');
-    if (gbReady()) for (let k = 0; k < 3; k++) { fireKey(keyOf('reset'), true); fireKey(keyOf('reset'), false); }
+    if (gbReady()) for (let k = 0; k < 3; k++) { fireKey('KeyC', true); fireKey('KeyC', false); }
     fireKey(keyOf('down'), false);
   };
   b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); touchSeen(); held = true; b.classList.add('on'); fireKey(keyOf('down'), true); });
@@ -8511,9 +8512,10 @@ function addGrit(n, x, y) {
   gs().g += n; saveDirty = true;
   if (x != null) particles.push({ k: 'text', text: '+' + n + ' Grit', x, y: y - 34, vx: 0, vy: -40, life: 1.5, color: '#ff9a3d' });
 }
-// ----- the Grit Blast: hold S, then press R three times -----
+// ----- the Grit Blast: hold S, then press C three times -----
 const gb = { sAt: -1, rs: [], cd: 0, fx: [] };
-const gNeed = () => Math.max(0.6, 2 - 0.1 * gLvl('chg'));
+const gNeed = () => Math.max(0.5, 1.5 - 0.07 * gLvl('chg'));
+const gbCharging = () => gs().atk === 1 && mode !== 'story' && state === 'play' && !!keys.KeyS && gb.sAt >= 0; // S charges the blast instead of letting rope out (the Down arrow still does)
 const gbPower = () => clamp((gt - gb.sAt - gNeed()) / Math.max(1, 3 - 0.12 * gLvl('chg')), 0, 1); // hold longer: up to full power
 function gbReady() { return gs().atk === 1 && mode !== 'story' && state === 'play' && !!keys.KeyS && gb.sAt >= 0 && gt - gb.sAt >= gNeed() && gt >= gb.cd; }
 function gbKey() {
@@ -8522,7 +8524,7 @@ function gbKey() {
   if (gb.rs.length >= 3) { const pw = gbPower(); gb.rs = []; gb.sAt = -1; gb.cd = gt + 3; gbFire(pw); }
 }
 function gbFire(pw) {
-  const a = gLvl('atk'), mult = 1 + 0.15 * a, R = (150 + 120 * pw) * (1 + 0.03 * a), F = (650 + 750 * pw) * mult;
+  const a = gLvl('atk'), mult = 1 + 0.15 * a, R = (190 + 130 * pw) * (1 + 0.03 * a), F = (650 + 750 * pw) * mult;
   gb.fx.push({ x: P.x, y: P.y, r: R, t: gt, pw });
   sfx('ult'); if (!reduceMotion) shake = 0.25 + pw * 0.3;
   burst(P.x, P.y, '#ff9a3d', Math.round(30 + pw * 30), 300 + pw * 200); burst(P.x, P.y, '#fff1c9', 16, 260);
@@ -8543,8 +8545,8 @@ function gbFire(pw) {
     for (const t of hw.turrets) { const q = push(t.x, t.y); if (!q) continue; t.cool = 8; t.lock = false; burst(t.x, t.y, '#ff9a3d', 12, 200); }
   } else if (mode === 'train' && train && train.drill) {
     const dr = train.drill;
-    if (dr.tg) for (const q0 of dr.tg) if (!q0.hit && push(q0.x, q0.y)) { q0.hit = true; burst(q0.x, q0.y, '#ff5a6e', 16, 240); sfx('hit', 0.7); }
-    if (dr.dum) for (const d of dr.dum) { const q = push(d.x, d.y); if (!q || d.out) continue; d.vx += q.ux * F * q.k * 0.9; d.vy += q.uy * F * q.k * 0.9 - 320; d.air = true; }
+    if (dr.tg) for (const q0 of dr.tg) if (!q0.hit && Math.hypot(q0.x - P.x, q0.y - P.y) <= R + 40) { q0.hit = true; burst(q0.x, q0.y, '#ff5a6e', 16, 240); sfx('hit', 0.7); }
+    if (dr.dum) for (const d of dr.dum) { const q = push(d.x, d.y); if (!q || d.out) continue; d.vx += q.ux * F * q.k * 1.4 + (q.ux >= 0 ? 250 : -250); d.vy += q.uy * F * q.k - 380; d.air = true; }
   }
 }
 function drawGrit() {
@@ -8568,7 +8570,7 @@ function drawGrit() {
     ctx.strokeStyle = pw >= 1 ? '#fff1c9' : '#ff9a3d'; ctx.shadowBlur = 12 + pw * 10; ctx.shadowColor = '#ff9a3d'; ctx.beginPath(); ctx.arc(P.x, P.y, r, 0, 6.283); ctx.stroke(); ctx.shadowBlur = 0;
     const n = gb.rs.filter(t => gt - t < 1.2).length;
     for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(P.x - 12 + k * 12, P.y - r - 12, 4, 0, 6.283); if (k < n) { ctx.fillStyle = '#ff9a3d'; ctx.fill(); } else { ctx.strokeStyle = 'rgba(255,241,201,0.7)'; ctx.lineWidth = 1.5; ctx.stroke(); } }
-    ctx.font = '700 12px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff1c9'; ctx.fillText('R R R', P.x, P.y - r - 22);
+    ctx.font = '700 12px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff1c9'; ctx.fillText('C C C', P.x, P.y - r - 22);
   }
   ctx.restore();
 }
@@ -8604,10 +8606,10 @@ function drawTowerSecrets() {
 let train = null;
 const TPAL = { top: '#c9a46a', rock: '#4a4058', deep: '#2e2840' };
 const DRILLS = {
-  1: { n: 'Target Smash', d: 'Break all 8 targets with Grit Blasts.', lim: 90, first: 40, again: 15, fast: 45 },
-  2: { n: 'Swing Sprint', d: 'Fly through the 6 gates, left to right.', lim: 45, first: 30, again: 10, fast: 25 },
-  3: { n: 'Dummy Toss', d: 'Blast the 3 dummies off their ledge.', lim: 60, first: 40, again: 15, fast: 30 },
-  M: { n: 'Master Gauntlet', d: 'Break all 12 moving targets.', lim: 75, first: 60, again: 20, fast: 45 },
+  1: { n: 'Target Smash', d: 'Break all 8 targets with Grit Blasts.', lim: 150, first: 40, again: 15, fast: 75 },
+  2: { n: 'Swing Sprint', d: 'Fly through the 6 gates, left to right.', lim: 75, first: 30, again: 10, fast: 40 },
+  3: { n: 'Dummy Toss', d: 'Blast the 3 dummies off their ledge.', lim: 100, first: 40, again: 15, fast: 50 },
+  M: { n: 'Master Gauntlet', d: 'Break all 12 moving targets.', lim: 120, first: 60, again: 20, fast: 70 },
 };
 function buildTrain(id) {
   const rows = TRAIN_MAPS[id], ht = rows.length, wt = rows[0].length, g = new Uint8Array(wt * ht);
@@ -8688,7 +8690,7 @@ function trainTick(dt) {
   if (T.id === 'shaft') {
     if (c.altar && !g.atk && tNear(c.altar, 50)) {
       g.atk = 1; writeSave(); sfx('rare'); burst(c.altar.x, c.altar.y - 40, '#ff9a3d', 40, 300); if (!reduceMotion) shake = 0.3;
-      banner('New power', 'Grit Blast', touchOn() ? 'Hold the 💥 button for 2 seconds, then let go. Hold longer for a bigger blast.' : 'Hold S for 2 seconds, then press R three times. Hold longer for a bigger blast.');
+      banner('New power', 'Grit Blast', touchOn() ? 'Hold the 💥 button until it glows, then let go. Hold longer for a bigger blast.' : 'Hold S until the ring fills (about 1.5 seconds), then press C three times. Hold longer for a bigger blast.');
     }
     if (c.door && tNear(c.door, 44)) {
       if (g.atk) { startTrain('arena'); return; }
@@ -8704,8 +8706,8 @@ function trainTick(dt) {
   const dr = T.drill;
   if (!dr) return;
   dr.t += dt;
-  if (dr.tg) for (const q of dr.tg) if (q.mv) { q.x = q.x0 + Math.sin(dr.t * 1.3 + q.ph) * 70; q.y = q.y0 + Math.cos(dr.t * 1.1 + q.ph * 1.7) * 30; }
-  if (dr.gates) { const q = dr.gates[dr.next]; if (q && Math.hypot(P.x - q.x, P.y - q.y) < 52) { dr.next++; sfx('pickup'); burst(q.x, q.y, '#5ee6c1', 16, 200); } }
+  if (dr.tg) for (const q of dr.tg) if (q.mv) { q.x = q.x0 + Math.sin(dr.t * 0.9 + q.ph) * 45; q.y = q.y0 + Math.cos(dr.t * 0.8 + q.ph * 1.7) * 20; }
+  if (dr.gates) { const q = dr.gates[dr.next]; if (q && Math.hypot(P.x - q.x, P.y - q.y) < 75) { dr.next++; sfx('pickup'); burst(q.x, q.y, '#5ee6c1', 16, 200); } }
   if (dr.dum) {
     const top = 17 * TS, x0 = 72 * TS, x1 = 89 * TS;
     for (const d of dr.dum) {
@@ -8740,7 +8742,7 @@ function trainRender() {
   if (c.altar) {
     const a = c.altar; ctx.fillStyle = '#6b6178'; ctx.fillRect(a.x - 20, a.y - 30, 40, 30); ctx.fillRect(a.x - 26, a.y - 34, 52, 6);
     if (!g.atk) { ctx.fillStyle = '#ff9a3d'; ctx.shadowBlur = 20 + Math.sin(gt * 4) * 6; ctx.shadowColor = '#ff9a3d'; ctx.beginPath(); ctx.arc(a.x, a.y - 52 + Math.sin(gt * 2) * 4, 11, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0; }
-    label(a.x, a.y - 76, g.atk ? 'Grit Blast: hold S, then R R R' : '???', '#ff9a3d');
+    label(a.x, a.y - 76, g.atk ? 'Grit Blast: hold S, then C C C' : '???', '#ff9a3d');
   }
   if (c.door) {
     const d = c.door; ctx.fillStyle = '#2a2140'; ctx.beginPath(); ctx.moveTo(d.x - 26, d.y); ctx.lineTo(d.x - 26, d.y - 60); ctx.arc(d.x, d.y - 60, 26, Math.PI, 0); ctx.lineTo(d.x + 26, d.y); ctx.closePath(); ctx.fill();
@@ -8779,7 +8781,7 @@ function trainHud() {
 }
 function trainHudSlow() {
   const dr = train.drill;
-  $('w-found').textContent = train.id === 'shaft' ? 'A secret place inside the Climb' : dr ? (dr.tg ? 'Targets left: ' + dr.tg.filter(q => !q.hit).length : dr.gates ? 'Gate ' + Math.min(dr.next + 1, dr.gates.length) + ' of ' + dr.gates.length : 'Dummies left: ' + dr.dum.filter(d => !d.out).length) : (touchOn() ? 'Grit Blast: hold the 💥 button, let go to fire' : 'Grit Blast: hold S, then press R three times');
+  $('w-found').textContent = train.id === 'shaft' ? 'A secret place inside the Climb' : dr ? (dr.tg ? 'Targets left: ' + dr.tg.filter(q => !q.hit).length : dr.gates ? 'Gate ' + Math.min(dr.next + 1, dr.gates.length) + ' of ' + dr.gates.length : 'Dummies left: ' + dr.dum.filter(d => !d.out).length) : (touchOn() ? 'Grit Blast: hold the 💥 button, let go to fire' : 'Grit Blast: hold S, then press C three times');
   $('w-team').textContent = '';
 }
 function openTrainShop() { state = 'paused'; for (const k in keys) keys[k] = false; detach(); gb.sAt = -1; renderTrainShop(); $('tr-code-msg').textContent = ''; show('scr-train'); }
@@ -9542,7 +9544,7 @@ function applyGift(kind, v) {
   const h = hs();
   if (kind === 'tok') { const n = clampInt(v, 1, 1000000); save.tokens += n; achStat('earned', n); writeSave(); refreshMenu(); return n + ' tokens'; }
   if (kind === 'grit') { const n = clampInt(v, 1, 1000000), g = gs(); g.g = Math.min(9999999, g.g + n); writeSave(); return n + ' Grit'; }
-  if (kind === 'gblast') { const g = gs(); if (g.atk && g.arena) return null; g.atk = 1; g.arena = 1; writeSave(); refreshMenu(); return 'the Grit Blast and the Training Arena (hold S, then press R three times)'; }
+  if (kind === 'gblast') { const g = gs(); if (g.atk && g.arena) return null; g.atk = 1; g.arena = 1; writeSave(); refreshMenu(); return 'the Grit Blast and the Training Arena (hold S, then press C three times)'; }
   if (kind === 'item' && typeof v === 'string' && ITEM[v] && !ITEM[v].sk) { save.owned[v] = (save.owned[v] || 0) + 1; writeSave(); return ITEM[v].n; }
   if (kind === 'items') { for (const it of ITEMS) if (!it.adm) save.owned[it.id] = Math.max(1, save.owned[it.id] || 0); writeSave(); return 'every item and skin'; }
   if (kind === 'skin' && typeof v === 'string' && SKIN_BY[v]) { for (const id of Object.values(skinEq(v))) save.owned[id] = Math.max(1, save.owned[id] || 0); writeSave(); return 'the ' + SKIN_BY[v].n + ' skin'; }
