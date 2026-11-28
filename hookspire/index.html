@@ -9613,6 +9613,14 @@ function buildDive(L, seed) {
     const k2 = r() < 0.12 ? 'pearl' : roll > 1.15 ? 'chest' : roll > 0.75 ? 'gem' : 'coin';
     items.push({ id: 't' + n, k: k2, tx: x, ty: y, x: px(x), y: px(y), home: true }); n++;
   }
+  // always enough treasure: at least 1.6x the level goal is hidden in the cave
+  const goal = diveQuota(L) * 1.6; let worth = items.reduce((a, q) => a + TREASURE[q.k].v, 0);
+  for (let k = 0; k < 4000 && worth < goal; k++) {
+    const [x, y] = openCells[Math.floor(r() * openCells.length)];
+    if (y < DIVE_SURF + 3 || items.some(q => Math.abs(q.tx - x) < 2 && Math.abs(q.ty - y) < 2)) continue;
+    const k2 = (y - DIVE_SURF) / (ht - DIVE_SURF) > 0.5 ? 'gem' : 'coin';
+    items.push({ id: 't' + n, k: k2, tx: x, ty: y, x: px(x), y: px(y), home: true }); n++; worth += TREASURE[k2].v;
+  }
   // bubble columns rise from vents on tunnel floors
   const vents = [];
   for (let k = 0; k < 400 && vents.length < 3 + Math.floor(L / 2); k++) {
