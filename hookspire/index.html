@@ -137,6 +137,8 @@ body.touch .hint { display: none; }
 #touch button.ab { width: 54px; height: 54px; border-radius: 14px; font-size: 11px; }
 #touch button.ab b { display: block; font-size: 15px; }
 #touch button.on { background: rgba(94,230,193,.35); border-color: var(--mint); }
+#touch button.blast { border-color: #ff9a3d; color: #ffd9b0; }
+#touch button.blast.ready { background: rgba(255,154,61,.45); box-shadow: 0 0 18px #ff9a3d; color: #fff; }
 #touch .tturn { position: absolute; inset: auto 0 45% 0; text-align: center; font: 700 16px var(--ui); color: var(--ink); text-shadow: 0 2px 6px #000; }
 body.touch .mutepill { display: none; }
 @media (max-height: 460px) { #touch .tstick { width: 124px; height: 124px; } #touch button.big { width: 64px; height: 64px; } #touch button.ab { width: 46px; height: 46px; } }
@@ -7188,11 +7190,29 @@ function tbtn(parent, cls, html, code, opts) {
   parent.append(b);
   return b;
 }
+// the Grit Blast on touch: hold the button to charge (it holds S), let go to fire (it presses R three times)
+let tBlast = null;
+function blastButton(parent) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'big blast'; b.innerHTML = '💥<br>Blast';
+  b.title = 'Grit Blast: hold to charge, let go to fire';
+  let held = false;
+  const up = () => {
+    if (!held) return; held = false; b.classList.remove('on');
+    if (gbReady()) for (let k = 0; k < 3; k++) { fireKey(keyOf('reset'), true); fireKey(keyOf('reset'), false); }
+    fireKey(keyOf('down'), false);
+  };
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); touchSeen(); held = true; b.classList.add('on'); fireKey(keyOf('down'), true); });
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
+  parent.append(b); tBlast = b;
+  return b;
+}
 function touchLayout() {
   // which buttons this mode needs
   const pad = $('t-pad'), side = $('t-side'), abl = $('t-abil');
   pad.textContent = ''; side.textContent = ''; abl.textContent = '';
   const pv = mode === 'pvp' && pvp, kf = pv && pvp.chess, ctf = pv && pvp.ctf, tag = pv && pvp.tag;
+  tBlast = null;
+  if (gs().atk === 1 && mode !== 'story') blastButton(pad);
   if (kf) {
     tbtn(pad, 'big', 'Move', keyOf('special'), { tap: true });
     tbtn(pad, 'big', 'Attack', keyOf('attack'));
@@ -7220,7 +7240,8 @@ function touchTick(dt) {
   $('touch').hidden = !show;
   if (!show) { if (stick.id != null) stickEnd(); touchMode = ''; return; }
   // rebuild the buttons when the mode or ability slots change
-  const key = mode + '|' + (pvp ? (pvp.chess ? 'k' : pvp.ctf ? 'c' : pvp.tag ? 't' : 'p') : '') + '|' + (mode === 'world' || mode === 'pvp' ? hs().slots.join(',') : '');
+  if (tBlast) tBlast.classList.toggle('ready', gbReady());
+  const key = gs().atk + '|' + mode + '|' + (pvp ? (pvp.chess ? 'k' : pvp.ctf ? 'c' : pvp.tag ? 't' : 'p') : '') + '|' + (mode === 'world' || mode === 'pvp' ? hs().slots.join(',') : '');
   if (key !== touchMode) { touchMode = key; touchLayout(); }
   $('t-turn').hidden = innerWidth >= innerHeight;
 }
@@ -8675,7 +8696,7 @@ function trainTick(dt) {
   if (T.id === 'shaft') {
     if (c.altar && !g.atk && tNear(c.altar, 50)) {
       g.atk = 1; writeSave(); sfx('rare'); burst(c.altar.x, c.altar.y - 40, '#ff9a3d', 40, 300); if (!reduceMotion) shake = 0.3;
-      banner('New power', 'Grit Blast', 'Hold S for 2 seconds, then press R three times. Hold longer for a bigger blast.');
+      banner('New power', 'Grit Blast', touchOn() ? 'Hold the 💥 button for 2 seconds, then let go. Hold longer for a bigger blast.' : 'Hold S for 2 seconds, then press R three times. Hold longer for a bigger blast.');
     }
     if (c.door && tNear(c.door, 44)) {
       if (g.atk) { startTrain('arena'); return; }
@@ -8766,7 +8787,7 @@ function trainHud() {
 }
 function trainHudSlow() {
   const dr = train.drill;
-  $('w-found').textContent = train.id === 'shaft' ? 'A secret place inside the Climb' : dr ? (dr.tg ? 'Targets left: ' + dr.tg.filter(q => !q.hit).length : dr.gates ? 'Gate ' + Math.min(dr.next + 1, dr.gates.length) + ' of ' + dr.gates.length : 'Dummies left: ' + dr.dum.filter(d => !d.out).length) : 'Grit Blast: hold S, then press R three times';
+  $('w-found').textContent = train.id === 'shaft' ? 'A secret place inside the Climb' : dr ? (dr.tg ? 'Targets left: ' + dr.tg.filter(q => !q.hit).length : dr.gates ? 'Gate ' + Math.min(dr.next + 1, dr.gates.length) + ' of ' + dr.gates.length : 'Dummies left: ' + dr.dum.filter(d => !d.out).length) : (touchOn() ? 'Grit Blast: hold the 💥 button, let go to fire' : 'Grit Blast: hold S, then press R three times');
   $('w-team').textContent = '';
 }
 function openTrainShop() { state = 'paused'; for (const k in keys) keys[k] = false; detach(); gb.sAt = -1; renderTrainShop(); $('tr-code-msg').textContent = ''; show('scr-train'); }
