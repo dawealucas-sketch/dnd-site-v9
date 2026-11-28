@@ -346,7 +346,8 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <div class="msec"><span class="label">Explore</span>
       <div class="modes two">
         <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
-        <button class="mode" id="m-story"><b>Story Mode</b><small>The Fallen Spire. Chapter 1: The Shattered Meadow. Play solo or with a friend.</small></button>
+        <button class="mode" id="m-story"><b>Story Mode</b><small>The Fallen Spire. Three chapters so far. Play solo or with a friend.</small></button>
+        <button class="mode" id="m-train" hidden><b>Training Arena</b><small>Spend Grit on upgrades and run drills to earn more.</small></button>
       </div>
     </div>
     <div class="msec"><span class="label">Battle</span>
@@ -613,6 +614,15 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <p>Put up to five abilities on keys 1 to 5. There may be more out there.</p>
     <div class="ablist" id="lo-list"></div>
     <div class="row"><button class="btn primary" id="b-lo-close">Back to the world</button></div>
+  </section>
+
+  <section class="panel wide" id="scr-train" hidden>
+    <div class="head-row"><h2>Grit Upgrades</h2><span class="note" id="tr-grit"></span></div>
+    <p class="note" id="tr-cap"></p>
+    <div class="ablist" id="tr-list"></div>
+    <div class="row" style="align-items:center"><input type="text" id="tr-code" maxlength="20" placeholder="Secret code" autocomplete="off" spellcheck="false"><button class="btn" id="b-tr-code">Enter code</button><span class="note" id="tr-code-msg"></span></div>
+    <p class="note">Earn Grit from training drills and from stars in Story Mode. Upgrades work everywhere except Story Mode.</p>
+    <div class="row"><button class="btn primary" id="b-tr-close">Back to the arena</button></div>
   </section>
 
   <section class="panel wide" id="scr-map" hidden>
@@ -1116,7 +1126,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0, story: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0, story: null, grit: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -1149,6 +1159,7 @@ try {
     if (s.seen && typeof s.seen === 'object') save.seen = s.seen;
     save.kfSide = s.kfSide === 1 ? 1 : 0;
     if (s.story && typeof s.story === 'object') save.story = s.story;
+    if (s.grit && typeof s.grit === 'object') save.grit = s.grit;
     if (typeof s.last === 'string' && /^m-[a-z]+$/.test(s.last)) save.last = s.last;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
@@ -1310,7 +1321,7 @@ function musicWant() {
   if (state === 'menu') return 'menu';
   if (mode === 'story') return story && story.L && story.L.goal === 'boss' ? 'boss' : 'story';
   if (mode === 'pvp') return 'pvp';
-  if (mode === 'world' || mode === 'trial') return 'world';
+  if (mode === 'world' || mode === 'trial' || mode === 'train') return 'world';
   return 'climb';
 }
 function musicTick() {
@@ -1502,13 +1513,16 @@ addEventListener('keydown', (e0) => {
   if (state === 'play') {
     if (GAME_KEYS.has(e.code) || ((mode === 'world' || (mode === 'pvp' && pvp && pvp.chess)) && e.code === 'Tab')) e.preventDefault();
     keys[e.code] = true;
+    if (e.code === 'KeyS' && !e.repeat) { gb.sAt = gt; gb.rs = []; }
+    if (e.code === 'KeyR' && gbReady()) { if (!e.repeat) gbKey(); return; } // R counts toward the Grit Blast while S is held
     if (save.adm && !e.repeat && (e.code === 'KeyG' || e.code === 'KeyF')) admToggle(e.code === 'KeyG' ? 'god' : 'fly');
     if (e.code === 'Escape' && (kfMenuOpen() || (pvp && pvp.chess && pvp.chess.picking))) { kfCloseMenu(); pvp.chess.picking = null; }
     else if (e.code === 'Escape' || e.code === 'KeyP') pause();
-    else if (mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story') {
+    else if (mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train') {
       if (mode === 'pvp' && pvp && pvp.chess) chessKey(e);
       else if (mode === 'story') { if (e.code === 'KeyR' && !e.repeat && story && !story.done) storyRespawn(); else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1); else if (e.code === 'Tab') openLoadout(); }
       else if (mode === 'trial') { if (e.code === 'KeyR' && !e.repeat && trial) startTrial(trial.n); }
+      else if (mode === 'train') { if (e.code === 'KeyR' && !e.repeat) trainRespawn(); else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1); else if (e.code === 'Tab') openLoadout(); }
       else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
       else if (e.code === 'Tab') openLoadout();
       else if (mode === 'pvp') { if (e.code === 'KeyE') pvpShoot(); else if (e.code === 'KeyQ' && !e.repeat) pvpUltKey(); else if (e.code === 'KeyW' && !e.repeat) pvpYank(); else if (e.code === 'KeyM' && !e.repeat) openMap(); else if (!e.repeat && pvp && !pvp.me.alive && (e.code === 'KeyA' || e.code === 'KeyD' || e.code === 'ArrowLeft' || e.code === 'ArrowRight')) specCycle(e.code === 'KeyA' || e.code === 'ArrowLeft' ? -1 : 1); }
@@ -1523,7 +1537,7 @@ addEventListener('keydown', (e0) => {
     else if (current === 'scr-pause' && (e.code === 'Escape' || e.code === 'KeyP')) resume();
   }
 });
-addEventListener('keyup', (e) => { keys[vcode(e.code)] = false; keys[e.code] = false; });
+addEventListener('keyup', (e) => { if (vcode(e.code) === 'KeyS') { gb.sAt = -1; gb.rs = []; } keys[vcode(e.code)] = false; keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (state === 'play') pause(); });
 canvas.addEventListener('pointermove', (e) => { if (e.pointerType === 'touch' && e.pointerId !== aimTouch) return; mouse.sx = e.clientX; mouse.sy = e.clientY; mouse.inside = true; if (e.pointerType === 'touch' && !rope) snapAim(); });
 canvas.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') mouse.inside = false; });
@@ -1570,7 +1584,7 @@ function rayCircle(ox, oy, ux, uy, cx, cy, r) {
 // ---------- rope wrapping: the rope bends around corners it swings into ----------
 function ropeCorners(x0, y0, x1, y1) {
   const out = [];
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story') && hw) {
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train') && hw) {
     const vx0 = Math.floor(x0 / TS), vx1 = Math.ceil(x1 / TS), vy0 = Math.floor(y0 / TS), vy1 = Math.ceil(y1 / TS);
     if ((vx1 - vx0 + 1) * (vy1 - vy0 + 1) > 1600) return out;
     for (let vy = vy0; vy <= vy1; vy++) for (let vx = vx0; vx <= vx1; vx++) {
@@ -1591,7 +1605,7 @@ function ropeBlocked(ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
   if (d < 24) return false;
   const sx = ax + dx / d * 8, sy = ay + dy / d * 8; // skip the bit of rope right at the hook or corner
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story') && hw) return !wLos(sx, sy, bx, by);
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train') && hw) return !wLos(sx, sy, bx, by);
   return lineBlocked(sx, sy, bx, by, chunksBetween(Math.min(ay, by) - 60, Math.max(ay, by) + 60));
 }
 const triSide = (p, a, b) => (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
@@ -1667,7 +1681,7 @@ function computeAim() {
   const dx = mouse.wx - P.x, dy = mouse.wy - P.y, len = Math.hypot(dx, dy);
   if (len < 4) return null;
   const ux = dx / len, uy = dy / len, near = nearChunks();
-  let bestT = RANGE, hit = null;
+  let bestT = RANGE * gRng(), hit = null;
   if (ux < -1e-6) { const t = -P.x / ux; if (t < bestT) { bestT = t; hit = { kind: 'steel' }; } }
   if (ux > 1e-6) { const t = (W - P.x) / ux; if (t < bestT) { bestT = t; hit = { kind: 'steel' }; } }
   for (const c of near) {
@@ -1690,7 +1704,7 @@ function computeAim() {
   for (const c of near) for (const a of c.anchors) {
     if (a.broken > gt) continue;
     const q = anchorPos(a, st), ddx = q.x - P.x, ddy = q.y - P.y, d = Math.hypot(ddx, ddy);
-    if (d > RANGE || d < 10) continue;
+    if (d > RANGE * gRng() || d < 10) continue;
     const ang = Math.acos(clamp((ddx * ux + ddy * uy) / d, -1, 1));
     if (ang < bestA && !lineBlocked(P.x, P.y, q.x, q.y, near)) { bestA = ang; cand = { valid: true, kind: 'anchor', ref: a, x: q.x, y: q.y }; }
   }
@@ -1705,7 +1719,7 @@ function ropeAnchor() {
 }
 function attach(a) {
   const L = Math.hypot(a.x - P.x, a.y - P.y);
-  rope = { kind: a.kind, ref: a.ref, x: a.x, y: a.y, L: clamp(L, MINL, RANGE) };
+  rope = { kind: a.kind, ref: a.ref, x: a.x, y: a.y, L: clamp(L, MINL, RANGE * gRng()) };
   if (a.kind === 'anchor' && a.ref.kind === 'crumble' && a.ref.grab < 0) a.ref.grab = gt;
   burst(a.x, a.y, '#ffb347', 6, 120); sfx('hook');
 }
@@ -1732,6 +1746,7 @@ function addTokens(n, x, y) {
 }
 
 function step(dt) {
+  if (mode === 'train') return; // we just dropped through the fake wall this frame
   gt += dt;
   if (raceCountdown()) { P.vx = 0; P.vy = 0; detach(); return; }
   if (P.stun > 0) P.stun -= dt;
@@ -1746,18 +1761,18 @@ function step(dt) {
 
   const near = nearChunks();
   let ax = 0;
-  if (rope) ax = dir * SWING;
-  else if (!P.ground) ax = dir * AIR;
+  if (rope) ax = dir * SWING * gSpd();
+  else if (!P.ground) ax = dir * AIR * gSpd();
   for (const c of near) for (const w of c.winds) if (P.y > w.y1 && P.y < w.y2) ax += windForce(w, st);
   P.vx += ax * dt;
   P.vy += G * dt;
-  if (!rope && P.ground) P.vx += (dir * WALKMAX - P.vx) * Math.min(1, 12 * dt);
+  if (!rope && P.ground) P.vx += (dir * WALKMAX * gSpd() - P.vx) * Math.min(1, 12 * dt);
   P.jumpCd = (P.jumpCd || 0) - dt;
   if (!rope && P.ground && held('KeyW', 'ArrowUp') && P.jumpCd <= 0) { P.vy = -JUMP_V; P.ground = false; P.jumpCd = 0.3; sfx('jump', 0.6); }
   if (rope) {
     const wl = rope.w && rope.w.length ? ropeWrapLen(rope, ropeAnchor() || rope) : 0;
     if (held('KeyW', 'ArrowUp')) rope.L = Math.max(MINL + wl, rope.L - REEL_IN * dt);
-    if (held('KeyS', 'ArrowDown')) rope.L = Math.min(RANGE + wl, rope.L + REEL_OUT * dt);
+    if (held('KeyS', 'ArrowDown')) rope.L = Math.min(RANGE * gRng() + wl, rope.L + REEL_OUT * dt);
   }
   const damp = 1 - 0.1 * dt;
   P.vx *= damp; P.vy *= damp;
@@ -1783,6 +1798,7 @@ function step(dt) {
   P.ground = false;
   if (P.x < PR) { P.x = PR; if (P.vx < 0) P.vx = -P.vx * 0.3; }
   if (P.x > W - PR) { P.x = W - PR; if (P.vx > 0) P.vx = -P.vx * 0.3; }
+  if (towerSecrets(dt)) return;
   for (const c of near) {
     for (const b of c.blocks) {
       const cx = clamp(P.x, b.x, b.x + b.w), cy = clamp(P.y, b.y, b.y + b.h);
@@ -1873,7 +1889,7 @@ function burst(x, y, color, n, spd) {
 }
 let bannerTimer = 0;
 function banner(small, big, detail) {
-  const el = $(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' ? 'wbanner' : 'banner'); // the arena modes use the world HUD
+  const el = $(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' ? 'wbanner' : 'banner'); // the arena modes use the world HUD
   el.textContent = '';
   const s = document.createElement('small'); s.textContent = small;
   el.append(s, document.createTextNode(big));
@@ -2204,7 +2220,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-train', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -2217,6 +2233,7 @@ function refreshMenu() {
   $('s-sum').textContent = String(save.summits);
   $('s-wins').textContent = String(save.raceWins);
   $('m-tokens').textContent = String(save.tokens);
+  $('m-train').hidden = !(save.grit && save.grit.arena === 1);
   if (achRefresh) achRefresh();
   if (typeof refreshLast === 'function' && $('m-last')) try { refreshLast(); } catch (e) {}
 }
@@ -2290,7 +2307,7 @@ function toMenu() {
   ab.active = {}; ab.cd = {};
   kfCloseMenu();
   if (typeof sDlg !== 'undefined') { sDlg.lines = null; $('dlg').hidden = true; $('radio').hidden = true; }
-  story = null; storyHost = false;
+  story = null; storyHost = false; train = null;
   pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true; $('k-hint').hidden = true; $('k-roster').hidden = true;
   trial = null; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false;
   toCheckpoint(0);
@@ -2422,7 +2439,7 @@ $('b-sum-again').addEventListener('click', () => beginRun(0, true));
 $('b-sum-menu').addEventListener('click', toMenu);
 $('b-sum-gacha').addEventListener('click', () => { toMenu(); openGacha(); });
 $('b-resume').addEventListener('click', resume);
-$('b-cp').addEventListener('click', () => { if (mode === 'trial' && trial) { startTrial(trial.n); return; } if (mode === 'story' && story) { storyRespawn(); resume(); return; } if (mode === 'world') toCampfire(); else toCheckpoint(reachedCp); resume(); });
+$('b-cp').addEventListener('click', () => { if (mode === 'trial' && trial) { startTrial(trial.n); return; } if (mode === 'train' && train) { trainRespawn(); resume(); return; } if (mode === 'story' && story) { storyRespawn(); resume(); return; } if (mode === 'world') toCampfire(); else toCheckpoint(reachedCp); resume(); });
 $('b-regroup').addEventListener('click', () => { let best = reachedCp; for (const s of peerState.values()) best = Math.max(best, s.cp); toCheckpoint(best); resume(); });
 $('b-quit').addEventListener('click', toMenu);
 $('b-help').addEventListener('click', () => { helpReturn = 'scr-menu'; show('scr-help'); });
@@ -3277,6 +3294,7 @@ function render(dt) {
   for (const c of vis) for (const a of c.anchors) drawAnchor(a, a === targetRef);
   for (const c of vis) for (const s of c.saws) drawSaw(s);
   drawWalls(camX, top, bottom);
+  drawTowerSecrets();
 
   // bots and other players
   for (const b of botsToDraw()) {
@@ -3295,7 +3313,7 @@ function render(dt) {
   // aim
   if (state === 'play' && mouse.inside && !raceCountdown()) {
     ctx.strokeStyle = 'rgba(243,236,223,0.08)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(P.x, P.y, RANGE, 0, 6.283); ctx.stroke();
+    ctx.beginPath(); ctx.arc(P.x, P.y, RANGE * gRng(), 0, 6.283); ctx.stroke();
     if (!rope && aim) {
       ctx.setLineDash([5, 7]); ctx.lineWidth = 1.5;
       ctx.strokeStyle = aim.valid ? 'rgba(94,230,193,0.55)' : 'rgba(243,236,223,0.25)';
@@ -3319,6 +3337,7 @@ function render(dt) {
   if (state === 'play') { emitTrail(me, dt, particles); P.trailAcc = me.trailAcc; }
   if (A) drawRopeW(P.x, P.y, A, rope.w, rope.L, save.eq.rope);
   drawClimber(me);
+  drawGrit();
 
   updateParticles(particles, dt);
   drawParticles(particles);
@@ -3673,7 +3692,7 @@ function ensureWorld() {
 // ----- Hookworld physics -----
 const wSolid = (tx, ty) => hw.get(tx, ty) !== TAIR;
 const curR = () => ab.active.shrink > 0 ? 8 : PR;
-const curRange = () => ab.active.longrope > 0 ? RANGE * 2 : RANGE;
+const curRange = () => (ab.active.longrope > 0 ? RANGE * 2 : RANGE) * gRng();
 function extraRects() {
   const out = hw.bars.slice();
   if (hw.sentry && !(ab.active.invis > 0)) out.push(hw.sentry);
@@ -3756,7 +3775,7 @@ function knockedOut() {
   hw.shots.length = 0;
   for (const dr of hw.drones) if (dr.st === 'chase') dr.st = 'return';
   toCampfire();
-  wHP = W_HP;
+  wHP = wMax();
   const c = hw.camps.find(cc => cc.id === hs().camp);
   banner('Knocked out', 'Back to ' + (c ? c.n : 'camp'), 'Five hits and you\'re out. Campfires heal you.');
 }
@@ -3850,7 +3869,7 @@ function stepWorld(dt) {
   if (rope && !grabbing) detach();
   if (!rope && grabbing && P.stun <= 0 && wAim && wAim.valid && !(mode === 'pvp' && pvp && Date.now() < pvp.me.netUntil)) worldAttach(wAim);
   if (rope && !ropeAnchor()) detach();
-  const fly = ab.active.fly > 0, feather = ab.active.feather > 0, km = chessSpeed();
+  const fly = ab.active.fly > 0, feather = ab.active.feather > 0, km = chessSpeed() * gSpd();
   let ax = 0, ay = fly ? 0 : feather ? G * 0.3 : G;
   if (fly && !rope) { ax = dir * 1700; ay += ((held('KeyS', 'ArrowDown') ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0)) * 1700; }
   else if (rope) ax = dir * SWING * km * (mode === 'pvp' && pvp && pvp.me.od > Date.now() ? 1.6 : 1);
@@ -3901,7 +3920,7 @@ function worldPickups() {
   for (const c of hw.chests) if (!h.ch.includes(c.id) && Math.hypot(P.x - c.x, P.y - c.y) < 42) {
     h.ch.push(c.id); addTokens(c.v, c.x, c.y); burst(c.x, c.y, '#ffd34d', 16, 200); banner('Chest', '+' + c.v + ' tokens'); saveDirty = true;
   }
-  for (const c of hw.camps) if (wHP < W_HP && h.camps.includes(c.id) && Math.hypot(P.x - c.x, P.y - (c.y - 20)) < 70) { wHP = W_HP; burst(P.x, P.y, '#9be15d', 12, 160); }
+  for (const c of hw.camps) if (wHP < wMax() && h.camps.includes(c.id) && Math.hypot(P.x - c.x, P.y - (c.y - 20)) < 70) { wHP = wMax(); burst(P.x, P.y, '#9be15d', 12, 160); }
   for (const c of hw.camps) if (h.camp !== c.id && Math.hypot(P.x - c.x, P.y - (c.y - 20)) < 70) {
     h.camp = c.id; if (!h.camps.includes(c.id)) h.camps.push(c.id);
     banner('Campfire lit', c.n, 'Press R to come back here.'); saveDirty = true;
@@ -4116,7 +4135,7 @@ function startWorld() {
   ensureWorld();
   mode = 'world';
   ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0; hw.shots.length = 0;
-  wHP = W_HP; lastHP = -1;
+  wHP = wMax(); lastHP = -1;
   for (const dr of hw.drones) { dr.st = 'patrol'; dr.t = 0; dr.x = dr.ax; dr.y = dr.ay; }
   toCampfire();
   runHeight = 0; reachedCp = 0;
@@ -4211,17 +4230,20 @@ function updateWorldHud(dt) {
   if (wHP !== lastHP) {
     lastHP = wHP;
     const el = $('w-hp'); el.textContent = '';
-    for (let i = 0; i < W_HP; i++) { const pip = document.createElement('i'); if (i >= wHP) pip.className = 'off'; el.append(pip); }
-    el.setAttribute('aria-label', 'Health ' + wHP + ' of ' + W_HP);
+    const mx = mode === 'story' ? W_HP : mode === 'pvp' ? P_HP + gHP() : wMax();
+    for (let i = 0; i < mx; i++) { const pip = document.createElement('i'); if (i >= wHP) pip.className = 'off'; if (i >= W_HP && mode !== 'story') pip.style.background = i < wHP ? '#ff9a3d' : ''; el.append(pip); }
+    el.setAttribute('aria-label', 'Health ' + wHP + ' of ' + mx);
   }
   updateSlots();
   if (mode === 'pvp' && pvp) pvpHudFast();
   if (mode === 'trial' && trial) trialHudFast();
   if (mode === 'story' && story) storyHudFast();
+  if (mode === 'train' && train) trainHud();
   wHudT -= dt;
   if (wHudT > 0) return;
   wHudT = 0.4;
   if (mode === 'story' && story) storyHudSlow();
+  else if (mode === 'train' && train) trainHudSlow();
   else if (mode === 'trial' && trial) {
     $('w-found').textContent = 'Falls ' + trial.deaths + (trState().best[trial.n] ? ' · Best ' + fmtTime(trState().best[trial.n]) : '');
     $('w-team').textContent = '';
@@ -4416,7 +4438,7 @@ function renderWorld(dt) {
   for (const s of hw.shots) if (inView(s.x, s.y)) { ctx.beginPath(); ctx.arc(s.x, s.y, 5, 0, 6.283); ctx.fill(); }
   // teammates
   if (teamKind === 'world' || teamKind === 'pvp' || teamKind === 'story') for (const s of peerState.values()) {
-    if (!s.playing || (mode === 'pvp' && !pvpPeerVisible(s)) || (mode === 'story' && (!story || !s.raw || s.raw.ss !== story.sid))) continue;
+    if (!s.playing || (mode === 'pvp' && !pvpPeerVisible(s)) || (mode === 'story' && (!story || !s.raw || s.raw.ss !== story.sid)) || mode === 'train') continue;
     const fx = s.fx || 0;
     const o = { x: s.rx, y: s.ry, vx: s.vx, vy: s.vy, base: s.c, eq: s.eq, anchor: s.a ? { x: s.a[0], y: s.a[1] } : null, label: s.n, face: (s.vx || 0) < 0 ? -1 : 1, hist: s.hist, trailAcc: s.trailAcc, alpha: fx & 1 ? (mode === 'pvp' ? 0.12 : 0.3) : 1, sc: fx & 2 ? 0.55 : 1, title: s.ti ? TITLE : '' };
     emitTrail(o, dt, particles); s.trailAcc = o.trailAcc;
@@ -4453,6 +4475,7 @@ function renderWorld(dt) {
   if (mode === 'pvp' && pvp) pvpRender(dt);
   if (mode === 'trial' && trial) trialRender(dt);
   if (mode === 'story' && story) storyRender(dt);
+  if (mode === 'train' && train) trainRender();
   if (mode !== 'pvp' || (pvp && pvp.me.alive)) {
     if (A) drawRopeW(P.x, P.y, A, rope.w, rope.L, ab.active.static > 0 ? 'r_bolt' : save.eq.rope);
     drawClimber(me);
@@ -4460,6 +4483,7 @@ function renderWorld(dt) {
     if (mode === 'pvp' && pvp) pvpMeOverlay();
     drawRewindGhost();
   }
+  drawGrit();
   updateParticles(particles, dt);
   drawParticles(particles);
   if (mode === 'story' && story) storyOverlay();
@@ -4474,6 +4498,7 @@ function worldFrame(dt) {
     if (mode === 'world') { updateEnemies(dt); exploreTick(dt); }
     else if (mode === 'trial' && trial) trialTick(dt);
     else if (mode === 'story' && story) storyTick(dt);
+    else if (mode === 'train' && train) trainTick(dt);
   } else { acc = 0; wAim = null; gt += dt; }
   if (mode === 'pvp' && pvp && (state === 'play' || (pvp.online && state !== 'menu'))) pvpTick(dt);
   sendPresence(dt);
@@ -4681,7 +4706,7 @@ function respawnSpot(team) {
 }
 function respawnFighter(f, isMe) {
   const s = respawnSpot(f.team);
-  f.hp = P_HP; f.alive = true; f.respawnAt = 0; f.inv = Date.now() + 2000; f.freezeUntil = 0; f.netUntil = 0; f.pull = null;
+  f.hp = P_HP; f.bonus = pvp && f === pvp.me ? gHP() : 0; f.alive = true; f.respawnAt = 0; f.inv = Date.now() + 2000; f.freezeUntil = 0; f.netUntil = 0; f.pull = null;
   if (isMe) { detach(); P.x = s.x; P.y = s.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.inv = 2; banner('Back in', hw.name); }
   else { f.x = s.x; f.y = s.y; f.vx = 0; f.vy = 0; f.rope = null; f.hist.length = 0; }
 }
@@ -4703,6 +4728,7 @@ function applyFighter(f, kind, a, b, c, src, isMe) {
   else if (kind === 'n') f.netUntil = now + clamp(a, 0, 4000);
   else if (kind === 's') { body.x = a; body.y = b; body.vx = 0; body.vy = 0; if (isMe) P.hist.length = 0; }
   dmg = clamp(Math.round(dmg), 0, 3);
+  if (isMe && f.bonus > 0 && dmg > 0) { const u = Math.min(f.bonus, dmg); f.bonus -= u; dmg -= u; } // Grit bonus hearts go first
   if (isMe) { detach(); P.stun = 0.2; if (!reduceMotion) shake = 0.2; sfx('hurt'); } else { f.rope = null; if (src === selfId()) sfx('hit', 0.7); }
   f.hp -= dmg;
   burst(body.x, body.y, '#ff5a6e', 10, 220);
@@ -5101,6 +5127,7 @@ function startPvp(pm, online) {
   { const tg = !!pm.tag, cf = !!pm.ctf, kf = !!pm.chess, alt = tg || cf || kf; $('w-ult').hidden = alt; $('p-hint').hidden = alt; $('g-hint').hidden = !tg; $('c-hint').hidden = !cf; $('k-hint').hidden = !kf; $('k-roster').hidden = !kf; $('w-slots').hidden = kf; $('w-hp').hidden = alt; $('t-timer').hidden = !alt; $('t-timer').style.borderColor = ''; }
   if (pm.chess) chessPlaceMe();
   $('wbanner').dataset.cd = '';
+  if (pvp && pvp.me) pvp.me.bonus = gHP();
   buildSlots(); lastHP = -1; wHP = P_HP;
   canvas.focus();
   firstHelp();
@@ -5146,7 +5173,7 @@ function pvpTick(dt) {
   if (!m.alive && m.lives > 0 && m.respawnAt && now >= m.respawnAt) respawnFighter(m, true);
   m.shotCd -= dt; m.yankCd -= dt;
   if (m.alive && now >= pvp.start && !pvp.over) m.charge = Math.min(100, m.charge + dt * 100 / ULT_TIME);
-  wHP = m.alive ? m.hp : 0;
+  wHP = m.alive ? m.hp + (m.bonus || 0) : 0;
   for (const b of pvp.bots) botTick(b, dt * (ab.active.slow > 0 && b.team !== m.team ? 0.35 : 1), now);
   updateShots(dt);
   updateFx(now, dt);
@@ -6998,10 +7025,10 @@ function touchSeen() { if (!touchUsed) { touchUsed = true; touchRefresh(); } }
 addEventListener('touchstart', touchSeen, { passive: true, capture: true });
 function snapAim() {
   // touch aim assist: snap to the nearest ring within a thumb's width of your finger
-  const R2 = 70, tower = !(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story') || !hw;
+  const R2 = 70, tower = !(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train') || !hw;
   let best = null, bd = R2;
   const consider = (x, y, toScreen) => {
-    if (Math.hypot(x - P.x, y - P.y) > (tower ? RANGE : curRange()) * 0.97) return;
+    if (Math.hypot(x - P.x, y - P.y) > (tower ? RANGE * gRng() : curRange()) * 0.97) return;
     const [sx, sy] = toScreen(x, y), d = Math.hypot(sx - mouse.sx, sy - mouse.sy);
     if (d < bd) { bd = d; best = [sx, sy]; }
   };
@@ -7068,13 +7095,13 @@ function touchLayout() {
     if (!tag) tbtn(pad, 'big', 'Ult', keyOf('special'), { tap: true });
     tbtn(pad, 'big', tag ? 'Tag<br>shot' : 'Shoot', keyOf('attack'));
   }
-  if (mode === 'world' || mode === 'story' || (pv && !kf)) {
+  if (mode === 'world' || mode === 'story' || mode === 'train' || (pv && !kf)) {
     const h = hs();
     for (let i = 0; i < 5; i++) { const id = h.slots[i]; const b = tbtn(abl, 'ab', '<b>' + (i + 1) + '</b>' + (id ? ABIL[id].n.split(' ')[0] : '—'), 'Digit' + (i + 1), { tap: true }); if (!id) b.style.opacity = '.4'; }
   }
   if (mode === 'world') tbtn(side, 'sm', '⚙', keyOf('equip'), { tap: true }).title = 'Equip';
   if (mode === 'world' || pv) tbtn(side, 'sm', '🗺', keyOf('map'), { tap: true }).title = 'Map';
-  if (mode === 'world' || mode === 'trial' || mode === 'story' || mode === 'solo' || mode === 'coop' || (mode === 'race' && !raceCountdown())) tbtn(side, 'sm', mode === 'world' ? '🔥' : '↺', keyOf('reset'), { tap: true }).title = mode === 'world' ? 'Campfire' : mode === 'trial' ? 'Restart' : 'Checkpoint';
+  if (mode === 'world' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'solo' || mode === 'coop' || (mode === 'race' && !raceCountdown())) tbtn(side, 'sm', mode === 'world' ? '🔥' : '↺', keyOf('reset'), { tap: true }).title = mode === 'world' ? 'Campfire' : mode === 'trial' ? 'Restart' : 'Checkpoint';
   tbtn(side, 'sm', SET.mute ? '🔇' : '🔊', keyOf('mute'), { tap: true }).title = 'Mute';
   tbtn(side, 'sm', '?', keyOf('help'), { tap: true }).title = 'How to play';
   tbtn(side, 'sm', 'II', 'Escape', { tap: true }).title = 'Pause';
@@ -7493,6 +7520,7 @@ function storyWin(fromPeer) {
   if (!rec.best || story.time < rec.best) rec.best = Math.round(story.time * 10) / 10;
   const newStars = starCount(rec.s) - starCount(before);
   let tok = newStars * 5 + (firstClear ? 10 : 0), extra = [];
+  if (newStars > 0) { gs(); addGrit(newStars * 10); extra.push('+' + newStars * 10 + ' Grit'); }
   if (L.gift && !hs().ab.includes(L.gift)) { const h = hs(); h.ab.push(L.gift); const e = h.slots.indexOf(null); if (e >= 0) h.slots[e] = L.gift; extra.push('New ability: ' + ABIL[L.gift].n); }
   const ch = L.ch;
   if (L === ch.levels[ch.levels.length - 1] && !S.ch[ch.id]) {
@@ -7964,6 +7992,341 @@ $('b-st-join').addEventListener('click', tryStoryJoin);
 $('st-code-in').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryStoryJoin(); });
 $('b-st-copy').addEventListener('click', () => copyCode($('b-st-copy'), $('st-code')));
 $('dlg').addEventListener('pointerdown', (e) => { e.preventDefault(); dlgNext(); });
+
+// =================================================================
+// ---------- Grit: the secret charged attack, the training arena and upgrades ----------
+// =================================================================
+const TRAIN_MAPS = {"shaft":["##############################","###....#######################","###.S..#######################","###....#######################","###....#######################","###....#######################","###....#######################","###....#######################","###..o.#######################","###....#######################","###....#######################","###....#######################","###....#######################","###....#######################","###....#######################","###....#######################","###..o.#######################","###....#######################","###....#######################","###....#######################","###....#######################","###....#######################","###....#######################","###....#######################","###..o.#######################","###....#######################","###....#######################","###....#######################","###....#######################","###....#######################","###........................###","###........................###","###........................###","###........................###","###........................###","###........................###","###.........A..........D...###","##############################","##############################","##############################"],"arena":["=##################################################################################################=","=##################################################################################################=","=............................................................................................##....=","=............................................................................................##....=","=.......................................T...........T...........T............................##....=","=...............................................................................g............##....=","=..........................................t...........t...........t............T............##....=","=............................................................................................##....=","=.............................................g..............................................##....=","=.......................................o...........o...........o...........o.......o........##....=","=............................................................................................##....=","=.................................................................g..........................##....=","=...........................o................t.............t..............................o..##....=","=............................................................................................##....=","=.................................o...........o...........o...........o......................##....=","=............................................................................................##....=","=...........................................................................d...d...d........##....=","=.......................................................................#################....##....=","=....................................t...........t...........t...............................##....=","=............................................................................................##....=","=...................................g.....................g...............................g..##....=","=............................................................................................ff....=","=............................................................................................ff....=","=............................................................................................ff....=","=............................................................................................ff....=","=...S....U.....1....2....3...................................................................ff.M..=","=##################################################################################################=","=##################################################################################################=","=##################################################################################################=","=##################################################################################################="]};
+const GSTATS = [
+  ['spd', 'Walking speed', 'Walk, swing and fly 4% faster per level.'],
+  ['atk', 'Attack power', 'The Grit Blast hits harder and reaches farther.'],
+  ['chg', 'Charge speed', 'Less time holding S before the blast is ready.'],
+  ['rng', 'Hook range', 'Your hook reaches 5% farther per level.'],
+  ['hp', 'Max hearts', '+1 heart per level. In PvP they are bonus hearts that take hits first.'],
+];
+const GRIT_CODE = 'NEVERLETGO';
+const SECRET_Y = -10 * CHUNK;                       // the 120 m checkpoint floor: its left wall is fake
+const RELIC = { x: 45, y: SUMMIT_Y - 250 };         // hidden just above the summit, by the left wall
+let secretT = 0;
+function gs() {
+  let g = save.grit;
+  if (!g || typeof g !== 'object') g = save.grit = {};
+  g.g = clampInt(g.g || 0, 0, 1e7);
+  if (!g.up || typeof g.up !== 'object') g.up = {};
+  for (const [k] of GSTATS) g.up[k] = clampInt(g.up[k] || 0, 0, 15);
+  if (!g.sec || typeof g.sec !== 'object') g.sec = {};
+  if (!g.dr || typeof g.dr !== 'object') g.dr = {};
+  g.atk = g.atk === 1 ? 1 : 0; g.arena = g.arena === 1 ? 1 : 0;
+  if (!g.mig) { // stars you already had in Story Mode count too
+    g.mig = 1; let n = 0;
+    const lv = save.story && save.story.lv; if (lv && typeof lv === 'object') for (const k in lv) n += starCount(clampInt(lv[k] && lv[k].s, 0, 7));
+    g.g += n * 10; saveDirty = true;
+  }
+  return g;
+}
+const gLvl = (k) => mode === 'story' ? 0 : gs().up[k];
+const gCap = () => { const q = gs().sec; return 5 + (q.drill ? 2 : 0) + (q.relic ? 3 : 0) + (q.code ? 5 : 0); };
+const gCost = (lv) => 10 * (lv + 1);
+const gSpd = () => 1 + 0.04 * gLvl('spd');
+const gRng = () => 1 + 0.05 * gLvl('rng');
+const gHP = () => gLvl('hp');
+const wMax = () => W_HP + gHP();
+function addGrit(n, x, y) {
+  gs().g += n; saveDirty = true;
+  if (x != null) particles.push({ k: 'text', text: '+' + n + ' Grit', x, y: y - 34, vx: 0, vy: -40, life: 1.5, color: '#ff9a3d' });
+}
+// ----- the Grit Blast: hold S, then press R three times -----
+const gb = { sAt: -1, rs: [], cd: 0, fx: [] };
+const gNeed = () => Math.max(0.6, 2 - 0.1 * gLvl('chg'));
+const gbPower = () => clamp((gt - gb.sAt - gNeed()) / Math.max(1, 3 - 0.12 * gLvl('chg')), 0, 1); // hold longer: up to full power
+function gbReady() { return gs().atk === 1 && mode !== 'story' && state === 'play' && !!keys.KeyS && gb.sAt >= 0 && gt - gb.sAt >= gNeed() && gt >= gb.cd; }
+function gbKey() {
+  gb.rs = gb.rs.filter(t => gt - t < 1.2); gb.rs.push(gt);
+  sfx('click'); burst(P.x, P.y - 30, '#ff9a3d', 6, 120);
+  if (gb.rs.length >= 3) { const pw = gbPower(); gb.rs = []; gb.sAt = -1; gb.cd = gt + 3; gbFire(pw); }
+}
+function gbFire(pw) {
+  const a = gLvl('atk'), mult = 1 + 0.15 * a, R = (150 + 120 * pw) * (1 + 0.03 * a), F = (650 + 750 * pw) * mult;
+  gb.fx.push({ x: P.x, y: P.y, r: R, t: gt, pw });
+  sfx('ult'); if (!reduceMotion) shake = 0.25 + pw * 0.3;
+  burst(P.x, P.y, '#ff9a3d', Math.round(30 + pw * 30), 300 + pw * 200); burst(P.x, P.y, '#fff1c9', 16, 260);
+  const push = (x, y) => { const dx = x - P.x, dy = y - P.y, d = Math.hypot(dx, dy) || 1; return d > R ? null : { ux: dx / d, uy: dy / d, k: 1 - d / R * 0.5 }; };
+  if (mode === 'pvp' && pvp) {
+    const me = selfId(), views = pvpViews(), mine = views.find(v => v.me), myTeam = mine ? mine.team : null;
+    for (const v of views) {
+      if (v.me || !v.alive) continue;
+      if (!pvp.tag && v.team === myTeam && (pvp.chess || pvp.ctf || (pvp.cfg && pvp.cfg.teams))) continue;
+      const q = push(v.x, v.y); if (!q) continue;
+      const kx = clamp(q.ux * F * q.k, -1500, 1500), ky = clamp(q.uy * F * q.k - 220, -1500, 1500);
+      if (pvp.chess) deal(me, v.id, 'd', Math.min(3, Math.round((1.5 + 1.5 * pw) * mult)), kx, ky);
+      else if (pvp.tag) deal(me, v.id, pvp.tag.it.has(me) ? 't' : 'y', 0, kx, ky);
+      else { deal(me, v.id, 'y', pvp.ctf ? 0 : Math.min(3, (pw >= 0.5 ? 2 : 1) + (a >= 5 ? 1 : 0)), kx, ky); if (pvp.ctf) ctfKnock(me, v.id); }
+    }
+  } else if (mode === 'world' && hw) {
+    for (const dr of hw.drones) { const q = push(dr.x, dr.y); if (!q) continue; dr.st = 'return'; dr.rest = gt + 10; moveDrone(dr, q.ux, q.uy, 90 * q.k, true); burst(dr.x, dr.y, '#ff9a3d', 12, 200); }
+    for (const t of hw.turrets) { const q = push(t.x, t.y); if (!q) continue; t.cool = 8; t.lock = false; burst(t.x, t.y, '#ff9a3d', 12, 200); }
+  } else if (mode === 'train' && train && train.drill) {
+    const dr = train.drill;
+    if (dr.tg) for (const q0 of dr.tg) if (!q0.hit && push(q0.x, q0.y)) { q0.hit = true; burst(q0.x, q0.y, '#ff5a6e', 16, 240); sfx('hit', 0.7); }
+    if (dr.dum) for (const d of dr.dum) { const q = push(d.x, d.y); if (!q || d.out) continue; d.vx += q.ux * F * q.k * 0.9; d.vy += q.uy * F * q.k * 0.9 - 320; d.air = true; }
+  }
+}
+function drawGrit() {
+  for (let k = gb.fx.length - 1; k >= 0; k--) {
+    const f = gb.fx[k], age = gt - f.t;
+    if (age > 0.5 || age < 0) { gb.fx.splice(k, 1); continue; }
+    const r = f.r * (0.3 + age / 0.5 * 0.7);
+    ctx.strokeStyle = 'rgba(255,154,61,' + (1 - age / 0.5) + ')'; ctx.lineWidth = 6 + f.pw * 6; ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, 6.283); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,241,201,' + Math.max(0, 0.8 - age * 1.6) + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(f.x, f.y, r * 0.85, 0, 6.283); ctx.stroke();
+  }
+  if (gs().atk !== 1 || mode === 'story' || state !== 'play' || !keys.KeyS || gb.sAt < 0) return;
+  const need = gNeed(), h = gt - gb.sAt, r0 = curR() + 10;
+  if (h < 0.3) return; // a quick tap of S shows nothing
+  ctx.save(); ctx.lineWidth = 3; ctx.lineCap = 'round';
+  if (h < need || gt < gb.cd) {
+    ctx.strokeStyle = 'rgba(255,154,61,0.65)'; ctx.beginPath(); ctx.arc(P.x, P.y, r0, -Math.PI / 2, -Math.PI / 2 + 6.283 * Math.min(1, h / need)); ctx.stroke();
+  } else {
+    const pw = gbPower(), r = r0 + 4 + pw * 16 + Math.sin(gt * 22) * 2;
+    const g = ctx.createRadialGradient(P.x, P.y, 4, P.x, P.y, r + 10); g.addColorStop(0, 'rgba(255,154,61,0)'); g.addColorStop(0.7, 'rgba(255,154,61,' + (0.15 + pw * 0.25) + ')'); g.addColorStop(1, 'rgba(255,154,61,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(P.x, P.y, r + 10, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = pw >= 1 ? '#fff1c9' : '#ff9a3d'; ctx.shadowBlur = 12 + pw * 10; ctx.shadowColor = '#ff9a3d'; ctx.beginPath(); ctx.arc(P.x, P.y, r, 0, 6.283); ctx.stroke(); ctx.shadowBlur = 0;
+    const n = gb.rs.filter(t => gt - t < 1.2).length;
+    for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(P.x - 12 + k * 12, P.y - r - 12, 4, 0, 6.283); if (k < n) { ctx.fillStyle = '#ff9a3d'; ctx.fill(); } else { ctx.strokeStyle = 'rgba(255,241,201,0.7)'; ctx.lineWidth = 1.5; ctx.stroke(); } }
+    ctx.font = '700 12px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff1c9'; ctx.fillText('R R R', P.x, P.y - r - 22);
+  }
+  ctx.restore();
+}
+// ----- the Climb's secrets: the fake wall and the summit relic -----
+function towerSecrets(dt) {
+  if (mode === 'solo' && P.x <= PR + 2 && held('KeyA', 'ArrowLeft') && P.y > SECRET_Y - 120 && P.y < SECRET_Y) {
+    secretT += dt;
+    if (secretT > 0.35) { secretT = 0; writeSave(); startTrain('shaft'); return true; }
+  } else secretT = 0;
+  const g = gs();
+  if (!g.sec.relic && Math.hypot(P.x - RELIC.x, P.y - RELIC.y) < 42) {
+    g.sec.relic = 1; writeSave(); sfx('rare'); burst(RELIC.x, RELIC.y, '#ff9a3d', 40, 300);
+    banner('Secret found', 'The Summit Relic', 'Grit upgrades can go 3 levels higher now.');
+  }
+  return false;
+}
+function drawTowerSecrets() {
+  if (mode === 'solo') {
+    // hairline cracks in the wall, only if you look closely
+    ctx.strokeStyle = 'rgba(255,154,61,' + (0.12 + 0.06 * Math.sin(gt * 2)) + ')'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(-4, SECRET_Y - 110); ctx.lineTo(-14, SECRET_Y - 80); ctx.lineTo(-6, SECRET_Y - 52); ctx.lineTo(-18, SECRET_Y - 20); ctx.lineTo(-8, SECRET_Y);
+    ctx.moveTo(-14, SECRET_Y - 80); ctx.lineTo(-26, SECRET_Y - 70); ctx.moveTo(-6, SECRET_Y - 52); ctx.lineTo(-2, SECRET_Y - 40); ctx.stroke();
+  }
+  if (!gs().sec.relic) {
+    const y = RELIC.y + Math.sin(gt * 2) * 5;
+    ctx.save(); ctx.translate(RELIC.x, y); ctx.rotate(gt);
+    ctx.fillStyle = '#ff9a3d'; ctx.shadowBlur = 18; ctx.shadowColor = '#ff9a3d';
+    ctx.beginPath(); for (let k = 0; k < 6; k++) { const a = k * 1.047; ctx.lineTo(Math.cos(a) * 11, Math.sin(a) * 11); } ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff1c9'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, 6.283); ctx.fill(); ctx.restore();
+  }
+}
+// ----- the training arena (and the hidden shaft that leads to it) -----
+let train = null;
+const TPAL = { top: '#c9a46a', rock: '#4a4058', deep: '#2e2840' };
+const DRILLS = {
+  1: { n: 'Target Smash', d: 'Break all 8 targets with Grit Blasts.', lim: 90, first: 40, again: 15, fast: 45 },
+  2: { n: 'Swing Sprint', d: 'Fly through the 6 gates, left to right.', lim: 45, first: 30, again: 10, fast: 25 },
+  3: { n: 'Dummy Toss', d: 'Blast the 3 dummies off their ledge.', lim: 60, first: 40, again: 15, fast: 30 },
+  M: { n: 'Master Gauntlet', d: 'Break all 12 moving targets.', lim: 75, first: 60, again: 20, fast: 45 },
+};
+function buildTrain(id) {
+  const rows = TRAIN_MAPS[id], ht = rows.length, wt = rows[0].length, g = new Uint8Array(wt * ht);
+  const name = id === 'shaft' ? 'The Hidden Shaft' : 'Training Arena';
+  const get = (x, y) => (x >= 0 && y >= 0 && x < wt && y < ht) ? g[y * wt + x] : TMETAL;
+  const c = { name, id, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(Object.assign({ n: name }, TPAL)),
+    rings: [], items: [], cps: [], gate: [], start: null, finish: null, pip: null, bram: null, boss: null,
+    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null,
+    pads: {}, tsp: [], Tsp: [], gates: [], dums: [], fake: [], altar: null, door: null, term: null };
+  const px = (x) => x * TS + TS / 2, py = (y) => y * TS + TS / 2, fl = (y) => (y + 1) * TS;
+  for (let y = 0; y < ht; y++) for (let x = 0; x < wt; x++) {
+    const ch = rows[y][x], i = y * wt + x;
+    if (ch === '#') g[i] = TROCK; else if (ch === '=') g[i] = TMETAL;
+    else if (ch === 'f') c.fake.push(i);
+    else if (ch === 'o') c.rings.push({ x: px(x), y: py(y) });
+    else if (ch === 'S') c.start = { x: px(x), y: fl(y) - PR - 2 };
+    else if (ch === 'A') c.altar = { x: px(x), y: fl(y) };
+    else if (ch === 'D') c.door = { x: px(x), y: fl(y) };
+    else if (ch === 'U') c.term = { x: px(x), y: fl(y) };
+    else if ('123M'.includes(ch)) c.pads[ch] = { x: px(x), y: fl(y) };
+    else if (ch === 't') c.tsp.push({ x: px(x), y: py(y) });
+    else if (ch === 'T') c.Tsp.push({ x: px(x), y: py(y) });
+    else if (ch === 'g') c.gates.push({ x: px(x), y: py(y) });
+    else if (ch === 'd') c.dums.push({ x: px(x), y: fl(y) - 18 });
+  }
+  return c;
+}
+function startTrain(id) {
+  const c = buildTrain(id);
+  hw = c; mode = 'train'; story = null; trial = null;
+  ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0;
+  train = { id, drill: null, msgT: 0, onPad: null, inTerm: false };
+  if (id === 'arena' && !gs().arena) { gs().arena = 1; writeSave(); }
+  detach(); P.x = c.start.x; P.y = c.start.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.inv = 0; P.stun = 0;
+  particles.length = 0; runHeight = 0; wHP = wMax(); lastHP = -1;
+  const sc = wScale();
+  wcamX = clamp(P.x - cw / sc / 2, 0, Math.max(0, c.wt * TS - cw / sc)); wcamY = clamp(P.y - ch / sc * 0.55, 0, Math.max(0, c.ht * TS - ch / sc));
+  wRegion = c.name; $('w-region').textContent = c.name; regionT = gt;
+  state = 'play'; show(null);
+  $('hud').hidden = true; $('whud').hidden = false;
+  $('w-ult').hidden = true; $('w-mini').hidden = true; $('w-hint').hidden = true; $('p-hint').hidden = true;
+  $('t-hint').hidden = false; $('t-timer').hidden = false; $('w-hp').hidden = true; $('w-slots').hidden = !hs().ab.length;
+  buildSlots();
+  canvas.focus();
+  if (id === 'shaft') banner('You found a secret', 'The Hidden Shaft', 'The wall was fake! Drop down and see what is hidden here.');
+  else banner('Training Arena', gs().g + ' Grit', 'Upgrade at the terminal. Step on a pad to start a drill.');
+}
+function trainRespawn() {
+  if (!train) return;
+  if (train.drill) { train.drill = null; banner('Drill stopped', 'Back to the start'); }
+  detach(); P.x = hw.start.x; P.y = hw.start.y; P.vx = 0; P.vy = 0; P.hist.length = 0;
+}
+const tNear = (q, d) => q && Math.hypot(P.x - q.x, P.y - (q.y - 20)) < d;
+function startDrill(k) {
+  const D = DRILLS[k], c = hw, dr = { k, t: 0 };
+  if (k === '1') dr.tg = c.tsp.map(p => ({ x: p.x, y: p.y, hit: false }));
+  if (k === 'M') dr.tg = [...c.tsp, ...c.Tsp].map((p, i) => ({ x0: p.x, y0: p.y, x: p.x, y: p.y, ph: i, hit: false, mv: true }));
+  if (k === '2') { dr.gates = c.gates.slice().sort((a, b) => a.x - b.x).map(p => ({ x: p.x, y: p.y })); dr.next = 0; }
+  if (k === '3') dr.dum = c.dums.map(p => ({ x: p.x, y: p.y, vx: 0, vy: 0, out: false, air: false }));
+  train.drill = dr; sfx('alert');
+  banner(D.n, 'Go!', D.d + ' You have ' + D.lim + ' seconds.');
+}
+function finishDrill(ok) {
+  const dr = train.drill, D = DRILLS[dr.k], g = gs();
+  train.drill = null;
+  if (!ok) { sfx('lose'); banner('Time\'s up', D.n, 'Step on the pad again to retry.'); return; }
+  const first = !g.dr[dr.k];
+  let n = first ? D.first : D.again;
+  if (dr.t <= D.fast) n += 10;
+  g.dr[dr.k] = first ? Math.round(dr.t * 10) / 10 : Math.min(g.dr[dr.k], Math.round(dr.t * 10) / 10);
+  addGrit(n, P.x, P.y); sfx('win');
+  let sub = '+' + n + ' Grit · ' + fmtTime(dr.t) + (dr.t <= D.fast ? ' · fast bonus!' : '');
+  if (dr.k === 'M' && !g.sec.drill) { g.sec.drill = 1; sub += ' · Level cap +2!'; }
+  writeSave(); banner('Drill complete', D.n, sub);
+}
+function trainTick(dt) {
+  const c = hw, T = train, g = gs();
+  if (T.id === 'shaft') {
+    if (c.altar && !g.atk && tNear(c.altar, 50)) {
+      g.atk = 1; writeSave(); sfx('rare'); burst(c.altar.x, c.altar.y - 40, '#ff9a3d', 40, 300); if (!reduceMotion) shake = 0.3;
+      banner('New power', 'Grit Blast', 'Hold S for 2 seconds, then press R three times. Hold longer for a bigger blast.');
+    }
+    if (c.door && tNear(c.door, 44)) {
+      if (g.atk) { startTrain('arena'); return; }
+      if (gt - T.msgT > 3) { T.msgT = gt; banner('Sealed', 'The door won\'t open', 'Touch the glowing altar first.'); }
+    }
+    return;
+  }
+  if (tNear(c.term, 46)) { if (!T.inTerm && !T.drill) { T.inTerm = true; openTrainShop(); } } else T.inTerm = false;
+  let on = null;
+  for (const k in c.pads) if (tNear(c.pads[k], 34)) on = k;
+  if (on && on !== T.onPad && !T.drill) startDrill(on);
+  T.onPad = on;
+  const dr = T.drill;
+  if (!dr) return;
+  dr.t += dt;
+  if (dr.tg) for (const q of dr.tg) if (q.mv) { q.x = q.x0 + Math.sin(dr.t * 1.3 + q.ph) * 70; q.y = q.y0 + Math.cos(dr.t * 1.1 + q.ph * 1.7) * 30; }
+  if (dr.gates) { const q = dr.gates[dr.next]; if (q && Math.hypot(P.x - q.x, P.y - q.y) < 52) { dr.next++; sfx('pickup'); burst(q.x, q.y, '#5ee6c1', 16, 200); } }
+  if (dr.dum) {
+    const top = 17 * TS, x0 = 72 * TS, x1 = 89 * TS;
+    for (const d of dr.dum) {
+      if (d.out) continue;
+      if (d.air) {
+        const py0 = d.y; d.vy += G * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.vx *= 1 - 0.3 * dt;
+        if (d.y < 2 * TS + 18) { d.y = 2 * TS + 18; d.vy = Math.abs(d.vy) * 0.3; }
+        if (d.vy > 0 && py0 + 18 <= top && d.y + 18 > top && d.x > x0 && d.x < x1) { d.y = top - 18; d.vy = 0; d.vx *= 0.4; if (Math.abs(d.vx) < 30) d.air = false; }
+      }
+      if (!d.air && (d.x < x0 || d.x > x1)) d.air = true;
+      if (d.y > top + 60) { d.out = true; burst(d.x, d.y, '#ffd34d', 16, 200); sfx('hit'); }
+    }
+  }
+  const left = dr.tg ? dr.tg.filter(q => !q.hit).length : dr.gates ? dr.gates.length - dr.next : dr.dum.filter(d => !d.out).length;
+  if (!left) finishDrill(true); else if (dr.t >= DRILLS[dr.k].lim) finishDrill(false);
+}
+function trainRender() {
+  const c = hw, g = gs(), dr = train.drill;
+  for (const i of c.fake) { // a fake wall: looks like rock, isn't
+    const x = (i % c.wt) * TS, y = Math.floor(i / c.wt) * TS;
+    ctx.fillStyle = TPAL.rock; ctx.fillRect(x, y, TS + 0.5, TS + 0.5);
+    ctx.strokeStyle = 'rgba(255,154,61,' + (0.08 + 0.05 * Math.sin(gt * 2 + y)) + ')'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + 8, y + 4); ctx.lineTo(x + 20, y + 22); ctx.lineTo(x + 14, y + 36); ctx.stroke();
+  }
+  const label = (x, y, t, col) => { ctx.font = '600 13px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = col || 'rgba(243,236,223,.85)'; ctx.fillText(t, x, y); };
+  if (c.altar) {
+    const a = c.altar; ctx.fillStyle = '#6b6178'; ctx.fillRect(a.x - 20, a.y - 30, 40, 30); ctx.fillRect(a.x - 26, a.y - 34, 52, 6);
+    if (!g.atk) { ctx.fillStyle = '#ff9a3d'; ctx.shadowBlur = 20 + Math.sin(gt * 4) * 6; ctx.shadowColor = '#ff9a3d'; ctx.beginPath(); ctx.arc(a.x, a.y - 52 + Math.sin(gt * 2) * 4, 11, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0; }
+    label(a.x, a.y - 76, g.atk ? 'Grit Blast: hold S, then R R R' : '???', '#ff9a3d');
+  }
+  if (c.door) {
+    const d = c.door; ctx.fillStyle = '#2a2140'; ctx.beginPath(); ctx.moveTo(d.x - 26, d.y); ctx.lineTo(d.x - 26, d.y - 60); ctx.arc(d.x, d.y - 60, 26, Math.PI, 0); ctx.lineTo(d.x + 26, d.y); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = g.atk ? '#ff9a3d' : '#6b6178'; ctx.lineWidth = 3; ctx.stroke(); label(d.x, d.y - 96, g.atk ? 'Training Arena' : 'Sealed');
+  }
+  if (c.term) {
+    const t = c.term; ctx.fillStyle = '#3b3352'; ctx.fillRect(t.x - 16, t.y - 50, 32, 50); ctx.fillStyle = '#ff9a3d'; ctx.globalAlpha = 0.6 + 0.3 * Math.sin(gt * 3); ctx.fillRect(t.x - 12, t.y - 46, 24, 16); ctx.globalAlpha = 1;
+    label(t.x, t.y - 60, 'Upgrades · ' + g.g + ' Grit', '#ff9a3d');
+  }
+  for (const k in c.pads) {
+    const p = c.pads[k], D = DRILLS[k], best = g.dr[k];
+    ctx.fillStyle = dr && dr.k === k ? '#5ee6c1' : k === 'M' ? '#ff5a6e' : '#ff9a3d'; ctx.globalAlpha = 0.85; ctx.beginPath(); ctx.ellipse(p.x, p.y - 3, 22, 6, 0, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
+    label(p.x, p.y - 30, k === 'M' && !best ? '??? (secret drill)' : D.n);
+    if (best) label(p.x, p.y - 46, 'Best ' + fmtTime(best), 'rgba(243,236,223,.55)');
+  }
+  if (!dr) return;
+  if (dr.tg) for (const q of dr.tg) if (!q.hit) {
+    for (const [r, col] of [[16, '#ff5a6e'], [11, '#ffffff'], [6, '#ff5a6e']]) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, 6.283); ctx.fill(); }
+  }
+  if (dr.gates) dr.gates.forEach((q, i) => {
+    if (i < dr.next) return;
+    ctx.strokeStyle = i === dr.next ? '#5ee6c1' : 'rgba(94,230,193,0.35)'; ctx.lineWidth = i === dr.next ? 5 : 3;
+    ctx.beginPath(); ctx.ellipse(q.x, q.y, 16, 40, 0, 0, 6.283); ctx.stroke();
+    if (i === dr.next) label(q.x, q.y - 50, String(i + 1), '#5ee6c1');
+  });
+  if (dr.dum) for (const d of dr.dum) if (!d.out) {
+    ctx.fillStyle = '#c9a46a'; ctx.strokeStyle = '#7a5f3a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(d.x, d.y, 13, 18, 0, 0, 6.283); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(d.x, d.y - 24, 8, 0, 6.283); ctx.fill(); ctx.stroke();
+  }
+}
+function trainHud() {
+  const dr = train.drill, el = $('t-timer');
+  const txt = dr ? DRILLS[dr.k].n + ' · ' + fmtTime(Math.max(0, DRILLS[dr.k].lim - dr.t)) : hw.name + ' · ' + gs().g + ' Grit';
+  if (el.textContent !== txt) el.textContent = txt;
+}
+function trainHudSlow() {
+  const dr = train.drill;
+  $('w-found').textContent = train.id === 'shaft' ? 'A secret place inside the Climb' : dr ? (dr.tg ? 'Targets left: ' + dr.tg.filter(q => !q.hit).length : dr.gates ? 'Gate ' + Math.min(dr.next + 1, dr.gates.length) + ' of ' + dr.gates.length : 'Dummies left: ' + dr.dum.filter(d => !d.out).length) : 'Grit Blast: hold S, then press R three times';
+  $('w-team').textContent = '';
+}
+function openTrainShop() { state = 'paused'; for (const k in keys) keys[k] = false; detach(); gb.sAt = -1; renderTrainShop(); $('tr-code-msg').textContent = ''; show('scr-train'); }
+function renderTrainShop() {
+  const g = gs(), cap = gCap(), list = $('tr-list');
+  $('tr-grit').textContent = g.g + ' Grit';
+  $('tr-cap').textContent = 'Level cap: ' + cap + (cap < 15 ? '. There are secret ways to raise it.' : '. The highest it goes!');
+  list.textContent = '';
+  for (const [k, n, d] of GSTATS) {
+    const lv = g.up[k], cost = gCost(lv), row = document.createElement('div'); row.className = 'abrow';
+    const tx = document.createElement('div'); tx.className = 'txt';
+    const b = document.createElement('b'); b.textContent = n + ' · Lv ' + lv + ' / ' + cap;
+    const sp = document.createElement('span'); sp.textContent = d;
+    tx.append(b, sp);
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn';
+    btn.textContent = lv >= cap ? 'Max' : 'Upgrade · ' + cost + ' Grit';
+    btn.disabled = lv >= cap || g.g < cost;
+    btn.addEventListener('click', () => { const q = gs(); if (q.up[k] >= gCap() || q.g < gCost(q.up[k])) return; q.g -= gCost(q.up[k]); q.up[k]++; writeSave(); sfx('capture'); if (k === 'hp') { wHP = wMax(); lastHP = -1; } renderTrainShop(); });
+    row.append(tx, btn); list.append(row);
+  }
+}
+$('b-tr-close').addEventListener('click', resume);
+$('b-tr-code').addEventListener('click', () => {
+  const v = $('tr-code').value.trim().toUpperCase().replace(/\s+/g, ''), g = gs(), m = $('tr-code-msg');
+  if (v === GRIT_CODE) { if (g.sec.code) m.textContent = 'You already used that one.'; else { g.sec.code = 1; writeSave(); sfx('rare'); m.textContent = 'Code accepted! Level cap +5.'; renderTrainShop(); } }
+  else m.textContent = v ? 'Nothing happens.' : '';
+  $('tr-code').value = '';
+});
+$('tr-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('b-tr-code').click(); });
+$('m-train').addEventListener('click', () => startTrain('arena'));
 
 // =================================================================
 // ---------- Achievements and skins ----------
@@ -8759,7 +9122,7 @@ function frame(ts) {
   admTick(dt);
   syncPeers(dt);
   if (teamKind === 'story') { storyLobbyT -= dt; if (storyLobbyT <= 0) { storyLobbyT = 0.3; storyLobbyTick(); } }
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
   const camX = (W - viewW()) / 2;
   mouse.wx = camX + mouse.sx / scale; mouse.wy = camY + mouse.sy / scale;
   if (state === 'play') {
