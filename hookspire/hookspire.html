@@ -737,7 +737,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <h2>Kingfall</h2>
     <p>A real-time battle on a giant chess board. You have 8 pieces. Play as any of them and switch whenever you like, while the rest follow your orders. Take the enemy <b>King</b> to win.</p>
     <div class="ktable" id="k-table"></div>
-    <p class="note"><b>E</b> attack · <b>Q</b> piece move · <b>1–8</b> or <b>Tab</b> switch piece. Click a piece's order to pick a new one, or press <b>O</b> to order everyone. Orders: <b>Z</b> Attack · <b>X</b> Guard the King · <b>C</b> Follow you · <b>V</b> Hold where they are · <b>T</b> Go to a spot you click · <b>R</b> Attack the enemy King.</p>
+    <p class="note"><b>E</b> attack · <b>Q</b> piece move · <b>1–8</b> or <b>Tab</b> switch piece. Click a piece's order in the list to give that piece a new one: Attack · Guard the King · Follow you · Hold where they are · Go to a spot you click · Attack the enemy King.</p>
     <div class="field"><span class="label">Play as (vs bot)</span><div class="seg" id="k-side"></div><p class="note">Online, the host picks who plays White and who plays Black in the lobby.</p></div>
     <div class="field"><span class="label">Piece AI</span><div class="seg" id="k-diff"></div><p class="note">How well the pieces you aren't playing move and aim, on both sides.</p></div>
     <div class="row">
@@ -1524,7 +1524,7 @@ addEventListener('keydown', (e0) => {
   if (state === 'play') {
     if (GAME_KEYS.has(e.code) || ((mode === 'world' || (mode === 'pvp' && pvp && pvp.chess)) && e.code === 'Tab')) e.preventDefault();
     keys[e.code] = true;
-    if (e.code === 'KeyS' && !e.repeat) { gb.sAt = gt; gb.rs = []; }
+    if (e.code === 'KeyX' && !e.repeat) { gb.sAt = gt; gb.rs = []; }
     if (e.code === 'KeyC' && gbReady()) { if (!e.repeat) gbKey(); return; } // C fires the Grit Blast while S is held
     if (save.adm && !e.repeat && (e.code === 'KeyG' || e.code === 'KeyF')) admToggle(e.code === 'KeyG' ? 'god' : 'fly');
     if (e.code === 'Escape' && (kfMenuOpen() || (pvp && pvp.chess && pvp.chess.picking))) { kfCloseMenu(); pvp.chess.picking = null; }
@@ -1548,7 +1548,7 @@ addEventListener('keydown', (e0) => {
     else if (current === 'scr-pause' && (e.code === 'Escape' || e.code === 'KeyP')) resume();
   }
 });
-addEventListener('keyup', (e) => { if (vcode(e.code) === 'KeyS') { gb.sAt = -1; gb.rs = []; } keys[vcode(e.code)] = false; keys[e.code] = false; });
+addEventListener('keyup', (e) => { if (vcode(e.code) === 'KeyX') { gb.sAt = -1; gb.rs = []; } keys[vcode(e.code)] = false; keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (state === 'play') pause(); });
 canvas.addEventListener('pointermove', (e) => { if (e.pointerType === 'touch' && e.pointerId !== aimTouch) return; mouse.sx = e.clientX; mouse.sy = e.clientY; mouse.inside = true; if (e.pointerType === 'touch' && !rope) snapAim(); });
 canvas.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') mouse.inside = false; });
@@ -6495,8 +6495,7 @@ function chessKey(e) {
   else if (e.code === 'Tab' && !e.repeat) {
     const ids = KF_SET.map((t, i) => kfId(C.mySide, i)), at = ids.indexOf(C.mine);
     for (let k = 1; k <= 8; k++) { const id = ids[(at + k) % 8], p = chessPiece(id); if (p && p.alive) { chessControl(id); break; } }
-  } else if (!e.repeat && e.code === 'KeyO') kfOrderMenu(null, null);
-  else if (!e.repeat) { const row = KF_ORD_INFO.find(r => 'Key' + r[1] === e.code); if (row) kfSetOrder(Object.keys(C.orders[C.mySide]), row[0]); }
+  }
 }
 // ----- orders -----
 function kfPosOf(id) { const v = pvpViews().find(w => w.id === id); return v ? { x: v.x, y: v.y } : null; }
@@ -6811,9 +6810,6 @@ function chessHudSlow() {
   const C = pvp.chess, el = $('k-roster');
   $('w-team').textContent = '';
   el.textContent = '';
-  const all = document.createElement('button'); all.type = 'button'; all.className = 'kall'; all.textContent = 'Order all ▾  (O)';
-  all.addEventListener('pointerdown', (e) => { e.preventDefault(); kfOrderMenu(null, all); });
-  el.append(all);
   KF_SET.forEach((t, i) => {
     const id = kfId(C.mySide, i), p = chessPiece(id), T = KF_TYPES[t], alive = !!(p && p.alive);
     const row = document.createElement('div'); row.className = 'krow' + (alive ? '' : ' dead'); row.setAttribute('aria-current', String(id === C.mine));
@@ -7036,7 +7032,7 @@ function modeHelp(k) {
       k: [...move, [K('up') + ' (hooked to an enemy)', 'Yank them'], ...abil, [K('map'), 'Map'], ['Esc', 'Pause']],
       tips: ['Stop a carrier on your side of the map by touching them or yanking them. Past the middle, they\'re safe.', 'Touch your own dropped flag to send it home. Otherwise it goes home after 20 seconds.', 'You can only score while your own flag is at your base.'] },
     chess: { t: 'Kingfall', g: 'A real-time chess battle. Play any of your 8 pieces while the rest follow your orders. Take the enemy King to win.',
-      k: [...move, [K('attack'), 'Attack (each piece has its own)'], [K('special'), 'Piece move · as the King, revive a piece'], ['1–8 / ' + K('equip'), 'Switch piece'], ['O', 'Order everyone'], ['Z X C V T R', 'Attack · Guard · Follow · Hold · Go to spot · Attack the King'], [K('map'), 'Map'], ['Esc', 'Pause']],
+      k: [...move, [K('attack'), 'Attack (each piece has its own)'], [K('special'), 'Piece move · as the King, revive a piece'], ['1–8 / ' + K('equip'), 'Switch piece'], ['Click an order', 'Give one piece a new order'], [K('map'), 'Map'], ['Esc', 'Pause']],
       tips: ['Click a piece\'s order in the list on the left to change just that piece.', 'Every 30 seconds your King can bring back a taken piece. If you aren\'t playing it, it does that on its own.', 'Knights leap, Bishops dash diagonally, Rooks charge, and the Queen dashes any way.'] },
   };
   return H[k] || H.climb;
@@ -7183,7 +7179,7 @@ function tbtn(parent, cls, html, code, opts) {
   parent.append(b);
   return b;
 }
-// the Grit Blast on touch: hold the button to charge (it holds S), let go to fire (it presses C three times)
+// the Grit Blast on touch: hold the button to charge (it holds X), let go to fire (it presses C three times)
 let tBlast = null;
 function blastButton(parent) {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'big blast'; b.innerHTML = '💥<br>Blast';
@@ -7192,9 +7188,9 @@ function blastButton(parent) {
   const up = () => {
     if (!held) return; held = false; b.classList.remove('on');
     if (gbReady()) for (let k = 0; k < 3; k++) { fireKey('KeyC', true); fireKey('KeyC', false); }
-    fireKey(keyOf('down'), false);
+    fireKey('KeyX', false);
   };
-  b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); touchSeen(); held = true; b.classList.add('on'); fireKey(keyOf('down'), true); });
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); touchSeen(); held = true; b.classList.add('on'); fireKey('KeyX', true); });
   b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
   parent.append(b); tBlast = b;
   return b;
@@ -7210,7 +7206,6 @@ function touchLayout() {
     tbtn(pad, 'big', 'Move', keyOf('special'), { tap: true });
     tbtn(pad, 'big', 'Attack', keyOf('attack'));
     tbtn(pad, 'mid', 'Next<br>piece', keyOf('equip'), { tap: true });
-    tbtn(pad, 'mid', 'Orders', 'KeyO', { tap: true });
   } else if (pv && !ctf) {
     if (!tag) tbtn(pad, 'big', 'Ult', keyOf('special'), { tap: true });
     tbtn(pad, 'big', tag ? 'Tag<br>shot' : 'Shoot', keyOf('attack'));
@@ -8512,12 +8507,12 @@ function addGrit(n, x, y) {
   gs().g += n; saveDirty = true;
   if (x != null) particles.push({ k: 'text', text: '+' + n + ' Grit', x, y: y - 34, vx: 0, vy: -40, life: 1.5, color: '#ff9a3d' });
 }
-// ----- the Grit Blast: hold S, then press C three times -----
+// ----- the Grit Blast: hold X, then press C three times -----
 const gb = { sAt: -1, rs: [], cd: 0, fx: [] };
 const gNeed = () => Math.max(0.5, 1.5 - 0.07 * gLvl('chg'));
-const gbCharging = () => gs().atk === 1 && mode !== 'story' && state === 'play' && !!keys.KeyS && gb.sAt >= 0; // S charges the blast instead of letting rope out (the Down arrow still does)
+const gbCharging = () => gs().atk === 1 && mode !== 'story' && state === 'play' && !!keys.KeyX && gb.sAt >= 0; // while you charge, the rope stays put and you slow down
 const gbPower = () => clamp((gt - gb.sAt - gNeed()) / Math.max(1, 3 - 0.12 * gLvl('chg')), 0, 1); // hold longer: up to full power
-function gbReady() { return gs().atk === 1 && mode !== 'story' && state === 'play' && !!keys.KeyS && gb.sAt >= 0 && gt - gb.sAt >= gNeed() && gt >= gb.cd; }
+function gbReady() { return gs().atk === 1 && mode !== 'story' && state === 'play' && !!keys.KeyX && gb.sAt >= 0 && gt - gb.sAt >= gNeed() && gt >= gb.cd; }
 function gbKey() {
   gb.rs = gb.rs.filter(t => gt - t < 1.2); gb.rs.push(gt);
   sfx('click'); burst(P.x, P.y - 30, '#ff9a3d', 6, 120);
@@ -8557,7 +8552,7 @@ function drawGrit() {
     ctx.strokeStyle = 'rgba(255,154,61,' + (1 - age / 0.5) + ')'; ctx.lineWidth = 6 + f.pw * 6; ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, 6.283); ctx.stroke();
     ctx.strokeStyle = 'rgba(255,241,201,' + Math.max(0, 0.8 - age * 1.6) + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(f.x, f.y, r * 0.85, 0, 6.283); ctx.stroke();
   }
-  if (gs().atk !== 1 || mode === 'story' || state !== 'play' || !keys.KeyS || gb.sAt < 0) return;
+  if (gs().atk !== 1 || mode === 'story' || state !== 'play' || !keys.KeyX || gb.sAt < 0) return;
   const need = gNeed(), h = gt - gb.sAt, r0 = curR() + 10;
   if (h < 0.3) return; // a quick tap of S shows nothing
   ctx.save(); ctx.lineWidth = 3; ctx.lineCap = 'round';
@@ -8690,7 +8685,7 @@ function trainTick(dt) {
   if (T.id === 'shaft') {
     if (c.altar && !g.atk && tNear(c.altar, 50)) {
       g.atk = 1; writeSave(); sfx('rare'); burst(c.altar.x, c.altar.y - 40, '#ff9a3d', 40, 300); if (!reduceMotion) shake = 0.3;
-      banner('New power', 'Grit Blast', touchOn() ? 'Hold the 💥 button until it glows, then let go. Hold longer for a bigger blast.' : 'Hold S until the ring fills (about 1.5 seconds), then press C three times. Hold longer for a bigger blast.');
+      banner('New power', 'Grit Blast', touchOn() ? 'Hold the 💥 button until it glows, then let go. Hold longer for a bigger blast.' : 'Hold X until the ring fills (about 1.5 seconds), then press C three times. Hold longer for a bigger blast.');
     }
     if (c.door && tNear(c.door, 44)) {
       if (g.atk) { startTrain('arena'); return; }
@@ -8742,7 +8737,7 @@ function trainRender() {
   if (c.altar) {
     const a = c.altar; ctx.fillStyle = '#6b6178'; ctx.fillRect(a.x - 20, a.y - 30, 40, 30); ctx.fillRect(a.x - 26, a.y - 34, 52, 6);
     if (!g.atk) { ctx.fillStyle = '#ff9a3d'; ctx.shadowBlur = 20 + Math.sin(gt * 4) * 6; ctx.shadowColor = '#ff9a3d'; ctx.beginPath(); ctx.arc(a.x, a.y - 52 + Math.sin(gt * 2) * 4, 11, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0; }
-    label(a.x, a.y - 76, g.atk ? 'Grit Blast: hold S, then C C C' : '???', '#ff9a3d');
+    label(a.x, a.y - 76, g.atk ? 'Grit Blast: hold X, then C C C' : '???', '#ff9a3d');
   }
   if (c.door) {
     const d = c.door; ctx.fillStyle = '#2a2140'; ctx.beginPath(); ctx.moveTo(d.x - 26, d.y); ctx.lineTo(d.x - 26, d.y - 60); ctx.arc(d.x, d.y - 60, 26, Math.PI, 0); ctx.lineTo(d.x + 26, d.y); ctx.closePath(); ctx.fill();
@@ -8781,7 +8776,7 @@ function trainHud() {
 }
 function trainHudSlow() {
   const dr = train.drill;
-  $('w-found').textContent = train.id === 'shaft' ? 'A secret place inside the Climb' : dr ? (dr.tg ? 'Targets left: ' + dr.tg.filter(q => !q.hit).length : dr.gates ? 'Gate ' + Math.min(dr.next + 1, dr.gates.length) + ' of ' + dr.gates.length : 'Dummies left: ' + dr.dum.filter(d => !d.out).length) : (touchOn() ? 'Grit Blast: hold the 💥 button, let go to fire' : 'Grit Blast: hold S, then press C three times');
+  $('w-found').textContent = train.id === 'shaft' ? 'A secret place inside the Climb' : dr ? (dr.tg ? 'Targets left: ' + dr.tg.filter(q => !q.hit).length : dr.gates ? 'Gate ' + Math.min(dr.next + 1, dr.gates.length) + ' of ' + dr.gates.length : 'Dummies left: ' + dr.dum.filter(d => !d.out).length) : (touchOn() ? 'Grit Blast: hold the 💥 button, let go to fire' : 'Grit Blast: hold X, then press C three times');
   $('w-team').textContent = '';
 }
 function openTrainShop() { state = 'paused'; for (const k in keys) keys[k] = false; detach(); gb.sAt = -1; renderTrainShop(); $('tr-code-msg').textContent = ''; show('scr-train'); }
@@ -9544,7 +9539,7 @@ function applyGift(kind, v) {
   const h = hs();
   if (kind === 'tok') { const n = clampInt(v, 1, 1000000); save.tokens += n; achStat('earned', n); writeSave(); refreshMenu(); return n + ' tokens'; }
   if (kind === 'grit') { const n = clampInt(v, 1, 1000000), g = gs(); g.g = Math.min(9999999, g.g + n); writeSave(); return n + ' Grit'; }
-  if (kind === 'gblast') { const g = gs(); if (g.atk && g.arena) return null; g.atk = 1; g.arena = 1; writeSave(); refreshMenu(); return 'the Grit Blast and the Training Arena (hold S, then press C three times)'; }
+  if (kind === 'gblast') { const g = gs(); if (g.atk && g.arena) return null; g.atk = 1; g.arena = 1; writeSave(); refreshMenu(); return 'the Grit Blast and the Training Arena (hold X, then press C three times)'; }
   if (kind === 'item' && typeof v === 'string' && ITEM[v] && !ITEM[v].sk) { save.owned[v] = (save.owned[v] || 0) + 1; writeSave(); return ITEM[v].n; }
   if (kind === 'items') { for (const it of ITEMS) if (!it.adm) save.owned[it.id] = Math.max(1, save.owned[it.id] || 0); writeSave(); return 'every item and skin'; }
   if (kind === 'skin' && typeof v === 'string' && SKIN_BY[v]) { for (const id of Object.values(skinEq(v))) save.owned[id] = Math.max(1, save.owned[id] || 0); writeSave(); return 'the ' + SKIN_BY[v].n + ' skin'; }
