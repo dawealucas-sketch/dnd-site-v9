@@ -906,12 +906,13 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <div class="adm-sec" id="adm-give" hidden style="background:rgba(94,230,193,.05)">
           <h3 style="color:var(--mint)" id="adm-give-title">Give</h3>
           <div class="row"><input class="adm-in" type="number" id="ag-tok" min="1" max="1000000" value="100" aria-label="Tokens to give"><button class="btn" id="b-ag-tok">Send tokens</button></div>
+          <div class="row"><input class="adm-in" type="number" id="ag-grit" min="1" max="1000000" value="100" aria-label="Grit to give"><button class="btn" id="b-ag-grit">Send Grit</button><button class="btn" id="b-ag-gblast">Send Grit Blast + arena</button></div>
           <div class="row"><select class="adm-in wide" id="ag-item" aria-label="Item to give"></select><button class="btn" id="b-ag-item">Send item</button><button class="btn" id="b-ag-items">Send every item</button></div>
           <div class="row"><select class="adm-in wide" id="ag-skin" aria-label="Skin to give"></select><button class="btn" id="b-ag-skin">Send skin</button></div>
           <div class="row"><select class="adm-in wide" id="ag-ab" aria-label="Ability to give"></select><button class="btn" id="b-ag-ab">Send ability</button><button class="btn" id="b-ag-aball">Send all abilities</button></div>
           <div class="row"><button class="link" id="b-ag-close">Close</button><span class="note" id="ag-msg" role="status"></span></div>
         </div>
-        <p class="note">Kicked players go back to the menu and can't rejoin that room for 20 seconds. Kick buttons also show in Race and PvP lobbies. Give sends tokens, items, skins or abilities to that player.</p>
+        <p class="note">Kicked players go back to the menu and can't rejoin that room for 20 seconds. Kick buttons also show in Race and PvP lobbies. Give sends tokens, Grit, items, skins or abilities to that player.</p>
       </div>
     </div>
     <div class="row"><button class="btn" id="b-adm-back">Back</button><button class="link" id="b-adm-lockbtn" hidden>Lock admin on this device</button></div>
@@ -9527,6 +9528,8 @@ function readGifts() {
 function applyGift(kind, v) {
   const h = hs();
   if (kind === 'tok') { const n = clampInt(v, 1, 1000000); save.tokens += n; achStat('earned', n); writeSave(); refreshMenu(); return n + ' tokens'; }
+  if (kind === 'grit') { const n = clampInt(v, 1, 1000000), g = gs(); g.g = Math.min(9999999, g.g + n); writeSave(); return n + ' Grit'; }
+  if (kind === 'gblast') { const g = gs(); if (g.atk && g.arena) return null; g.atk = 1; g.arena = 1; writeSave(); refreshMenu(); return 'the Grit Blast and the Training Arena (hold S, then press R three times)'; }
   if (kind === 'item' && typeof v === 'string' && ITEM[v] && !ITEM[v].sk) { save.owned[v] = (save.owned[v] || 0) + 1; writeSave(); return ITEM[v].n; }
   if (kind === 'items') { for (const it of ITEMS) if (!it.adm) save.owned[it.id] = Math.max(1, save.owned[it.id] || 0); writeSave(); return 'every item and skin'; }
   if (kind === 'skin' && typeof v === 'string' && SKIN_BY[v]) { for (const id of Object.values(skinEq(v))) save.owned[id] = Math.max(1, save.owned[id] || 0); writeSave(); return 'the ' + SKIN_BY[v].n + ' skin'; }
@@ -9535,6 +9538,8 @@ function applyGift(kind, v) {
   return null;
 }
 $('b-ag-tok').addEventListener('click', () => { const n = clampInt($('ag-tok').value, 1, 1000000); sendGift('tok', n, n + ' tokens'); });
+$('b-ag-grit').addEventListener('click', () => { const n = clampInt($('ag-grit').value, 1, 1000000); sendGift('grit', n, n + ' Grit'); });
+$('b-ag-gblast').addEventListener('click', () => sendGift('gblast', 1, 'the Grit Blast and the Training Arena'));
 $('b-ag-item').addEventListener('click', () => { const id = $('ag-item').value; if (ITEM[id]) sendGift('item', id, ITEM[id].n); });
 $('b-ag-items').addEventListener('click', () => sendGift('items', 1, 'every item and skin'));
 $('b-ag-skin').addEventListener('click', () => { const id = $('ag-skin').value; if (SKIN_BY[id]) sendGift('skin', id, 'the ' + SKIN_BY[id].n + ' skin'); });
