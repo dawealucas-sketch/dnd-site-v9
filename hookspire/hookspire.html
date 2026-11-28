@@ -265,9 +265,12 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 .slot .bar i { display: block; height: 100%; }
 .slot.active { border-color: var(--gold); }
 .slot.empty { opacity: .5; }
-.hp { display: flex; gap: 4px; align-items: center; }
-.hp i { width: 20px; height: 8px; border-radius: 4px; background: var(--danger); box-shadow: 0 1px 0 rgba(0,0,0,.35); }
-.hp i.off { background: rgba(255,255,255,.2); }
+.hp { display: flex; gap: 5px; align-items: center; margin: 4px 0; padding: 5px 8px; border-radius: 10px; background: rgba(13,10,24,.55); width: fit-content; }
+.hp i { width: 26px; height: 24px; background: var(--danger); clip-path: path('M13 23 L2.5 12.5 C-1 9 1 2.5 7 2.5 C10 2.5 12 4.5 13 6.5 C14 4.5 16 2.5 19 2.5 C25 2.5 27 9 23.5 12.5 Z'); filter: drop-shadow(0 1px 0 rgba(0,0,0,.4)); }
+.hp i.off { background: rgba(255,255,255,.22); }
+.hp.low i:not(.off) { animation: hplow .6s ease-in-out infinite alternate; }
+@keyframes hplow { from { transform: scale(1); } to { transform: scale(1.18); filter: drop-shadow(0 0 6px #ff5a6e); } }
+@media (prefers-reduced-motion: reduce) { .hp.low i:not(.off) { animation: none; } }
 .ult { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(132px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center; background: rgba(10,8,24,.72); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 14px; white-space: nowrap; }
 .ult .k { font-family: var(--display); color: var(--dim); }
 .ult .bar { width: 140px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; display: block; }
@@ -990,6 +993,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
           <h3 style="color:var(--mint)" id="adm-give-title">Give</h3>
           <div class="row"><input class="adm-in" type="number" id="ag-tok" min="1" max="1000000" value="100" aria-label="Tokens to give"><button class="btn" id="b-ag-tok">Send tokens</button></div>
           <div class="row"><input class="adm-in" type="number" id="ag-grit" min="1" max="1000000" value="100" aria-label="Grit to give"><button class="btn" id="b-ag-grit">Send Grit</button><button class="btn" id="b-ag-gblast">Send Grit Blast + arena</button></div>
+          <div class="row"><input class="adm-in" type="number" id="ag-pearl" min="1" max="1000000" value="100" aria-label="Pearls to give"><button class="btn" id="b-ag-pearl">Send pearls</button></div>
           <div class="row"><select class="adm-in wide" id="ag-item" aria-label="Item to give"></select><button class="btn" id="b-ag-item">Send item</button><button class="btn" id="b-ag-items">Send every item</button></div>
           <div class="row"><select class="adm-in wide" id="ag-skin" aria-label="Skin to give"></select><button class="btn" id="b-ag-skin">Send skin</button></div>
           <div class="row"><select class="adm-in wide" id="ag-ab" aria-label="Ability to give"></select><button class="btn" id="b-ag-ab">Send ability</button><button class="btn" id="b-ag-aball">Send all abilities</button></div>
@@ -4477,7 +4481,8 @@ function updateWorldHud(dt) {
   if (wHP !== lastHP) {
     lastHP = wHP;
     const el = $('w-hp'); el.textContent = '';
-    const mx = mode === 'story' ? W_HP : mode === 'pvp' ? P_HP + gHP() : wMax();
+    const mx = mode === 'story' ? W_HP : mode === 'pvp' ? (pvp && pvp.duel ? DUEL_HP : P_HP + gHP()) : wMax();
+    el.classList.toggle('low', wHP === 1);
     for (let i = 0; i < mx; i++) { const pip = document.createElement('i'); if (i >= wHP) pip.className = 'off'; if (i >= W_HP && mode !== 'story') pip.style.background = i < wHP ? '#ff9a3d' : ''; el.append(pip); }
     el.setAttribute('aria-label', 'Health ' + wHP + ' of ' + mx);
   }
@@ -4965,6 +4970,9 @@ const ARENA_IDS = ARENAS.map(a => a.id);
 const TEAM_COLORS = ['#ff6b8b', '#7fb2ff'], TEAM_NAMES = ['Red team', 'Blue team'];
 const PVP_BOT_NAMES = ['Bot Pip', 'Bot Juno', 'Bot Rook', 'Bot Vex', 'Bot Moss', 'Bot Zed', 'Bot Kit', 'Bot Ash'];
 const PDIFF = { easy: { rate: 2.0, err: 0.36, yank: false, mv: 0.76, think: 0.3 }, medium: { rate: 1.4, err: 0.17, yank: true, mv: 0.8, think: 0.27 }, hard: { rate: 0.98, err: 0.07, yank: true, mv: 0.85, think: 0.24 } };
+// battle, Capture the Flag, Tag and Duel bots are a bit weaker than the raw table: slower shots, worse aim, a little slower
+const botD = (b) => { const D = PDIFF[b.diff] || PDIFF.medium; return Object.assign({}, D, { rate: D.rate * 1.35, err: D.err * 1.4 }); };
+const botMv = (b) => (PDIFF[b.diff] || PDIFF.medium).mv * (pvp && (pvp.hr || pvp.chess) ? 1 : 0.85);
 const SHOT_V = 900, SHOT_CD = 0.55, YANK_CD = 2, ULT_TIME = 40, P_HP = 5;
 let pvp = null, pvpHost = false, pvpPm = null, lastPvpId = 0, myPeerId = null, PB = P, claimN = 0;
 const pvpSid = Math.random().toString(36).slice(2, 8);
@@ -5463,7 +5471,7 @@ function botPhysics(b, dt, now) {
     let push = Math.abs(b.vx) > 40 ? Math.sign(b.vx) : b.dir;
     const wallAhead = Math.abs(b.vx) > 120 && wSolid(Math.floor((b.x + Math.sign(b.vx) * (PR + 6 + Math.abs(b.vx) * 0.12)) / TS), Math.floor(b.y / TS));
     if (wallAhead) { push = -Math.sign(b.vx); b.wallT = (b.wallT || 0) + dt; } else b.wallT = Math.max(0, (b.wallT || 0) - dt);
-    ax = push * SWING * 0.95 * (PDIFF[b.diff] || PDIFF.medium).mv * (b.spd || 1) * (b.od > now ? 1.5 : 1);
+    ax = push * SWING * 0.95 * botMv(b) * (b.spd || 1) * (b.od > now ? 1.5 : 1);
     const fr = b.rope.L - (b.rope.w && b.rope.w.length ? ropeWrapLen(b.rope, b.rope) : 0); // free rope after any wraps
     if (fr > 230) b.rope.L -= REEL_IN * dt * 0.5;
     else if (b.wantUp && fr > 130) b.rope.L -= REEL_IN * dt * 0.3;
@@ -5476,11 +5484,11 @@ function botPhysics(b, dt, now) {
       else { b.vx *= 0.5; b.blockT = (b.blockT || 0) + dt; }
     } else {
       b.blockT = Math.max(0, (b.blockT || 0) - dt);
-      b.vx += (b.dir * WALKMAX * (b.spd || 1) * (0.6 + 0.4 * (PDIFF[b.diff] || PDIFF.medium).mv) - b.vx) * Math.min(1, 10 * dt);
+      b.vx += (b.dir * WALKMAX * (b.spd || 1) * (0.6 + 0.4 * botMv(b)) - b.vx) * Math.min(1, 10 * dt);
       if (Math.random() < dt * 1.5) b.vy = -JUMP_V;
     }
   }
-  else if (!wSolid(Math.floor((b.x + b.dir * (PR + 10)) / TS), Math.floor(b.y / TS))) ax = b.dir * AIR * (b.spd || 1) * (PDIFF[b.diff] || PDIFF.medium).mv;
+  else if (!wSolid(Math.floor((b.x + b.dir * (PR + 10)) / TS), Math.floor(b.y / TS))) ax = b.dir * AIR * (b.spd || 1) * botMv(b);
   if (b.pull && now < b.pull.until) { const dx = b.pull.x - b.x, dy = b.pull.y - b.y, d = Math.hypot(dx, dy) || 1; ax += dx / d * 1600; ay += dy / d * 1600; }
   b.vx += ax * dt; b.vy += ay * dt;
   b.vx *= 1 - 0.1 * dt; b.vy *= 1 - 0.1 * dt;
@@ -5515,7 +5523,7 @@ function botTick(b, dt, now) {
   for (let i = 0; i < n; i++) botPhysics(b, h, now);
   if (Math.abs(b.vx) > 20) b.face = Math.sign(b.vx);
   if (!tgt) return;
-  const D = PDIFF[b.diff] || PDIFF.medium;
+  const D = botD(b);
   const los = td < 700 && wLos(b.x, b.y, tgt.x, tgt.y);
   if (los && td < 650 && b.shotCd <= 0) {
     const lead = td / SHOT_V * 0.6, ax = tgt.x + (tgt.vx || 0) * lead, ay = tgt.y + (tgt.vy || 0) * lead;
@@ -5523,7 +5531,7 @@ function botTick(b, dt, now) {
     spawnShot(b.id, b.team, b.x, b.y, Math.cos(a), Math.sin(a), { dmg: b.od > now ? 2 : 1 });
     b.shotCd = D.rate * (0.8 + Math.random() * 0.4) * (b.od > now ? 0.5 : 1);
   }
-  if (D.yank && los && td < RANGE && b.yankCd <= 0 && Math.random() < dt * 0.5) {
+  if (D.yank && los && td < RANGE && b.yankCd <= 0 && Math.random() < dt * 0.35) {
     const ux = (b.x - tgt.x) / td, uy = (b.y - tgt.y) / td;
     deal(b.id, tgt.id, 'y', 1, ux * 950, uy * 950 - 250);
     b.yankCd = 5; pvp.lines.push({ x1: b.x, y1: b.y, x2: tgt.x, y2: tgt.y, until: now + 250 });
@@ -5563,7 +5571,7 @@ function startPvp(pm, online) {
   state = 'play'; show(null);
   $('hud').hidden = true; $('whud').hidden = false; $('w-ult').hidden = false; $('w-hint').hidden = true; $('p-hint').hidden = false;
   { const mm = $('w-mini'); mm.width = 440; mm.height = Math.round(440 * hw.ht / hw.wt); mm.hidden = false; }
-  { const tg = !!pm.tag, cf = !!pm.ctf, kf = !!pm.chess, hr = !!pm.hr, du = !!pm.duel, alt = tg || cf || kf || hr || du; $('w-ult').hidden = alt; $('p-hint').hidden = alt; $('d-hint').hidden = !du; $('g-hint').hidden = !tg; $('c-hint').hidden = !cf; $('r-hint').hidden = !hr; $('k-hint').hidden = !kf; $('k-roster').hidden = !kf; $('w-slots').hidden = kf || du; $('w-hp').hidden = alt; $('t-timer').hidden = !alt; $('t-timer').style.borderColor = ''; }
+  { const tg = !!pm.tag, cf = !!pm.ctf, kf = !!pm.chess, hr = !!pm.hr, du = !!pm.duel, alt = tg || cf || kf || hr || du; $('w-ult').hidden = alt; $('p-hint').hidden = alt; $('d-hint').hidden = !du; $('g-hint').hidden = !tg; $('c-hint').hidden = !cf; $('r-hint').hidden = !hr; $('k-hint').hidden = !kf; $('k-roster').hidden = !kf; $('w-slots').hidden = kf || du; $('w-hp').hidden = alt && !du; $('t-timer').hidden = !alt; $('t-timer').style.borderColor = ''; }
   if (pm.chess) chessPlaceMe();
   if (pm.duel) duelPlace();
   $('wbanner').dataset.cd = '';
@@ -5874,7 +5882,9 @@ $('b-pr-menu').addEventListener('click', toMenu);
 function drawTag(x, y, hp, teamCol) {
   if (pvp && pvp.tag) return;
   if (pvp && pvp.ctf) { if (teamCol) { ctx.strokeStyle = teamCol; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, y + 24, 16, 5, 0, 0, 6.283); ctx.stroke(); } return; }
-  for (let i = 0; i < (pvp && pvp.duel ? DUEL_HP : P_HP); i++) { ctx.fillStyle = i < hp ? '#ff5a6e' : 'rgba(255,255,255,0.25)'; ctx.fillRect(x - 24 + i * 10, y - 46, 8, 4); }
+  const n = pvp && pvp.duel ? DUEL_HP : P_HP, w = n * 13 + 4;
+  ctx.fillStyle = 'rgba(13,10,24,0.6)'; ctx.fillRect(x - w / 2, y - 76, w, 14);
+  for (let i = 0; i < n; i++) { const hx = x - w / 2 + 8.5 + i * 13, hy = y - 69; ctx.fillStyle = i < hp ? '#ff5a6e' : 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.moveTo(hx, hy + 5); ctx.bezierCurveTo(hx - 7, hy, hx - 4, hy - 6, hx, hy - 2.5); ctx.bezierCurveTo(hx + 4, hy - 6, hx + 7, hy, hx, hy + 5); ctx.fill(); }
   if (teamCol) { ctx.strokeStyle = teamCol; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, y + 24, 16, 5, 0, 0, 6.283); ctx.stroke(); }
 }
 function iceOverlay(x, y) { ctx.fillStyle = 'rgba(191,243,255,0.45)'; ctx.fillRect(x - 20, y - 32, 40, 56); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.strokeRect(x - 20, y - 32, 40, 56); }
@@ -5950,6 +5960,7 @@ function pvpRender(dt) {
   for (const b of pvp.rbots) if (b && b.alive) drawFighter(b, b.rx, b.ry, b.a ? { x: b.a[0], y: b.a[1] } : null, b.invis, false, b.fr, b.nt, dt);
   if (pvp.tag) tagMarkers();
   if (pvp.ctf) ctfDraw();
+  if (pvp.me.alive && !pvp.tag && !pvp.ctf && !pvp.hr) drawTag(P.x, P.y, pvp.me.hp, pvp.cfg.teams ? TEAM_COLORS[pvp.me.team & 1] : null);
   if (pvp.duel) duelDraw(now);
   if (pvp.hr) hrDraw();
   for (const s of pvp.shots) { ctx.fillStyle = s.tag ? '#ff3d55' : s.swap ? '#ffd34d' : s.homing ? '#ff8a3d' : (s.team === pvp.me.team ? '#5ee6c1' : '#ff5a6e'); ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, 6.283); ctx.fill(); }
@@ -6216,7 +6227,7 @@ function tagBotTick(b, dt, now) {
   for (let i = 0; i < n; i++) botPhysics(b, h, now);
   if (Math.abs(b.vx) > 20) b.face = Math.sign(b.vx);
   if (it && tgt && td < TAG_SHOT_V * TAG_SHOT_LIFE * 0.85 && b.shotCd <= 0 && !((T.fz[b.id] || 0) > now) && wLos(b.x, b.y, tgt.x, tgt.y)) {
-    const D = PDIFF[b.diff] || PDIFF.medium, lead = td / TAG_SHOT_V * 0.6;
+    const D = botD(b), lead = td / TAG_SHOT_V * 0.6;
     const a = Math.atan2(tgt.y + (tgt.vy || 0) * lead - b.y, tgt.x + (tgt.vx || 0) * lead - b.x) + (Math.random() - 0.5) * 2 * D.err * 1.3;
     spawnShot(b.id, b.team, b.x, b.y, Math.cos(a), Math.sin(a), { tag: true, speed: TAG_SHOT_V, life: TAG_SHOT_LIFE });
     b.shotCd = TAG_CD * D.rate * (1.1 + Math.random() * 0.5);
@@ -6578,8 +6589,8 @@ function ctfBotTick(b, dt, now) {
   // yank an enemy carrier that's in reach
   const c = carrierOf(O);
   if (c && b.yankCd <= 0 && ctfOnSide(own, c.x)) {
-    const d = Math.hypot(c.x - b.x, c.y - b.y), D = PDIFF[b.diff] || PDIFF.medium;
-    if (d < RANGE * 0.9 && d > 60 && wLos(b.x, b.y, c.x, c.y) && Math.random() < dt * (b.diff === 'hard' ? 0.9 : b.diff === 'medium' ? 0.5 : 0.25)) {
+    const d = Math.hypot(c.x - b.x, c.y - b.y), D = botD(b);
+    if (d < RANGE * 0.9 && d > 60 && wLos(b.x, b.y, c.x, c.y) && Math.random() < dt * (b.diff === 'hard' ? 0.65 : b.diff === 'medium' ? 0.35 : 0.18)) {
       deal(b.id, c.id, 'y', 0, (b.x - c.x) / d * 950, (b.y - c.y) / d * 950 - 250);
       ctfKnock(b.id, c.id);
       b.yankCd = D.rate * 6; pvp.lines.push({ x1: b.x, y1: b.y, x2: c.x, y2: c.y, until: now + 250 });
@@ -10209,7 +10220,7 @@ function duelBotTick(b, dt, now) {
   for (let i = 0; i < n; i++) botPhysics(b, h, now);
   if (Math.abs(b.vx) > 20) b.face = Math.sign(b.vx);
   if (!tgt) return;
-  const td = Math.hypot(tgt.x - b.x, tgt.y - b.y), lv = { easy: [0.85, 0.55], medium: [0.6, 0.8], hard: [0.45, 1] }[b.diff] || [0.6, 0.8];
+  const td = Math.hypot(tgt.x - b.x, tgt.y - b.y), lv = { easy: [1.15, 0.4], medium: [0.8, 0.6], hard: [0.6, 0.75] }[b.diff] || [0.8, 0.6];
   // close in on foot when near; the hook brain does the rest
   if (td < 220 && b.rope && Math.random() < dt * 2) b.rope = null;
   if (td < SLASH_R && b.shotCd <= 0) {
@@ -10219,7 +10230,7 @@ function duelBotTick(b, dt, now) {
   if (b.yankCd <= 0) {
     const sw = SWORD[b.sword] || SWORDS[0], los = wLos(b.x, b.y, tgt.x, tgt.y);
     const want = { wood: td < 220, flame: td < 600 && los, frost: td < 140, storm: td < 320 && los, grapple: td > 160 && td < 470 && los, shadow: td > 120 && td < 390 && los, king: td < 110 }[sw.id];
-    if (want && Math.random() < dt * (b.diff === 'hard' ? 3 : b.diff === 'easy' ? 0.8 : 1.6)) { b.yankCd = SPECIAL_CD + (b.diff === 'easy' ? 3 : 0); duelPower(b.id, b, b, sw, tgt.x, tgt.y, false); }
+    if (want && Math.random() < dt * (b.diff === 'hard' ? 2 : b.diff === 'easy' ? 0.5 : 1.1)) { b.yankCd = SPECIAL_CD + 2 + (b.diff === 'easy' ? 3 : 0); duelPower(b.id, b, b, sw, tgt.x, tgt.y, false); }
   }
 }
 function finishDuel() {
@@ -11079,6 +11090,7 @@ function readGifts() {
 function applyGift(kind, v) {
   const h = hs();
   if (kind === 'tok') { const n = clampInt(v, 1, 1000000); save.tokens += n; achStat('earned', n); writeSave(); refreshMenu(); return n + ' tokens'; }
+  if (kind === 'pearl') { const n = clampInt(v, 1, 1000000), d = dv(); d.pearls = Math.min(9999999, d.pearls + n); writeSave(); return n + ' pearls'; }
   if (kind === 'grit') { const n = clampInt(v, 1, 1000000), g = gs(); g.g = Math.min(9999999, g.g + n); writeSave(); return n + ' Grit'; }
   if (kind === 'gblast') { const g = gs(); if (g.atk && g.arena) return null; g.atk = 1; g.arena = 1; writeSave(); refreshMenu(); return 'the Grit Blast and the Training Arena (hold X, then press C three times)'; }
   if (kind === 'item' && typeof v === 'string' && ITEM[v] && !ITEM[v].sk) { save.owned[v] = (save.owned[v] || 0) + 1; writeSave(); return ITEM[v].n; }
@@ -11090,6 +11102,7 @@ function applyGift(kind, v) {
 }
 $('b-ag-tok').addEventListener('click', () => { const n = clampInt($('ag-tok').value, 1, 1000000); sendGift('tok', n, n + ' tokens'); });
 $('b-ag-grit').addEventListener('click', () => { const n = clampInt($('ag-grit').value, 1, 1000000); sendGift('grit', n, n + ' Grit'); });
+$('b-ag-pearl').addEventListener('click', () => { const n = clampInt($('ag-pearl').value, 1, 1000000); sendGift('pearl', n, n + ' pearls'); });
 $('b-ag-gblast').addEventListener('click', () => sendGift('gblast', 1, 'the Grit Blast and the Training Arena'));
 $('b-ag-item').addEventListener('click', () => { const id = $('ag-item').value; if (ITEM[id]) sendGift('item', id, ITEM[id].n); });
 $('b-ag-items').addEventListener('click', () => sendGift('items', 1, 'every item and skin'));
