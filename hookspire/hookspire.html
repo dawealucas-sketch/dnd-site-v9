@@ -318,6 +318,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   <div class="kroster" id="k-roster" hidden></div>
   <div class="kmenu" id="k-menu" hidden></div>
   <div class="hint" id="k-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>E</b> attack · <b>Q</b> piece move · <b>1–8 / Tab</b> switch · <b>O</b> order all · <b>M</b> map</div>
+  <div class="hint" id="r-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump / yank · <b>E</b> use item · <b>R</b> back to last gate · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
   <div class="hint" id="c-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump / yank a hooked enemy · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
   <div class="hint" id="p-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / yank a hooked player · <b>E</b> shoot · <b>Q</b> ultimate · <b>1–5</b> abilities · <b>Esc</b> pause</div>
   <div class="hint" id="w-hint"><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1–5</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
@@ -357,6 +358,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
         <button class="mode" id="m-tag"><b>Hook Tag</b><small>Tag or be tagged. Classic or Infection, with bots or friends.</small></button>
         <button class="mode" id="m-ctf"><b>Capture the Flag</b><small>Red vs Blue. Steal their flag and bring it home. First to 3.</small></button>
+        <button class="mode" id="m-hr"><b>Hook Racing</b><small>3-lap races on 4 tracks. Boost rings, shortcuts and items. Solo, teams or online.</small></button>
         <button class="mode" id="m-chess"><b>Kingfall</b><small>Real-time chess battle. Command your pieces and take the enemy King.</small></button>
       </div>
     </div>
@@ -733,6 +735,28 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <button class="link" id="b-c-back">Back to menu</button>
   </section>
 
+  <section class="panel wide" id="scr-hr" hidden>
+    <h2>Hook Racing</h2>
+    <p>Race 3 laps around a looping track: right along the bottom, up the far end, back along the top, then down to the finish line. Pass every gate in order. Fly through orange boost rings, find the narrow shortcuts in the middle wall, and grab <b>?</b> boxes for items (press <kbd>E</kbd> to use one).</p>
+    <div class="field"><span class="label">Track</span><div class="seg" id="h-track"></div><p class="note" id="h-track-note"></p><p class="note" id="h-rec"></p></div>
+    <div class="field"><span class="label">Race type</span><div class="seg" id="h-teams"></div><p class="note">In a team race, every finishing place scores points for your team (10, 8, 6, 5, 4, 3, 2, 1). The team with the most points wins.</p></div>
+    <div class="field" id="h-myteam-f"><span class="label">Your team (playing offline)</span><div class="seg" id="h-myteam"></div><p class="note">Online, the host puts everyone on a team in the lobby.</p></div>
+    <div class="field"><span class="label">Bots</span><div class="seg" id="h-nb"></div></div>
+    <div class="field"><span class="label">Bot difficulty</span><div class="seg" id="h-diff"></div></div>
+    <div class="row">
+      <button class="btn primary" id="b-h-start">Start race</button>
+      <button class="btn" id="b-h-host">Host online race</button>
+    </div>
+    <div class="join" id="h-join">
+      <label for="h-code">Join a friend's race</label>
+      <input type="text" id="h-code" maxlength="6" placeholder="Race code" autocomplete="off" spellcheck="false">
+      <button class="btn" id="b-h-join">Join</button>
+    </div>
+    <p class="err" id="h-err" hidden></p>
+    <p class="note">Rewards: 5 tokens for finishing, plus 15 / 10 / 6 for 1st / 2nd / 3rd and 10 for a team win. Grit for a podium: 15 / 10 / 5. Win on all 4 tracks to unlock the Checkered skin.</p>
+    <button class="link" id="b-h-back">Back to menu</button>
+  </section>
+
   <section class="panel wide" id="scr-chess" hidden>
     <h2>Kingfall</h2>
     <p>A real-time battle on a giant chess board. You have 8 pieces. Play as any of them and switch whenever you like, while the rest follow your orders. Take the enemy <b>King</b> to win.</p>
@@ -1072,6 +1096,7 @@ const PALETTES = [
   { id: 'ninja', n: 'Ninja', cols: ['#e0484f', '#3a3550', '#111018'], hat: 'band', hc: '#e0484f', rope: 'plain', trail: 'dot', aura: 'ring', ac: '#e0484f' },
   { id: 'astronaut', n: 'Astronaut', cols: ['#ffffff', '#9aa3b5', '#ff8a3d'], hat: 'bubble', hc: '#ff8a3d', rope: 'chain', trail: 'spark', aura: 'orbit', ac: '#ff8a3d' },
   { id: 'samurai', n: 'Samurai', cols: ['#ffd34d', '#8a1f2b', '#2a2540'], hat: 'horns', hc: '#ffd34d', rope: 'plain', trail: 'leaf', aura: 'ring' },
+  { id: 'checkered', n: 'Checkered', cols: ['#ffffff', '#1b1631', '#ff5a6e', '#ffd34d'], hat: 'racehelm', hc: '#ff5a6e', rope: 'plain', rc: '#ffffff', trail: 'streak', aura: 'checker', ac: '#ffffff', glow: 8, race: true },
   { id: 'spireheart', n: 'Spireheart', cols: ['#ffe14a', '#5fd8ff', '#5fe3d0', '#ff8a3d', '#ffffff'], hat: 'spirecrown', hc: '#ffffff', rope: 'grad', rc: '#ffffff', trail: 'elements', aura: 'elements', ac: '#ffffff', glow: 18, story: 5 },
   { id: 'emberforged', n: 'Emberforged', cols: ['#fff1c9', '#ffb347', '#ff5a1f', '#3a1a12'], hat: 'forgehelm', hc: '#ffb347', rope: 'chain', rc: '#ff8a3d', trail: 'cinder', aura: 'magma', ac: '#ff8a3d', glow: 14, story: 4 },
   { id: 'tidecaller', n: 'Tidecaller', cols: ['#e8fffb', '#5fe3d0', '#1fa3b5', '#14456b'], hat: 'coralcrown', hc: '#ff8a7a', rope: 'glow', rc: '#5fe3d0', trail: 'ring', aura: 'tide', ac: '#5fe3d0', glow: 12, story: 3 },
@@ -1084,9 +1109,9 @@ const SKIN_ORDER = ['forest', 'ocean', 'candy', 'toxic', 'pirate', 'frost', 'lav
 const PAL_BY = Object.create(null);
 for (const s of PALETTES) PAL_BY[s.id] = s;
 const SKINS = SKIN_ORDER.map(id => PAL_BY[id]);
-const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon', boltcrown: 'Bolt Crown', icecrown: 'Ice Crown', coralcrown: 'Coral Crown', glacier: 'Glacier Crown', forgehelm: 'Forge Helm', spirecrown: 'Spire Crown' };
+const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon', boltcrown: 'Bolt Crown', icecrown: 'Ice Crown', coralcrown: 'Coral Crown', glacier: 'Glacier Crown', forgehelm: 'Forge Helm', spirecrown: 'Spire Crown', racehelm: 'Racing Helmet' };
 const SKIN_BY = Object.create(null);
-for (const s of [...SKINS, PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart]) {
+for (const s of [...SKINS, PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.checkered]) {
   SKIN_BY[s.id] = s;
   const base = { r: 5, ex: true, sk: s.id };
   ITEMS.push(Object.assign({ cat: 'hat', id: 'k_' + s.id + '_h', n: s.n + ' ' + HAT_NAMES[s.hat], k: s.hat, c: s.hc || s.cols[1], c2: s.cols[0] }, base));
@@ -1137,7 +1162,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0, story: null, grit: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0, story: null, grit: null, hrCfg: null, hrBest: null, hrWins: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -1171,6 +1196,9 @@ try {
     save.kfSide = s.kfSide === 1 ? 1 : 0;
     if (s.story && typeof s.story === 'object') save.story = s.story;
     if (s.grit && typeof s.grit === 'object') save.grit = s.grit;
+    if (s.hrCfg && typeof s.hrCfg === 'object') save.hrCfg = s.hrCfg;
+    if (s.hrBest && typeof s.hrBest === 'object') save.hrBest = s.hrBest;
+    if (s.hrWins && typeof s.hrWins === 'object') save.hrWins = s.hrWins;
     if (typeof s.last === 'string' && /^m-[a-z]+$/.test(s.last)) save.last = s.last;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
@@ -1536,7 +1564,7 @@ addEventListener('keydown', (e0) => {
       else if (mode === 'train') { if (e.code === 'KeyR' && !e.repeat) trainRespawn(); else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1); else if (e.code === 'Tab') openLoadout(); }
       else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
       else if (e.code === 'Tab') openLoadout();
-      else if (mode === 'pvp') { if (e.code === 'KeyE') pvpShoot(); else if (e.code === 'KeyQ' && !e.repeat) pvpUltKey(); else if (e.code === 'KeyW' && !e.repeat) pvpYank(); else if (e.code === 'KeyM' && !e.repeat) openMap(); else if (!e.repeat && pvp && !pvp.me.alive && (e.code === 'KeyA' || e.code === 'KeyD' || e.code === 'ArrowLeft' || e.code === 'ArrowRight')) specCycle(e.code === 'KeyA' || e.code === 'ArrowLeft' ? -1 : 1); }
+      else if (mode === 'pvp') { if (e.code === 'KeyR' && !e.repeat && pvp && pvp.hr) hrReset(); else if (e.code === 'KeyE') pvpShoot(); else if (e.code === 'KeyQ' && !e.repeat) pvpUltKey(); else if (e.code === 'KeyW' && !e.repeat) pvpYank(); else if (e.code === 'KeyM' && !e.repeat) openMap(); else if (!e.repeat && pvp && !pvp.me.alive && (e.code === 'KeyA' || e.code === 'KeyD' || e.code === 'ArrowLeft' || e.code === 'ArrowRight')) specCycle(e.code === 'KeyA' || e.code === 'ArrowLeft' ? -1 : 1); }
       else if (e.code === 'KeyM') openMap();
       else if (e.code === 'KeyR' && !e.repeat) toCampfire();
     }
@@ -2231,7 +2259,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-train', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-train', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-hr', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -2319,7 +2347,7 @@ function toMenu() {
   kfCloseMenu();
   if (typeof sDlg !== 'undefined') { sDlg.lines = null; $('dlg').hidden = true; $('radio').hidden = true; }
   story = null; storyHost = false; train = null;
-  pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true; $('k-hint').hidden = true; $('k-roster').hidden = true;
+  pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true; $('r-hint').hidden = true; $('k-hint').hidden = true; $('k-roster').hidden = true;
   trial = null; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false;
   toCheckpoint(0);
   runHeight = 0;
@@ -2942,6 +2970,12 @@ function drawAura(x, y, id) {
       for (let k = 0; k < 4; k++) { const p = (t * 0.5 + k / 4) % 1; ctx.beginPath(); ctx.arc(Math.sin(k * 2.3 + t) * 22, 30 - p * 62, 2 + p * 1.5, 0, 6.283); ctx.stroke(); }
       break;
     }
+    case 'checker': {
+      // a spinning ring of black and white squares, like a finish flag
+      ctx.rotate(t * 1.2); ctx.globalAlpha = 0.85;
+      for (let k = 0; k < 18; k++) { ctx.save(); ctx.rotate(k / 18 * 6.283); ctx.fillStyle = k % 2 ? '#1b1631' : '#ffffff'; ctx.fillRect(32, -4, 8, 8); ctx.restore(); }
+      break;
+    }
     case 'elements': {
       // a ring in every chapter's colors, with the four elements circling you
       ctx.lineWidth = 2.5; ctx.globalAlpha = 0.55;
@@ -3116,6 +3150,14 @@ function drawHat(id, face) {
       for (const [x0, s0] of [[-4.5, -1], [4.5, 1]]) { ctx.moveTo(x0, -14); ctx.lineTo(x0 + s0 * 1.5, -21); ctx.moveTo(x0 + s0 * 0.7, -17.5); ctx.lineTo(x0 + s0 * 4, -20.5); ctx.moveTo(x0 + s0 * 1.5, -21); ctx.lineTo(x0 + s0 * 0.4, -24.5); }
       ctx.stroke();
       ctx.fillStyle = '#f3f0ff'; ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8 + Math.sin(t * 3) * 3; ctx.beginPath(); ctx.arc(0, -18, 2.8, 0, 6.283); ctx.fill();
+      break;
+    }
+    case 'racehelm': {
+      // a racing helmet with a stripe and a dark visor
+      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0, -11, 7.8, Math.PI * 0.95, Math.PI * 2.05); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(-1.3, -18.8, 2.6, 7.6);
+      ctx.fillStyle = 'rgba(30,40,70,0.9)'; ctx.fillRect(1.8, -12.8, 6.4, 3.2);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fillRect(3, -12.4, 2, 1);
       break;
     }
     case 'spirecrown': {
@@ -4351,6 +4393,9 @@ function updateWorldHud(dt) {
   } else if (mode === 'pvp' && pvp && pvp.tag) {
     tagHudSlow();
     pvpLobbyTick();
+  } else if (mode === 'pvp' && pvp && pvp.hr) {
+    hrHudSlow();
+    pvpLobbyTick();
   } else if (mode === 'pvp' && pvp && pvp.ctf) {
     ctfHudSlow();
     pvpLobbyTick();
@@ -4821,6 +4866,7 @@ function applyFighter(f, kind, a, b, c, src, isMe) {
   if (now < f.inv || now < pvp.start) return;
   if (isMe && ADM.god) return;
   if (kind === 'p') { f.pull = { x: a, y: b, until: now + clamp(c, 0, 4000) }; return; }
+  if (!isMe && (f.shieldUntil || 0) > now) { f.shieldUntil = 0; burst(f.x, f.y, '#ffd34d', 14, 200); return; } // a bot's race shield
   if (isMe && ab.active.shield > 0) { ab.shieldHits = (ab.shieldHits || 1) - 1; if (ab.shieldHits <= 0) delete ab.active.shield; burst(P.x, P.y, '#ffd34d', 14, 200); return; }
   const body = isMe ? P : f;
   let dmg = 1;
@@ -4830,6 +4876,7 @@ function applyFighter(f, kind, a, b, c, src, isMe) {
   else if (kind === 'n') f.netUntil = now + clamp(a, 0, 4000);
   else if (kind === 's') { body.x = a; body.y = b; body.vx = 0; body.vy = 0; if (isMe) P.hist.length = 0; }
   dmg = clamp(Math.round(dmg), 0, 3);
+  if (pvp.hr) dmg = 0; // nobody gets knocked out in a race
   if (isMe && f.bonus > 0 && dmg > 0) { const u = Math.min(f.bonus, dmg); f.bonus -= u; dmg -= u; } // Grit bonus hearts go first
   if (isMe) { detach(); P.stun = 0.2; if (!reduceMotion) shake = 0.2; sfx('hurt'); } else { f.rope = null; if (src === selfId()) sfx('hit', 0.7); }
   f.hp -= dmg;
@@ -5017,6 +5064,7 @@ function pvpGate(dt) {
 }
 function pvpReady() { const m = pvp && pvp.me, now = Date.now(); return !!(m && m.alive && now >= pvp.start && !pvp.over && now >= m.freezeUntil && state === 'play'); }
 function pvpShoot() {
+  if (pvp && pvp.hr) { if (pvpReady()) { const dx = mouse.wx - P.x, dy = mouse.wy - P.y, d = Math.hypot(dx, dy) || 1; hrUse(selfId(), P, pvp.hr.me, Date.now(), dx / d, dy / d); } return; }
   if (pvp && pvp.ctf) return;
   if (!pvpReady() || pvp.me.shotCd > 0) return;
   if (pvp.tag) {
@@ -5030,7 +5078,7 @@ function pvpShoot() {
   spawnShot(selfId(), m.team, P.x, P.y, dx / d, dy / d, { dmg: od ? 2 : 1 }); sfx('shoot');
   m.shotCd = SHOT_CD * (od ? 0.5 : 1);
 }
-function pvpUltKey() { if (pvp && (pvp.tag || pvp.ctf)) return; if (pvpReady() && pvp.me.charge >= 100) useUlt(selfId(), pvp.me, P, pvp.me.ult, mouse.wx, mouse.wy); }
+function pvpUltKey() { if (pvp && (pvp.tag || pvp.ctf || pvp.hr)) return; if (pvpReady() && pvp.me.charge >= 100) useUlt(selfId(), pvp.me, P, pvp.me.ult, mouse.wx, mouse.wy); }
 function pvpYank() {
   if (pvp && pvp.tag) return;
   if (!pvpReady() || !rope || rope.kind !== 'peer' || pvp.me.yankCd > 0) return;
@@ -5167,6 +5215,7 @@ function botTick(b, dt, now) {
   if (!b.alive) { if (b.lives > 0 && b.respawnAt && now >= b.respawnAt) respawnFighter(b, false); return; }
   if (pvp.tag) { tagBotTick(b, dt, now); return; }
   if (pvp.ctf) { ctfBotTick(b, dt, now); return; }
+  if (pvp.hr) { hrBotTick(b, dt, now); return; }
   if (pvp.chess) { chessBotTick(b, dt, now); return; }
   if (now < pvp.start || pvp.over) return;
   b.charge = Math.min(100, b.charge + dt * 100 / ULT_TIME);
@@ -5199,7 +5248,7 @@ function botTick(b, dt, now) {
 
 // ----- match flow -----
 function startPvp(pm, online) {
-  hw = pm.chess ? buildKingfall() : pm.ctf ? buildCtf(pm.map) : buildArena(pm.map); mode = 'pvp'; lastPvpId = pm.id;
+  hw = pm.chess ? buildKingfall() : pm.ctf ? buildCtf(pm.map) : pm.hr ? buildRaceTrack(pm.map) : buildArena(pm.map); mode = 'pvp'; lastPvpId = pm.id;
   ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0;
   const tm = new Map(pm.tm || []), myId = online ? myPeerId : 'me';
   const myTeam = online ? (tm.has(myId) ? tm.get(myId) : 99) : (pm.teams ? (pm.mt === 1 ? 1 : 0) : 0);
@@ -5209,6 +5258,7 @@ function startPvp(pm, online) {
   pvp.me.ult = pcfg.ult; pvp.me.inv = pm.st + 2000;
   if (pm.tag) initTag(pm, online);
   if (pm.ctf) initCtf(pm);
+  if (pm.hr) initHr(pm);
   if (pm.chess) initChess(pm, online);
   const sp = hw.spawns, off = pm.id % sp.length;
   if (!online || pvpHost) for (let k = 0; k < pm.nb; k++) {
@@ -5226,7 +5276,7 @@ function startPvp(pm, online) {
   state = 'play'; show(null);
   $('hud').hidden = true; $('whud').hidden = false; $('w-ult').hidden = false; $('w-hint').hidden = true; $('p-hint').hidden = false;
   { const mm = $('w-mini'); mm.width = 440; mm.height = Math.round(440 * hw.ht / hw.wt); mm.hidden = false; }
-  { const tg = !!pm.tag, cf = !!pm.ctf, kf = !!pm.chess, alt = tg || cf || kf; $('w-ult').hidden = alt; $('p-hint').hidden = alt; $('g-hint').hidden = !tg; $('c-hint').hidden = !cf; $('k-hint').hidden = !kf; $('k-roster').hidden = !kf; $('w-slots').hidden = kf; $('w-hp').hidden = alt; $('t-timer').hidden = !alt; $('t-timer').style.borderColor = ''; }
+  { const tg = !!pm.tag, cf = !!pm.ctf, kf = !!pm.chess, hr = !!pm.hr, alt = tg || cf || kf || hr; $('w-ult').hidden = alt; $('p-hint').hidden = alt; $('g-hint').hidden = !tg; $('c-hint').hidden = !cf; $('r-hint').hidden = !hr; $('k-hint').hidden = !kf; $('k-roster').hidden = !kf; $('w-slots').hidden = kf; $('w-hp').hidden = alt; $('t-timer').hidden = !alt; $('t-timer').style.borderColor = ''; }
   if (pm.chess) chessPlaceMe();
   $('wbanner').dataset.cd = '';
   if (pvp && pvp.me) pvp.me.bonus = gHP();
@@ -5245,7 +5295,7 @@ function teamPlan(humans, ta, botsWanted) {
 }
 function hostStartPvp() {
   if (!myPeerId) return;
-  const tg = pvpPm && pvpPm.tag, cf = pvpPm && pvpPm.ctf, ta = (pvpPm && pvpPm.ta) || {};
+  const tg = pvpPm && pvpPm.tag, cf = pvpPm && pvpPm.ctf, hr = pvpPm && pvpPm.hr, ta = (pvpPm && pvpPm.ta) || {};
   const ids = [myPeerId, ...[...peerState.values()].map(s => s.id).sort()];
   if (pvpPm && pvpPm.chess) {
     if (ids.length !== 2) return;
@@ -5255,11 +5305,13 @@ function hostStartPvp() {
     startPvp(pvpPm, true);
     return;
   }
-  const nb = cf ? clamp(ccfg.size * 2 - ids.length, 0, 8) : tg ? tcfg.nb : pcfg.nb;
-  const plan = cf || (!tg && pcfg.teams) ? teamPlan(ids.slice(0, 16), ta, Math.min(nb, 16 - Math.min(16, ids.length))) : null;
+  const nb = cf ? clamp(ccfg.size * 2 - ids.length, 0, 8) : hr ? Math.min(hcfg.nb, Math.max(0, 8 - ids.length)) : tg ? tcfg.nb : pcfg.nb;
+  const plan = cf || (hr ? hcfg.teams : (!tg && pcfg.teams)) ? teamPlan(ids.slice(0, 16), ta, Math.min(nb, 16 - Math.min(16, ids.length))) : null;
   for (let k = 0; k < nb; k++) ids.push('b' + k);
   pvpPm = cf
     ? { id: Date.now() % 1e9, st: Date.now() + 4500, map: ccfg.map, lv: 1, teams: true, nb, df: ccfg.diff, ctf: { size: ccfg.size }, ta, tm: plan }
+    : hr
+    ? { id: Date.now() % 1e9, st: Date.now() + 4500, map: hcfg.track, lv: 1, teams: hcfg.teams, nb, df: hcfg.diff, hr: { laps: HR_LAPS }, ta, tm: plan || ids.slice(0, 16).map((id, i) => [id, i]) }
     : tg
     ? { id: Date.now() % 1e9, st: Date.now() + 4500, map: tcfg.map, lv: 1, teams: false, nb, df: tcfg.diff, tag: { v: tcfg.v, len: tcfg.len }, tm: ids.slice(0, 16).map((id, i) => [id, i]) }
     : { id: Date.now() % 1e9, st: Date.now() + 4500, map: pcfg.map, lv: pcfg.lives, teams: pcfg.teams, nb: pcfg.nb, df: pcfg.diff, ta, tm: plan || ids.slice(0, 16).map((id, i) => [id, i]) };
@@ -5267,6 +5319,7 @@ function hostStartPvp() {
   startPvp(pvpPm, true);
 }
 function pvpTick(dt) {
+  if (pvp.hr) { hrTick(dt); return; }
   if (pvp.tag) { tagTick(dt); return; }
   if (pvp.ctf) { ctfTick(dt); return; }
   if (pvp.chess) { chessTick(dt); return; }
@@ -5315,9 +5368,9 @@ function finishPvp(win) {
   setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1600);
 }
 function showPvpResults() {
-  $('pr-title').textContent = pvp.won ? 'You win!' : pvp.chess ? (pvp.chess.win == null ? 'Draw' : KF_SIDE[pvp.chess.win] + ' wins') : pvp.ctf ? (pvp.ctf.win == null ? 'Draw' : TEAM_NAMES[pvp.ctf.win] + ' wins') : pvp.tag ? tagWinLabel(pvp.tag.win || []) : winnerLabel(pvp.winTeam);
+  $('pr-title').textContent = pvp.hr ? hrTitle() : pvp.won ? 'You win!' : pvp.chess ? (pvp.chess.win == null ? 'Draw' : KF_SIDE[pvp.chess.win] + ' wins') : pvp.ctf ? (pvp.ctf.win == null ? 'Draw' : TEAM_NAMES[pvp.ctf.win] + ' wins') : pvp.tag ? tagWinLabel(pvp.tag.win || []) : winnerLabel(pvp.winTeam);
   const a = ARENAS.find(q => q.id === pvp.cfg.map);
-  $('pr-sub').textContent = pvp.chess ? 'Kingfall · White took ' + pvp.chess.kills[0] + ' · Black took ' + pvp.chess.kills[1] + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.ctf ? 'Capture the Flag · ' + ((CTF_MAPS.find(q => q.id === pvp.cfg.map) || {}).n || '') + ' · Red ' + pvp.ctf.score[0] + ' – ' + pvp.ctf.score[1] + ' Blue' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.tag ? 'Hook Tag · ' + TAGV[pvp.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pvp.tag.len / 60) + ' min' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : (a ? a.n : '') + ' · ' + pvp.cfg.lv + (pvp.cfg.lv === 1 ? ' life' : ' lives') + ' · ' + (pvp.cfg.teams ? '2 teams' : 'Free-for-all') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '');
+  $('pr-sub').textContent = pvp.hr ? hrSub() : pvp.chess ? 'Kingfall · White took ' + pvp.chess.kills[0] + ' · Black took ' + pvp.chess.kills[1] + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.ctf ? 'Capture the Flag · ' + ((CTF_MAPS.find(q => q.id === pvp.cfg.map) || {}).n || '') + ' · Red ' + pvp.ctf.score[0] + ' – ' + pvp.ctf.score[1] + ' Blue' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.tag ? 'Hook Tag · ' + TAGV[pvp.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pvp.tag.len / 60) + ' min' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : (a ? a.n : '') + ' · ' + pvp.cfg.lv + (pvp.cfg.lv === 1 ? ' life' : ' lives') + ' · ' + (pvp.cfg.teams ? '2 teams' : 'Free-for-all') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '');
   renderPvpResults();
   const follower = pvp.online && !pvpHost;
   $('b-pr-again').hidden = follower;
@@ -5325,6 +5378,7 @@ function showPvpResults() {
   show('scr-pvp-res');
 }
 function renderPvpResults() {
+  if (pvp.hr) { renderHrResults(); return; }
   if (pvp.tag) { renderTagResults(); return; }
   if (pvp.ctf) { renderCtfResults(); return; }
   if (pvp.chess) { renderChessResults(); return; }
@@ -5355,6 +5409,7 @@ function pvpPresence(pr) {
   pr.cl = pvp.claims.slice(-24).map(c => c.slice(0, 7));
   if (pvp.tag && pvpHost) pr.tg = tagPack(now);
   if (pvp.ctf && pvpHost) pr.cf = ctfPack(now);
+  if (pvp.hr) pr.hr = { m: hrPackR(pvp.hr.me), b: pvpHost ? pvp.bots.map(b => [b.id, ...hrPackR(b.hr || hrRacer())]) : undefined };
   if (pvp.chess) chessPresence(pr, now);
   if (pvpHost) {
     const ids = new Set(pvp.bots.map(b => b.id));
@@ -5367,16 +5422,18 @@ function hostPvpPeer() { let h = null; for (const s of peerState.values()) if (s
 function parsePm(v) {
   if (!v || typeof v !== 'object') return null;
   const id = num(v.id), st = num(v.st);
-  if (id == null || st == null || !(ARENA_IDS.includes(v.map) || CTF_IDS.includes(v.map) || v.map === 'kingfall') || ![1, 3, 5].includes(v.lv)) return null;
+  if (id == null || st == null || !(ARENA_IDS.includes(v.map) || CTF_IDS.includes(v.map) || HR_IDS.includes(v.map) || v.map === 'kingfall') || ![1, 3, 5].includes(v.lv)) return null;
   const tm = Array.isArray(v.tm) ? v.tm.slice(0, 16).filter(e => Array.isArray(e) && typeof e[0] === 'string' && num(e[1]) != null).map(e => [e[0].slice(0, 40), clampInt(e[1], 0, 99)]) : [];
   const tag = v.tag && typeof v.tag === 'object' && TAGV[v.tag.v] && TAG_LENS.includes(v.tag.len) ? { v: v.tag.v, len: v.tag.len } : null;
   const ctf = v.ctf && typeof v.ctf === 'object' && CTF_SIZES.includes(v.ctf.size) && CTF_IDS.includes(v.map) ? { size: v.ctf.size } : null;
   if (CTF_IDS.includes(v.map) && !ctf) return null;
   const chess = v.map === 'kingfall' && v.chess && typeof v.chess === 'object' ? {} : null;
   if (v.map === 'kingfall' && !chess) return null;
+  const hr = HR_IDS.includes(v.map) && v.hr && typeof v.hr === 'object' ? { laps: HR_LAPS } : null;
+  if (HR_IDS.includes(v.map) && !hr) return null;
   const ta = {};
   if (v.ta && typeof v.ta === 'object') for (const k of Object.keys(v.ta).slice(0, 16)) if (v.ta[k] === 0 || v.ta[k] === 1) ta[k.slice(0, 40)] = v.ta[k];
-  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 8), df: PDIFF[v.df] ? v.df : 'medium', tm, tag, ctf, chess, ta };
+  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 8), df: PDIFF[v.df] ? v.df : 'medium', tm, tag, ctf, chess, hr, ta };
 }
 function syncRemoteBots(dt) {
   const h = hostPvpPeer(), ok = h && h.raw.pv && h.raw.pv.id === pvp.id && Array.isArray(h.raw.pb);
@@ -5409,6 +5466,7 @@ function pvpLobbyTick() {
 }
 function pmText(pm) {
   const a = ARENAS.find(q => q.id === pm.map);
+  if (pm.hr) { const T = HR_TRACKS.find(t => t.id === pm.map); return 'Hook Racing · ' + (T ? T.n : '') + ' · ' + HR_LAPS + ' laps · ' + (pm.teams ? '2 teams (points)' : 'Free-for-all') + ' · ' + (pm.nb ? pm.nb + ' ' + DIFF[pm.df].n.toLowerCase() + ' bot' + (pm.nb > 1 ? 's' : '') : 'no bots'); }
   if (pm.chess) return 'Kingfall · 1 vs 1 · ' + DIFF[pm.df].n.toLowerCase() + ' piece AI';
   if (pm.ctf) { const cm = CTF_MAPS.find(q => q.id === pm.map); return 'Capture the Flag · ' + (cm ? cm.n : '') + ' · ' + pm.ctf.size + ' vs ' + pm.ctf.size + ' · ' + DIFF[pm.df].n.toLowerCase() + ' bots fill empty spots'; }
   if (pm.tag) return 'Hook Tag · ' + TAGV[pm.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pm.tag.len / 60) + ' min · ' + (pm.nb ? pm.nb + ' ' + DIFF[pm.df].n.toLowerCase() + ' bot' + (pm.nb > 1 ? 's' : '') : 'no bots');
@@ -5508,7 +5566,7 @@ $('p-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryPvpJo
 $('b-p-copy').addEventListener('click', () => copyCode($('b-p-copy'), $('p-lcode')));
 $('b-p-lstart').addEventListener('click', hostStartPvp);
 $('b-p-leave').addEventListener('click', toMenu);
-$('b-pr-again').addEventListener('click', () => { if (pvp && pvp.online && pvpHost) hostStartPvp(); else if (pvp && pvp.tag) startTagOffline(); else if (pvp && pvp.ctf) startCtfOffline(); else if (pvp && pvp.chess) startChessOffline(); else startPvpOffline(); });
+$('b-pr-again').addEventListener('click', () => { if (pvp && pvp.online && pvpHost) hostStartPvp(); else if (pvp && pvp.hr) startHrOffline(); else if (pvp && pvp.tag) startTagOffline(); else if (pvp && pvp.ctf) startCtfOffline(); else if (pvp && pvp.chess) startChessOffline(); else startPvpOffline(); });
 $('b-pr-menu').addEventListener('click', toMenu);
 
 // ----- PvP drawing -----
@@ -5591,6 +5649,7 @@ function pvpRender(dt) {
   for (const b of pvp.rbots) if (b && b.alive) drawFighter(b, b.rx, b.ry, b.a ? { x: b.a[0], y: b.a[1] } : null, b.invis, false, b.fr, b.nt, dt);
   if (pvp.tag) tagMarkers();
   if (pvp.ctf) ctfDraw();
+  if (pvp.hr) hrDraw();
   for (const s of pvp.shots) { ctx.fillStyle = s.tag ? '#ff3d55' : s.swap ? '#ffd34d' : s.homing ? '#ff8a3d' : (s.team === pvp.me.team ? '#5ee6c1' : '#ff5a6e'); ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, 6.283); ctx.fill(); }
   ctx.strokeStyle = 'rgba(255,179,71,0.9)'; ctx.lineWidth = 3;
   for (const l of pvp.lines) { ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke(); }
@@ -5624,12 +5683,14 @@ function pvpHudFast() {
   else if (el >= 0 && bn.dataset.cd && bn.dataset.cd !== 'go') {
     bn.dataset.cd = 'go';
     if (pvp.chess) banner('Kingfall', 'Go!', 'You play ' + KF_SIDE[pvp.chess.mySide] + '. Take their King. 1–8 switches pieces.');
+    else if (pvp.hr) banner(hw.name, 'Go!', pvp.hr.laps + ' laps. Race through the gates in order. E uses an item.');
     else if (pvp.ctf) banner('Capture the Flag', 'Go!', 'You\'re on the ' + TEAM_NAMES[pvp.me.team & 1] + '. Grab their flag and bring it home.');
     else if (pvp.tag) { if (pvp.tag.it.has(selfId())) banner(TAGV[pvp.tag.v].n, "You're IT!", 'Everyone else gets a 3 second head start. E fires a tag shot.'); else banner(TAGV[pvp.tag.v].n, 'Run!', 'Don\'t let IT touch you.'); }
     else banner(hw.name, 'Fight!');
   }
   if (pvp.tag) tagHudFast(now);
   if (pvp.ctf) ctfHudFast(now);
+  if (pvp.hr) hrHudFast(now);
   if (pvp.chess) chessHudFast(now);
   const sv = !m.alive ? specTarget() : null;
   const txt = !m.alive ? (m.lives > 0 ? 'Back in ' + Math.max(1, Math.ceil((m.respawnAt - now) / 1000)) : 'Watching ' + (sv ? sv.name : 'nobody')) : hw.name;
@@ -6313,6 +6374,322 @@ $('b-c-join').addEventListener('click', tryCtfJoin);
 $('c-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryCtfJoin(); });
 
 // =================================================================
+// ---------- Hook Racing (runs on the PvP engine) ----------
+// =================================================================
+const HR_TRACKS = [
+  { id: 'hr_meadow', n: 'Meadow Loop', d: 'Wide and friendly. One shortcut through the middle wall, near the far end.', pal: { n: 'Meadow Loop', top: '#8fd36b', rock: '#7a6a58', deep: '#574b3f' } },
+  { id: 'hr_ice', n: 'Glacier Circuit', d: 'Icy floors you slide on, and two narrow shortcuts.', pal: { n: 'Glacier Circuit', top: '#e8fbff', rock: '#6a7fa0', deep: '#4a5a78' } },
+  { id: 'hr_ruins', n: 'Sunken Speedway', d: 'Broken pillars everywhere. Weave between them.', pal: { n: 'Sunken Speedway', top: '#7fc8b8', rock: '#5a6b78', deep: '#3a4756' } },
+  { id: 'hr_volcano', n: 'Cinder Raceway', d: 'Low arches and tight gaps, with two shortcuts.', pal: { n: 'Cinder Raceway', top: '#ff8a3d', rock: '#3a2a2e', deep: '#1f1518' } },
+];
+const HR_IDS = HR_TRACKS.map(t => t.id), HR_LAPS = 3, HR_PTS = [10, 8, 6, 5, 4, 3, 2, 1];
+const HR_ITEMS = ['boost', 'shield', 'slow'], HR_ITEM_N = { boost: 'Speed burst', shield: 'Shield', slow: 'Slow shot' };
+const HR_NEXT = ['the far end', 'the top straight', 'the top-left', 'the finish line'];
+const hcfg = Object.assign({ track: 'hr_meadow', teams: false, team: 0, nb: 5, diff: 'medium' }, save.hrCfg || {});
+if (!HR_IDS.includes(hcfg.track)) hcfg.track = 'hr_meadow';
+hcfg.teams = hcfg.teams === true; hcfg.team = hcfg.team === 1 ? 1 : 0; hcfg.nb = clampInt(hcfg.nb, 0, 7);
+if (!PDIFF[hcfg.diff]) hcfg.diff = 'medium';
+const saveHcfg = () => { save.hrCfg = Object.assign({}, hcfg); writeSave(); };
+
+function buildRaceTrack(id) {
+  if (arenaCache[id]) return arenaCache[id];
+  const T = HR_TRACKS.find(t => t.id === id) || HR_TRACKS[0], k = HR_IDS.indexOf(T.id);
+  const wt = 120, ht = 40, g = new Uint8Array(wt * ht);
+  const inb = (x, y) => x >= 0 && y >= 0 && x < wt && y < ht;
+  const get = (x, y) => inb(x, y) ? g[y * wt + x] : TMETAL;
+  const fill = (x0, y0, w, h, v) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (inb(x, y)) g[y * wt + x] = v; };
+  // the loop: a bottom straight (going right), a shaft up the far end, a top straight (going left), and a shaft down
+  fill(0, 0, wt, 2, TROCK); fill(0, 37, wt, 3, TROCK); fill(0, 0, 1, ht, TMETAL); fill(wt - 1, 0, 1, ht, TMETAL);
+  fill(12, 17, 96, 5, TROCK);
+  if (k === 1) { fill(1, 37, wt - 2, 1, TICE); fill(12, 17, 96, 1, TICE); }
+  const OB = [
+    [[40, 31, 3, 6], [52, 22, 3, 5], [75, 30, 3, 7], [88, 22, 2, 4], [80, 2, 3, 6], [50, 11, 3, 6], [25, 12, 3, 5], [65, 2, 2, 4]],
+    [[36, 30, 3, 7], [58, 22, 3, 6], [82, 31, 3, 6], [70, 2, 3, 7], [44, 11, 3, 6], [28, 2, 3, 5]],
+    [[30, 22, 2, 6], [34, 31, 2, 6], [48, 26, 3, 3], [64, 22, 2, 5], [68, 31, 2, 6], [86, 26, 3, 3], [78, 11, 2, 6], [60, 2, 2, 6], [46, 7, 3, 3], [30, 11, 2, 6]],
+    [[38, 22, 6, 4], [38, 33, 6, 4], [72, 22, 6, 4], [72, 33, 6, 4], [60, 2, 6, 4], [60, 13, 6, 4], [30, 2, 5, 4], [30, 13, 5, 4]],
+  ][k];
+  for (const [x, y, w, h] of OB) fill(x, y, w, h, k === 1 ? TICE : TROCK);
+  const SC = [[99], [96, 20], [100], [94, 22]][k]; // shortcuts: 2-wide gaps through the middle wall
+  for (const x of SC) fill(x, 17, 2, 5, TAIR);
+  const px = (tx) => tx * TS + TS / 2;
+  const rings = [], ring = (tx, ty) => { const x = px(tx), y = px(ty); if (get(tx, ty) === TAIR && get(tx, ty + 1) === TAIR && !rings.some(q => Math.abs(q.x - x) < 60 && Math.abs(q.y - y) < 60)) rings.push({ x, y }); };
+  for (let x = 14; x < 108; x += 5) { ring(x, 25); ring(x + 2, 31); ring(x + 1, 5); ring(x + 3, 11); }
+  for (let y = 34; y >= 4; y -= 3) ring(y % 2 ? 111 : 115, y);
+  for (let y = 6; y <= 34; y += 5) ring(y % 2 ? 4 : 8, y);
+  for (const x of SC) { ring(x, 12); ring(x + 1, 8); ring(x, 26); }
+  const zone = (x0, x1, y0, y1) => ({ x0: x0 * TS, x1: x1 * TS, y0: y0 * TS, y1: y1 * TS });
+  const gates = [zone(58, 62, 22, 37), zone(93, 97, 2, 17), zone(38, 42, 2, 17), zone(12, 16, 22, 37)];
+  const free = (tx, ty) => { let y = ty; while (y > 2 && get(tx, y) !== TAIR) y--; return y; };
+  const boosts = [[32, 28, 1, 0], [70, 27, 1, 0], [113, 24, 0, -1], [85, 8, -1, 0], [50, 7, -1, 0], [6, 22, 0, 1]].map(([x, y, dx, dy]) => ({ x: px(x), y: px(free(x, y)), dx, dy }));
+  const boxes = [[46, 34], [90, 34], [75, 6], [18, 6], [113, 16]].map(([x, y]) => ({ x: px(x), y: px(free(x, y)) }));
+  const spawns = []; for (let i = 0; i < 8; i++) spawns.push({ x: 17 * TS + i * 44, y: 37 * TS - PR - 2 });
+  const wps = [];
+  for (let x = 20; x <= 104; x += 12) wps.push([x, 29]);
+  wps.push([113, 32], [113, 25], [113, 18], [113, 11], [111, 6]);
+  for (let x = 104; x >= 16; x -= 12) wps.push([x, 8]);
+  wps.push([6, 9], [6, 18], [6, 27], [8, 34], [14, 32]);
+  const W2 = wps.map(([x, y]) => ({ x: px(x), y: px(free(x, y)) }));
+  const pal = T.pal;
+  const img = document.createElement('canvas'); img.width = wt; img.height = ht;
+  { const ic = img.getContext('2d'), id2 = ic.createImageData(wt, ht), top = hexRGB(pal.top), rock = hexRGB(pal.rock);
+    for (let y = 0; y < ht; y++) for (let x = 0; x < wt; x++) {
+      const v = g[y * wt + x];
+      const c = v === TAIR ? [150, 200, 240] : v === TMETAL ? [75, 91, 117] : v === TICE ? [169, 220, 245] : (y > 0 && g[(y - 1) * wt + x] === TAIR ? top : rock);
+      const o = (y * wt + x) * 4; id2.data[o] = c[0]; id2.data[o + 1] = c[1]; id2.data[o + 2] = c[2]; id2.data[o + 3] = 255;
+    }
+    ic.putImageData(id2, 0, 0); }
+  const a = { name: T.n, img, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings, spawns, tspawns: null, gates, boosts, boxes, wps: W2,
+    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
+  arenaCache[id] = a;
+  return a;
+}
+// ----- racers: lap, next gate, finish time, best lap, item -----
+function hrRacer(ls) { return { lap: 0, g: 0, fin: 0, best: 0, ls: ls || 0, item: null, bt: 0, box: {} }; }
+function initHr(pm) { pvp.hr = { laps: (pm.hr && pm.hr.laps) || HR_LAPS, me: hrRacer(pm.st), over: false, firstFin: 0, res: null, extra: [], grit: 0 }; }
+const hrPackR = (R) => [R.lap, R.g, Math.round(R.fin), Math.round(R.best)];
+const hrUnpack = (e) => Array.isArray(e) ? { lap: clampInt(e[0], 0, 9), g: clampInt(e[1], 0, 3), fin: clampInt(e[2], 0, 1e7), best: clampInt(e[3], 0, 1e7) } : null;
+function hrRacers() {
+  const out = [], h = pvp.online ? hostPvpPeer() : null, hb = h && h.raw && h.raw.hr && Array.isArray(h.raw.hr.b) ? h.raw.hr.b : [];
+  for (const v of pvpViews()) {
+    let R = null;
+    if (v.me) R = pvp.hr.me;
+    else if (v.bot) R = v.bot.hr;
+    else if (v.rbot) { const e = hb.find(q => Array.isArray(q) && q[0] === v.id); R = e ? hrUnpack(e.slice(1)) : null; }
+    else if (v.peer) { const r = v.peer.raw; R = r && r.hr && r.pv && r.pv.id === pvp.id ? hrUnpack(r.hr.m) : null; }
+    out.push({ v, R: R || { lap: 0, g: 0, fin: 0, best: 0 } });
+  }
+  return out;
+}
+function hrScore(r) {
+  const R = r.R; if (R.fin) return 1e9 - R.fin;
+  const G2 = hw.gates[R.g], d = Math.hypot(r.v.x - (G2.x0 + G2.x1) / 2, r.v.y - (G2.y0 + G2.y1) / 2);
+  return R.lap * 4 + R.g + Math.max(0, 1 - d / 6000) * 0.99;
+}
+const hrStandings = () => hrRacers().sort((a, b) => hrScore(b) - hrScore(a));
+function hrPass(R, x, y, now, me) {
+  if (R.fin || now < pvp.start) return;
+  const G2 = hw.gates[R.g];
+  if (x < G2.x0 || x > G2.x1 || y < G2.y0 || y > G2.y1) return;
+  R.g++;
+  if (me) sfx('checkpoint');
+  if (R.g < 4) return;
+  R.g = 0; R.lap++;
+  const lt = now - R.ls; R.ls = now; if (!R.best || lt < R.best) R.best = lt;
+  if (R.lap >= pvp.hr.laps) { R.fin = now - pvp.start; if (me) { sfx('win'); banner('Finished!', fmtTime(R.fin / 1000), 'Lap best ' + fmtTime(R.best / 1000)); } }
+  else if (me) banner('Lap ' + (R.lap + 1) + ' / ' + pvp.hr.laps, fmtTime(lt / 1000), R.lap + 1 === pvp.hr.laps ? 'Final lap!' : '');
+}
+function hrPickups(body, R, now, me) {
+  for (const b of hw.boosts) if (now > R.bt && Math.hypot(body.x - b.x, body.y - b.y) < 44) {
+    R.bt = now + 800; const v = body.vx * b.dx + body.vy * b.dy, add = Math.max(0, 1150 - v);
+    body.vx += b.dx * add; body.vy += b.dy * add;
+    if (me) { sfx('dash'); burst(body.x, body.y, '#ff9a3d', 14, 200); }
+  }
+  if (!R.item) hw.boxes.forEach((q, i) => {
+    if (R.item || (R.box[i] || 0) > now || Math.hypot(body.x - q.x, body.y - q.y) > 38) return;
+    R.box[i] = now + 6000; R.item = HR_ITEMS[Math.floor(Math.random() * HR_ITEMS.length)];
+    if (me) { sfx('pickup'); banner('Item', HR_ITEM_N[R.item], 'Press E to use it.'); }
+  });
+}
+function hrUse(id, body, R, now, ux, uy) {
+  const it = R.item; if (!it) return;
+  R.item = null;
+  const me = id === selfId();
+  if (it === 'boost') { body.vx = ux * 1300; body.vy = uy * 1300; if (me) detach(); else body.rope = null; burst(body.x, body.y, '#ffd34d', 18, 240); if (me) sfx('dash'); }
+  else if (it === 'shield') { if (me) { ab.active.shield = 8; ab.shieldHits = 1; sfx('ability'); } else body.shieldUntil = now + 8000; }
+  else {
+    const order = hrStandings(), i = order.findIndex(r => r.v.id === id), t = order[i - 1] || order[i + 1];
+    if (t && !t.R.fin) { deal(id, t.v.id, 'f', 1200); pvp.lines.push({ x1: body.x, y1: body.y, x2: t.v.x, y2: t.v.y, until: now + 300 }); if (me) { sfx('shoot'); banner('Slow shot', 'Hit ' + t.v.name); } }
+  }
+}
+function hrReset() {
+  // stuck? R puts you back at the last gate you passed
+  if (!pvpReady() || pvp.hr.me.fin) return;
+  const R = pvp.hr.me, G2 = hw.gates[(R.g + 3) % 4];
+  let x = (G2.x0 + G2.x1) / 2, y = (G2.y0 + G2.y1) / 2;
+  for (let k = 0; k < 12 && !circleFree(x, y, PR + 1); k++) y -= TS / 2;
+  burst(P.x, P.y, '#c7d2ff', 12, 160); detach(); P.x = x; P.y = y; P.vx = 0; P.vy = 0; P.hist.length = 0;
+  banner('Back on track', 'Last gate');
+}
+function hrTick(dt) {
+  const now = Date.now(), H = pvp.hr, m = pvp.me;
+  if (pvp.online) { if (!pvpHost) syncRemoteBots(dt); readClaims(); }
+  m.yankCd -= dt; wHP = P_HP;
+  for (const b of pvp.bots) botTick(b, dt, now);
+  pvp.lines = pvp.lines.filter(l => l.until > now);
+  pvp.claims = pvp.claims.filter(c => now - c[7] < 2500).slice(-24);
+  if (pvp.over) return;
+  if (now >= pvp.start) { hrPass(H.me, P.x, P.y, now, true); if (!H.me.fin) hrPickups(P, H.me, now, true); }
+  // the race ends when everyone is home, or 30 seconds after the winner
+  const rs = hrRacers(), fins = rs.filter(r => r.R.fin).length;
+  if (fins && !H.firstFin) { H.firstFin = now; if (!H.me.fin) banner('Someone finished!', '30 seconds left', 'Cross the line before time runs out.'); }
+  if (now > pvp.start + 1000 && ((rs.length && fins === rs.length) || (H.firstFin && now - H.firstFin > 30000) || now > pvp.start + 8 * 60000)) finishHr();
+}
+function hrBotTick(b, dt, now) {
+  if (!b.hr) { b.spd = { easy: 1.05, medium: 1.2, hard: 1.35 }[b.diff] || 1.2; b.hr = hrRacer(pvp.start); b.wp = 1; b.wpT = Math.max(now, pvp.start); } // the first waypoint ahead of the start line
+  if (now < pvp.start || pvp.over) return;
+  if (b.hr.fin || now < b.freezeUntil) { b.rope = null; if (now < b.freezeUntil) { b.vx = 0; b.vy = 0; return; } }
+  const wps = hw.wps;
+  let w = wps[b.wp % wps.length];
+  if (!b.hr.fin) {
+    if (Math.hypot(w.x - b.x, w.y - b.y) < 130) { b.wp = (b.wp + 1) % wps.length; b.wpT = now; w = wps[b.wp]; }
+    else if (now - b.wpT > 6000) { burst(b.x, b.y, '#c7d2ff', 12, 160); b.x = w.x; b.y = w.y; b.vx = 0; b.vy = 0; b.rope = null; b.hist.length = 0; burst(w.x, w.y, '#c7d2ff', 12, 160); b.wp = (b.wp + 1) % wps.length; b.wpT = now; w = wps[b.wp]; } // stuck: back on the track
+    b.target = w; botBrain(b, w, dt, now);
+  }
+  const n = Math.max(1, Math.ceil(dt / STEP)), h = dt / n;
+  for (let i = 0; i < n; i++) botPhysics(b, h, now);
+  if (Math.abs(b.vx) > 20) b.face = Math.sign(b.vx);
+  if (b.hr.fin) return;
+  hrPass(b.hr, b.x, b.y, now, false);
+  hrPickups(b, b.hr, now, false);
+  if (b.hr.item && Math.random() < dt * 0.5) { const d = Math.hypot(w.x - b.x, w.y - b.y) || 1; hrUse(b.id, b, b.hr, now, (w.x - b.x) / d, (w.y - b.y) / d); }
+}
+function finishHr() {
+  const H = pvp.hr, order = hrStandings(), teams = pvp.cfg.teams;
+  pvp.over = true; H.over = true;
+  const pts = {}, tp = [0, 0];
+  order.forEach((r, i) => { const p = r.R.fin ? (HR_PTS[i] || 1) : 0; pts[r.v.id] = p; if (teams) tp[r.v.team & 1] += p; });
+  const place = order.findIndex(r => r.v.me);
+  const win = teams ? (tp[0] === tp[1] ? null : tp[0] > tp[1] ? 0 : 1) : null;
+  const won = teams ? win === (pvp.me.team & 1) : place === 0;
+  pvp.winTeam = win;
+  H.res = { order: order.map(r => ({ id: r.v.id, name: r.v.name, me: !!r.v.me, team: r.v.team, c: r.v.c, fin: r.R.fin, best: r.R.best, lap: r.R.lap, pts: pts[r.v.id] })), tp, win, place };
+  const R = H.me, T = pvp.cfg.map, many = order.length > 1;
+  let tok = R.fin ? 5 + ([15, 10, 6][place] || 0) : 0;
+  if (teams && won) tok += 10;
+  const grit = R.fin && many ? ([15, 10, 5][place] || 0) : 0;
+  if (tok) addTokens(tok, P.x, P.y);
+  if (grit) addGrit(grit);
+  const extra = [];
+  if (!save.hrBest || typeof save.hrBest !== 'object') save.hrBest = {};
+  const rec = save.hrBest[T] && typeof save.hrBest[T] === 'object' ? save.hrBest[T] : (save.hrBest[T] = {});
+  if (R.fin && (!rec.r || R.fin < rec.r)) { rec.r = R.fin; extra.push('New best race time!'); }
+  if (R.best && (!rec.l || R.best < rec.l)) { rec.l = R.best; extra.push('New best lap!'); }
+  if (R.fin && place === 0 && many) {
+    if (!save.hrWins || typeof save.hrWins !== 'object') save.hrWins = {};
+    if (!save.hrWins[T]) { save.hrWins[T] = 1; extra.push('First win on this track!'); }
+    if (HR_IDS.every(t => save.hrWins[t]) && !ownsSkin('checkered')) { for (const iid of Object.values(skinEq('checkered'))) save.owned[iid] = Math.max(1, save.owned[iid] || 0); extra.push('New skin: Checkered!'); }
+  }
+  pvp.reward = tok; pvp.won = won; H.grit = grit; H.extra = extra;
+  sfx(won ? 'win' : 'lose');
+  writeSave();
+  detach(); for (const k in keys) keys[k] = false;
+  state = 'over';
+  banner('Race over', !R.fin ? 'Did not finish' : place === 0 ? 'You win!' : 'You came ' + (ORD[place] || place + 1), extra.join(' '));
+  setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1800);
+}
+function hrTitle() {
+  const H = pvp.hr.res;
+  if (pvp.cfg.teams) return pvp.winTeam == null ? 'Draw' : TEAM_NAMES[pvp.winTeam] + ' wins';
+  const w = H.order[0]; return w ? (w.me ? 'You win!' : w.name + ' wins') : 'Race over';
+}
+function hrSub() {
+  const H = pvp.hr, T = HR_TRACKS.find(t => t.id === pvp.cfg.map) || HR_TRACKS[0];
+  return 'Hook Racing · ' + T.n + (pvp.cfg.teams ? ' · Red ' + H.res.tp[0] + ' – ' + H.res.tp[1] + ' Blue points' : '') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') + (H.grit ? ' · +' + H.grit + ' Grit' : '') + (H.extra.length ? ' · ' + H.extra.join(' · ') : '');
+}
+function renderHrResults() {
+  const H = pvp.hr, list = $('pr-list'); list.textContent = '';
+  H.res.order.forEach((r, i) => {
+    const li = document.createElement('li'); if (r.me) li.className = 'me';
+    const pl = document.createElement('span'); pl.className = 'place'; pl.textContent = r.fin ? (ORD[i] || String(i + 1)) : '—';
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = pvp.cfg.teams ? TEAM_COLORS[r.team & 1] : r.c;
+    const nm = document.createElement('span'); nm.textContent = r.name + (r.me ? ' (you)' : '');
+    const res = document.createElement('span'); res.className = 'res';
+    res.textContent = (r.fin ? fmtTime(r.fin / 1000) + (r.best ? ' · best lap ' + fmtTime(r.best / 1000) : '') : 'Did not finish · lap ' + Math.min(r.lap + 1, H.laps) + ' of ' + H.laps) + (pvp.cfg.teams ? ' · ' + r.pts + ' pts' : '');
+    li.append(pl, dot, nm, res); list.append(li);
+  });
+}
+function hrDraw() {
+  const now = Date.now(), R = pvp.hr.me;
+  hw.gates.forEach((G2, i) => {
+    const next = i === R.g && !R.fin, x = (G2.x0 + G2.x1) / 2;
+    if (i === 3) {
+      ctx.globalAlpha = next ? 0.95 : 0.65;
+      for (let y = G2.y0; y < G2.y1; y += 20) for (let c = 0; c < 2; c++) { ctx.fillStyle = ((y / 20 + c) % 2) ? '#1b1631' : '#ffffff'; ctx.fillRect(x - 20 + c * 20, y, 20, 20); }
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.strokeStyle = next ? '#5ee6c1' : 'rgba(243,236,223,0.3)'; ctx.lineWidth = next ? 6 : 3; ctx.setLineDash([14, 10]);
+      ctx.beginPath(); ctx.moveTo(x, G2.y0); ctx.lineTo(x, G2.y1); ctx.stroke(); ctx.setLineDash([]);
+    }
+    if (next) { ctx.font = '700 15px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#5ee6c1'; ctx.fillText(i === 3 ? 'FINISH LINE' : 'NEXT GATE', x, G2.y0 + 22); }
+  });
+  for (const b of hw.boosts) {
+    ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.dy, b.dx));
+    ctx.strokeStyle = '#ff9a3d'; ctx.lineWidth = 4; ctx.shadowBlur = 12; ctx.shadowColor = '#ff9a3d';
+    ctx.beginPath(); ctx.arc(0, 0, 26, 0, 6.283); ctx.stroke();
+    const o = (gt * 30) % 12;
+    ctx.lineWidth = 3; for (let k = -1; k <= 0; k++) { const xx = k * 12 + o - 4; ctx.beginPath(); ctx.moveTo(xx - 5, -9); ctx.lineTo(xx + 4, 0); ctx.lineTo(xx - 5, 9); ctx.stroke(); }
+    ctx.restore();
+  }
+  hw.boxes.forEach((q, i) => {
+    if ((R.box[i] || 0) > now) return;
+    ctx.save(); ctx.translate(q.x, q.y + Math.sin(gt * 3 + i) * 4); ctx.rotate(Math.sin(gt * 2 + i) * 0.2);
+    ctx.fillStyle = 'hsl(' + ((gt * 90 + i * 70) % 360) + ',80%,60%)'; ctx.shadowBlur = 12; ctx.shadowColor = ctx.fillStyle;
+    ctx.fillRect(-15, -15, 30, 30); ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffffff'; ctx.font = '700 20px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', 0, 1); ctx.textBaseline = 'alphabetic';
+    ctx.restore();
+  });
+}
+function hrHudFast(now) {
+  const H = pvp.hr, R = H.me, order = hrStandings(), place = order.findIndex(r => r.v.me), el = Math.max(0, (now - pvp.start) / 1000);
+  const txt = R.fin ? 'Finished · ' + fmtTime(R.fin / 1000) + ' · ' + (ORD[place] || place + 1) : 'Lap ' + Math.min(R.lap + 1, H.laps) + '/' + H.laps + ' · ' + fmtTime(el) + ' · ' + (ORD[place] || place + 1) + ' of ' + order.length;
+  const t = $('t-timer'); if (t.textContent !== txt) t.textContent = txt;
+  t.style.borderColor = pvp.cfg.teams ? TEAM_COLORS[pvp.me.team & 1] : '';
+}
+function hrHudSlow() {
+  const H = pvp.hr, R = H.me;
+  $('w-found').textContent = (R.fin ? 'You finished! ' : 'Next: ' + HR_NEXT[R.g] + ' · ') + (R.item ? 'Item: ' + HR_ITEM_N[R.item] + ' (E)' : 'Grab ? boxes for items');
+  const el = $('w-team'); el.textContent = '';
+  hrStandings().forEach((r, i) => {
+    const row = document.createElement('div'); row.className = 'team-row';
+    const name = document.createElement('span'); name.textContent = (ORD[i] || i + 1) + ' ' + r.v.name + (r.v.me ? ' (you)' : '');
+    const st2 = document.createElement('span'); st2.className = 'muted';
+    st2.textContent = r.R.fin ? fmtTime(r.R.fin / 1000) : 'lap ' + Math.min(r.R.lap + 1, H.laps);
+    const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = pvp.cfg.teams ? TEAM_COLORS[r.v.team & 1] : r.v.c;
+    row.append(name, st2, dot); el.append(row);
+  });
+}
+function startHrOffline() { startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: hcfg.track, lv: 1, teams: hcfg.teams, nb: hcfg.nb, df: hcfg.diff, tm: [], hr: { laps: HR_LAPS }, mt: hcfg.team }, false); }
+function renderHrSetup() {
+  const mk = (id, opts, get, set) => {
+    const el = $(id); el.textContent = '';
+    for (const [v, label] of opts) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+      b.setAttribute('aria-pressed', String(get() === v));
+      b.addEventListener('click', () => { set(v); saveHcfg(); renderHrSetup(); });
+      el.append(b);
+    }
+  };
+  const wins = save.hrWins && typeof save.hrWins === 'object' ? save.hrWins : {}, nWon = HR_IDS.filter(t => wins[t]).length;
+  mk('h-track', HR_TRACKS.map(t => [t.id, t.n + (wins[t.id] ? ' ✓' : '')]), () => hcfg.track, v => { hcfg.track = v; });
+  mk('h-teams', [[false, 'Free-for-all'], [true, '2 teams (points)']], () => hcfg.teams, v => { hcfg.teams = v; });
+  mk('h-myteam', [[0, 'Red'], [1, 'Blue']], () => hcfg.team, v => { hcfg.team = v; });
+  mk('h-nb', [0, 1, 2, 3, 4, 5, 6, 7].map(n => [n, String(n)]), () => hcfg.nb, v => { hcfg.nb = v; });
+  mk('h-diff', Object.keys(PDIFF).map(k => [k, DIFF[k].n]), () => hcfg.diff, v => { hcfg.diff = v; });
+  $('h-myteam-f').hidden = !hcfg.teams;
+  $('h-track-note').textContent = (HR_TRACKS.find(t => t.id === hcfg.track) || {}).d || '';
+  const rec = save.hrBest && save.hrBest[hcfg.track] || {};
+  $('h-rec').textContent = 'Your best race ' + (rec.r ? fmtTime(rec.r / 1000) : '—') + ' · best lap ' + (rec.l ? fmtTime(rec.l / 1000) : '—') + ' · Tracks won ' + nWon + ' of 4' + (nWon >= 4 ? ' · Checkered skin unlocked!' : '');
+  $('b-h-host').hidden = !roomApi; $('h-join').hidden = !roomApi;
+}
+$('m-hr').addEventListener('click', () => { renderHrSetup(); $('h-err').hidden = true; show('scr-hr'); });
+$('b-h-back').addEventListener('click', () => show('scr-menu'));
+$('b-h-start').addEventListener('click', startHrOffline);
+$('b-h-host').addEventListener('click', async () => {
+  const err = $('h-err'); err.hidden = true;
+  try { await joinRoom('pvp', newCode()); pvpHost = true; pvpPm = { id: 0, st: 0, map: hcfg.track, lv: 1, teams: hcfg.teams, nb: hcfg.nb, df: hcfg.diff, tm: [], hr: { laps: HR_LAPS } }; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = 'Could not open an online race. Try again in a moment.'; err.hidden = false; }
+});
+const tryHrJoin = async () => {
+  const err = $('h-err'); err.hidden = true;
+  const code = readCode($('h-code'));
+  if (code.length < 4) { err.textContent = 'Race codes are 5 letters and numbers.'; err.hidden = false; return; }
+  try { await joinRoom('pvp', code); pvpHost = false; lastPvpId = 0; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join race "' + code + '". Check the code and try again.'); err.hidden = false; }
+};
+$('b-h-join').addEventListener('click', tryHrJoin);
+$('h-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryHrJoin(); });
+
+// =================================================================
 // ---------- Kingfall: a real-time chess battle (runs on the PvP engine) ----------
 // =================================================================
 const KF_TYPES = {
@@ -6904,7 +7281,7 @@ function canRestart() {
 }
 function restartCurrent() {
   writeSave();
-  if (mode === 'pvp' && pvp && !pvp.online) { const C = pvp; kfCloseMenu(); if (C.chess) startChessOffline(); else if (C.ctf) startCtfOffline(); else if (C.tag) startTagOffline(); else startPvpOffline(); }
+  if (mode === 'pvp' && pvp && !pvp.online) { const C = pvp; kfCloseMenu(); if (C.chess) startChessOffline(); else if (C.hr) startHrOffline(); else if (C.ctf) startCtfOffline(); else if (C.tag) startTagOffline(); else startPvpOffline(); }
   else if (mode === 'trial' && trial) startTrial(trial.n);
   else if (mode === 'story' && story) { sDlg.lines = null; $('dlg').hidden = true; storyPick(story.id); }
   else if (mode === 'race' && race && !race.online) startRace(offlineRc(), false);
@@ -6993,7 +7370,7 @@ refreshKeyHints();
 // ---------- How to play (H), menu helpers and save codes ----------
 // =================================================================
 function helpKey() {
-  if (mode === 'pvp' && pvp) return pvp.chess ? 'chess' : pvp.ctf ? 'ctf' : pvp.tag ? 'tag' : 'pvp';
+  if (mode === 'pvp' && pvp) return pvp.chess ? 'chess' : pvp.hr ? 'hr' : pvp.ctf ? 'ctf' : pvp.tag ? 'tag' : 'pvp';
   if (mode === 'world' || mode === 'trial' || mode === 'race' || mode === 'coop' || mode === 'story') return mode;
   return 'climb';
 }
@@ -7031,6 +7408,9 @@ function modeHelp(k) {
     ctf: { t: 'Capture the Flag', g: 'Touch the other team\'s flag to grab it, then bring it to your base while your own flag is home. First to 3 captures wins.',
       k: [...move, [K('up') + ' (hooked to an enemy)', 'Yank them'], ...abil, [K('map'), 'Map'], ['Esc', 'Pause']],
       tips: ['Stop a carrier on your side of the map by touching them or yanking them. Past the middle, they\'re safe.', 'Touch your own dropped flag to send it home. Otherwise it goes home after 20 seconds.', 'You can only score while your own flag is at your base.'] },
+    hr: { t: 'Hook Racing', g: 'Race 3 laps. Pass every gate in order: right along the bottom, up the far end, back along the top, then down to the finish line.',
+      k: [...move, [K('attack'), 'Use your item'], [K('reset'), 'Stuck? Back to the last gate'], [K('up') + ' (hooked to a racer)', 'Yank them back'], ...abil, [K('map'), 'Map'], ['Esc', 'Pause']],
+      tips: ['Fly through the orange boost rings for a burst of speed.', 'Narrow gaps in the middle wall are shortcuts: hard to swing through, but fast.', 'Grab ? boxes for a speed burst (toward your aim), a shield, or a slow shot that hits the racer ahead of you.'] },
     chess: { t: 'Kingfall', g: 'A real-time chess battle. Play any of your 8 pieces while the rest follow your orders. Take the enemy King to win.',
       k: [...move, [K('attack'), 'Attack (each piece has its own)'], [K('special'), 'Piece move · as the King, revive a piece'], ['1–8 / ' + K('equip'), 'Switch piece'], ['Click an order', 'Give one piece a new order'], [K('map'), 'Map'], ['Esc', 'Pause']],
       tips: ['Click a piece\'s order in the list on the left to change just that piece.', 'Every 30 seconds your King can bring back a taken piece. If you aren\'t playing it, it does that on its own.', 'Knights leap, Bishops dash diagonally, Rooks charge, and the Queen dashes any way.'] },
@@ -7071,7 +7451,7 @@ function refreshLast() {
 document.querySelectorAll('#scr-menu .mode').forEach((el) => el.addEventListener('click', () => { if (/^m-(solo|coop|race|world|trial|pvp|tag|ctf|chess)$/.test(el.id)) { save.last = el.id; saveDirty = true; } }));
 $('m-last').addEventListener('click', () => { const src = save.last && document.getElementById(save.last); if (src) src.click(); });
 refreshLast();
-const BACKS = ['b-back-coop', 'b-back-start', 'b-back-race', 'b-lobby-leave', 'b-res-menu', 'b-sum-menu', 'b-set-back', 'g-back', 'l-back', 'b-w-back', 'b-p-back', 'b-g-back', 'b-c-back', 'b-k-back', 'b-p-leave', 'b-pr-menu', 'b-tr-back', 'b-ach-back', 'b-help-back', 'b-adm-back', 'b-trr-list'];
+const BACKS = ['b-back-coop', 'b-back-start', 'b-back-race', 'b-lobby-leave', 'b-res-menu', 'b-sum-menu', 'b-set-back', 'g-back', 'l-back', 'b-w-back', 'b-p-back', 'b-g-back', 'b-c-back', 'b-h-back', 'b-k-back', 'b-p-leave', 'b-pr-menu', 'b-tr-back', 'b-ach-back', 'b-help-back', 'b-adm-back', 'b-trr-list'];
 function menuBack() {
   const sec = document.getElementById(current);
   const b = sec && BACKS.map(id => sec.querySelector('#' + id)).find(Boolean);
@@ -7207,8 +7587,8 @@ function touchLayout() {
     tbtn(pad, 'big', 'Attack', keyOf('attack'));
     tbtn(pad, 'mid', 'Next<br>piece', keyOf('equip'), { tap: true });
   } else if (pv && !ctf) {
-    if (!tag) tbtn(pad, 'big', 'Ult', keyOf('special'), { tap: true });
-    tbtn(pad, 'big', tag ? 'Tag<br>shot' : 'Shoot', keyOf('attack'));
+    if (!tag && !pvp.hr) tbtn(pad, 'big', 'Ult', keyOf('special'), { tap: true });
+    tbtn(pad, 'big', tag ? 'Tag<br>shot' : pvp.hr ? 'Use<br>item' : 'Shoot', keyOf('attack'), pvp.hr ? { tap: true } : undefined);
   }
   if (mode === 'world' || mode === 'story' || mode === 'train' || (pv && !kf)) {
     const h = hs();
@@ -7216,7 +7596,7 @@ function touchLayout() {
   }
   if (mode === 'world') tbtn(side, 'sm', '⚙', keyOf('equip'), { tap: true }).title = 'Equip';
   if (mode === 'world' || pv) tbtn(side, 'sm', '🗺', keyOf('map'), { tap: true }).title = 'Map';
-  if (mode === 'world' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'solo' || mode === 'coop' || (mode === 'race' && !raceCountdown())) tbtn(side, 'sm', mode === 'world' ? '🔥' : '↺', keyOf('reset'), { tap: true }).title = mode === 'world' ? 'Campfire' : mode === 'trial' ? 'Restart' : 'Checkpoint';
+  if ((pv && pvp.hr) || mode === 'world' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'solo' || mode === 'coop' || (mode === 'race' && !raceCountdown())) tbtn(side, 'sm', mode === 'world' ? '🔥' : '↺', keyOf('reset'), { tap: true }).title = mode === 'world' ? 'Campfire' : mode === 'trial' ? 'Restart' : 'Checkpoint';
   tbtn(side, 'sm', SET.mute ? '🔇' : '🔊', keyOf('mute'), { tap: true }).title = 'Mute';
   tbtn(side, 'sm', '?', keyOf('help'), { tap: true }).title = 'How to play';
   tbtn(side, 'sm', 'II', 'Escape', { tap: true }).title = 'Pause';
@@ -8955,14 +9335,14 @@ function renderSkins() {
   const s = achState(), owned = SKINS.filter(k => ownsSkin(k.id)).length;
   $('l-count').textContent = 'You own ' + owned + ' of ' + SKINS.length + ' skins. Earn them with gold medals in Time Trials. Tap one to preview it.';
   const grid = $('l-items'); grid.textContent = '';
-  const list = [...(ownsSkin('admin') ? [ADMIN_SKIN] : []), PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, ...SKINS];
+  const list = [...(ownsSkin('admin') ? [ADMIN_SKIN] : []), PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.checkered, ...SKINS];
   for (const k of list) {
-    const need = k === ADMIN_SKIN || k.story ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
+    const need = k === ADMIN_SKIN || k.story || k.race ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
     const eq = skinEq(k.id), wearing = own && Object.keys(eq).every(c => save.eq[c] === eq[c]);
     const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = k.cols[0];
     const t = document.createElement('b'); t.textContent = hidden && !own ? 'Secret skin' : k.n;
     const sm = document.createElement('small'); sm.style.color = own ? 'var(--mint)' : 'var(--dim)';
-    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : k.story ? 'Unlock: finish Chapter ' + k.story + ' of Story Mode' : 'Unlock: ' + need + ' gold medals';
+    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : k.story ? 'Unlock: finish Chapter ' + k.story + ' of Story Mode' : k.race ? 'Unlock: win a Hook Racing race on all 4 tracks' : 'Unlock: ' + need + ' gold medals';
     const strip = document.createElement('span'); strip.className = 'strip'; strip.style.background = 'linear-gradient(90deg, ' + k.cols.join(', ') + ')';
     b.append(t, sm, strip);
     b.setAttribute('aria-pressed', String(wearing));
