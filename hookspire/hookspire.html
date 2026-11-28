@@ -350,6 +350,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <div class="modes two">
         <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
         <button class="mode" id="m-story"><b>Story Mode</b><small>The Fallen Spire. The whole story, in five chapters. Play solo or with a friend.</small></button>
+        <button class="mode" id="m-dive"><b>Treasure Dive</b><small>10 underwater caves. Grab treasure and get back up before your air runs out. Solo or co-op.</small></button>
         <button class="mode" id="m-train" hidden><b>Training Arena</b><small>Spend Grit on upgrades and run drills to earn more.</small></button>
       </div>
     </div>
@@ -735,6 +736,41 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <button class="link" id="b-c-back">Back to menu</button>
   </section>
 
+  <section class="panel wide" id="scr-dive" hidden>
+    <div class="head-row"><h2>Treasure Dive</h2><span class="note" id="dv-pearls"></span></div>
+    <p>Dive into a cave full of treasure, grab what you can carry and bring it back up to your boat. Watch your air: bubble columns refill it, and so does the surface. Fish and eels knock treasure out of your hands, currents push you around, and the roof can cave in. Every dive is a new cave. Bank enough treasure to beat the level.</p>
+    <div id="dv-levels" class="snodes"></div>
+    <p class="note" id="dv-best"></p>
+    <div class="row"><button class="btn primary" id="b-dv-shop">Pearl Shop</button></div>
+    <div class="adm-sec">
+      <h3 style="color:var(--mint)">Co-op</h3>
+      <p class="note" id="dv-coop-msg"></p>
+      <div id="dv-coop-box" hidden style="display:grid;gap:8px">
+        <div class="code-box"><div><div class="label">Co-op code</div><div class="code" id="dv-code"></div></div><button class="btn" id="b-dv-copy">Copy code</button></div>
+        <div class="team" id="dv-team"></div>
+      </div>
+      <div class="row"><button class="btn" id="b-dv-host">Host co-op</button></div>
+      <div class="join" id="dv-join"><label for="dv-code-in">Join a friend's dive</label><input type="text" id="dv-code-in" maxlength="6" placeholder="Co-op code" autocomplete="off" spellcheck="false"><button class="btn" id="b-dv-join">Join</button></div>
+      <p class="err" id="dv-err" hidden></p>
+    </div>
+    <p class="note">Treasure turns into tokens when you bank it. Pearls are a new currency: spend them in the Pearl Shop on diving gear, pets and ocean items. Beat level 10 to unlock the Deep Diver skin.</p>
+    <button class="link" id="b-dv-back">Back to menu</button>
+  </section>
+
+  <section class="panel wide" id="scr-dshop" hidden>
+    <div class="head-row"><h2>Pearl Shop</h2><span class="note" id="ds-pearls"></span></div>
+    <div class="seg" id="ds-tabs"></div>
+    <div class="ablist" id="ds-list"></div>
+    <div class="row"><button class="btn primary" id="b-ds-back">Back</button></div>
+  </section>
+
+  <section class="panel" id="scr-dive-res" hidden>
+    <h2 id="dr-title"></h2>
+    <p id="dr-sub"></p>
+    <p class="note" id="dr-msg"></p>
+    <div class="row"><button class="btn primary" id="b-dr-next">Next level</button><button class="btn" id="b-dr-retry">Dive again</button><button class="btn" id="b-dr-map">Back to the levels</button></div>
+  </section>
+
   <section class="panel wide" id="scr-hr" hidden>
     <h2>Hook Racing</h2>
     <p>Race 3 laps around a looping track. Pass every gate in order: the next one glows green, and a checkered line marks the finish. Fly through orange boost rings, find the narrow shortcuts in the middle wall, and grab <b>?</b> boxes for items (press <kbd>E</kbd> to use one).</p>
@@ -1106,6 +1142,7 @@ const PALETTES = [
   { id: 'r_sand', n: 'Sand Racer', cols: ['#fff1c9', '#f0d58a', '#c49a5a', '#8a6a3a'], hat: 'racehelm', hc: '#f0d58a', rope: 'plain', rc: '#c49a5a', trail: 'dot', aura: 'glow', ac: '#f0d58a', glow: 8, race: 'hr_dunes' },
   { id: 'r_jungle', n: 'Jungle Racer', cols: ['#c8ff9e', '#5fd36b', '#2f8a3a', '#2f4a26'], hat: 'racehelm', hc: '#5fd36b', rope: 'plain', rc: '#8a6d52', trail: 'leaf', aura: 'orbit', ac: '#5fd36b', glow: 8, race: 'hr_jungle' },
   { id: 'r_crystal', n: 'Crystal Racer', cols: ['#ffffff', '#c7a8ff', '#7fd8ff', '#4a4068'], hat: 'racehelm', hc: '#c7a8ff', rope: 'glow', rc: '#c7a8ff', trail: 'star', aura: 'rainbowring', ac: '#c7a8ff', glow: 14, race: 'hr_crystal' },
+  { id: 'deepdiver', n: 'Deep Diver', cols: ['#ffd98a', '#d9a441', '#1f4f8a', '#0b1e3f'], hat: 'bubble', hc: '#d9a441', rope: 'chain', rc: '#d9a441', trail: 'ring', aura: 'tide', ac: '#5fd8ff', glow: 10, dive: true },
   { id: 'spireheart', n: 'Spireheart', cols: ['#ffe14a', '#5fd8ff', '#5fe3d0', '#ff8a3d', '#ffffff'], hat: 'spirecrown', hc: '#ffffff', rope: 'grad', rc: '#ffffff', trail: 'elements', aura: 'elements', ac: '#ffffff', glow: 18, story: 5 },
   { id: 'emberforged', n: 'Emberforged', cols: ['#fff1c9', '#ffb347', '#ff5a1f', '#3a1a12'], hat: 'forgehelm', hc: '#ffb347', rope: 'chain', rc: '#ff8a3d', trail: 'cinder', aura: 'magma', ac: '#ff8a3d', glow: 14, story: 4 },
   { id: 'tidecaller', n: 'Tidecaller', cols: ['#e8fffb', '#5fe3d0', '#1fa3b5', '#14456b'], hat: 'coralcrown', hc: '#ff8a7a', rope: 'glow', rc: '#5fe3d0', trail: 'ring', aura: 'tide', ac: '#5fe3d0', glow: 12, story: 3 },
@@ -1120,7 +1157,7 @@ for (const s of PALETTES) PAL_BY[s.id] = s;
 const SKINS = SKIN_ORDER.map(id => PAL_BY[id]);
 const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon', boltcrown: 'Bolt Crown', icecrown: 'Ice Crown', coralcrown: 'Coral Crown', glacier: 'Glacier Crown', forgehelm: 'Forge Helm', spirecrown: 'Spire Crown', racehelm: 'Racing Helmet' };
 const SKIN_BY = Object.create(null);
-for (const s of [...SKINS, PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, ...PALETTES.filter(p => p.race)]) {
+for (const s of [...SKINS, PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.deepdiver, ...PALETTES.filter(p => p.race)]) {
   SKIN_BY[s.id] = s;
   const base = { r: 5, ex: true, sk: s.id };
   ITEMS.push(Object.assign({ cat: 'hat', id: 'k_' + s.id + '_h', n: s.n + ' ' + HAT_NAMES[s.hat], k: s.hat, c: s.hc || s.cols[1], c2: s.cols[0] }, base));
@@ -1137,6 +1174,16 @@ const ADMIN_SKIN = { id: 'admin', n: 'Admin', cols: ['#ff1f3d', '#0b0b0f', '#ff1
   ITEMS.push(Object.assign({ cat: 'rope', id: 'k_admin_r', n: 'Glitch Rope', k: 'glitch', c: '#ff1f3d', cols }, base));
   ITEMS.push(Object.assign({ cat: 'trail', id: 'k_admin_t', n: 'Glitch Trail', k: 'glitch', cols }, base));
   ITEMS.push(Object.assign({ cat: 'aura', id: 'k_admin_a', n: 'Glitch Aura', k: 'glitch', c: '#ff1f3d', cols }, base)); }
+// ocean items, bought with Pearls in the Pearl Shop (never from the gacha)
+for (const [cat, id, n, pearl, p] of [
+  ['hat', 'o_pearlcrown', 'Pearl Crown', 30, { k: 'coralcrown', c: '#f3f0ff' }],
+  ['hat', 'o_helmet', 'Brass Diving Helmet', 40, { k: 'bubble', c: '#d9a441' }],
+  ['hat', 'o_starfish', 'Starfish', 20, { k: 'starfish', c: '#ff8a7a' }],
+  ['trail', 'o_bubbles', 'Bubble Stream', 20, { k: 'ring', cols: ['#e8fffb', '#8fe3ff', '#5fd8ff'] }],
+  ['trail', 'o_ink', 'Ink Cloud', 25, { k: 'dot', cols: ['#3a2a5a', '#6b4a9a', '#1b1631'] }],
+  ['aura', 'o_whirl', 'Whirlpool', 40, { k: 'gring', c: '#5fd8ff', cols: ['#0b1e3f', '#1fa3b5', '#5fd8ff', '#e8fffb'] }],
+  ['aura', 'o_jelly', 'Jelly Glow', 35, { k: 'pulse', c: '#ff7ad9' }],
+]) ITEMS.push(Object.assign({ cat, id, n, r: 4, ex: true, pearl }, p));
 const ITEM = Object.create(null);
 for (const it of ITEMS) ITEM[it.id] = it;
 ITEM.k_spireheart_c.fx = 'elements'; ITEM.k_spireheart_c.n = 'Spireheart Prism'; ITEM.k_spireheart_r.n = 'Spireheart Rope'; ITEM.k_spireheart_t.n = 'Spireheart Elements'; ITEM.k_spireheart_a.n = 'Spireheart Halo';
@@ -1171,7 +1218,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0, story: null, grit: null, hrCfg: null, hrBest: null, hrWins: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0, story: null, grit: null, hrCfg: null, hrBest: null, hrWins: null, dive: null, pet: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -1208,6 +1255,8 @@ try {
     if (s.hrCfg && typeof s.hrCfg === 'object') save.hrCfg = s.hrCfg;
     if (s.hrBest && typeof s.hrBest === 'object') save.hrBest = s.hrBest;
     if (s.hrWins && typeof s.hrWins === 'object') save.hrWins = s.hrWins;
+    if (s.dive && typeof s.dive === 'object') save.dive = s.dive;
+    if (typeof s.pet === 'string') save.pet = s.pet.slice(0, 20);
     if (typeof s.last === 'string' && /^m-[a-z]+$/.test(s.last)) save.last = s.last;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
@@ -1369,7 +1418,7 @@ function musicWant() {
   if (state === 'menu') return 'menu';
   if (mode === 'story') return story && story.L && story.L.goal === 'boss' ? 'boss' : 'story';
   if (mode === 'pvp') return 'pvp';
-  if (mode === 'world' || mode === 'trial' || mode === 'train') return 'world';
+  if (mode === 'world' || mode === 'trial' || mode === 'train' || mode === 'dive') return 'world';
   return 'climb';
 }
 function musicTick() {
@@ -1566,10 +1615,11 @@ addEventListener('keydown', (e0) => {
     if (save.adm && !e.repeat && (e.code === 'KeyG' || e.code === 'KeyF')) admToggle(e.code === 'KeyG' ? 'god' : 'fly');
     if (e.code === 'Escape' && (kfMenuOpen() || (pvp && pvp.chess && pvp.chess.picking))) { kfCloseMenu(); pvp.chess.picking = null; }
     else if (e.code === 'Escape' || e.code === 'KeyP') pause();
-    else if (mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train') {
+    else if (mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive') {
       if (mode === 'pvp' && pvp && pvp.chess) chessKey(e);
       else if (mode === 'story') { if (e.code === 'KeyR' && !e.repeat && story && !story.done) storyRespawn(); else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1); else if (e.code === 'Tab') openLoadout(); }
       else if (mode === 'trial') { if (e.code === 'KeyR' && !e.repeat && trial) startTrial(trial.n); }
+      else if (mode === 'dive') { if (e.code === 'KeyR' && !e.repeat && dive && !dive.done) { diveSurface(true); banner('Back to the boat', 'You dropped what you were carrying'); } else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1); else if (e.code === 'Tab') openLoadout(); }
       else if (mode === 'train') { if (e.code === 'KeyR' && !e.repeat) trainRespawn(); else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1); else if (e.code === 'Tab') openLoadout(); }
       else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
       else if (e.code === 'Tab') openLoadout();
@@ -1632,7 +1682,7 @@ function rayCircle(ox, oy, ux, uy, cx, cy, r) {
 // ---------- rope wrapping: the rope bends around corners it swings into ----------
 function ropeCorners(x0, y0, x1, y1) {
   const out = [];
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train') && hw) {
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive') && hw) {
     const vx0 = Math.floor(x0 / TS), vx1 = Math.ceil(x1 / TS), vy0 = Math.floor(y0 / TS), vy1 = Math.ceil(y1 / TS);
     if ((vx1 - vx0 + 1) * (vy1 - vy0 + 1) > 1600) return out;
     for (let vy = vy0; vy <= vy1; vy++) for (let vx = vx0; vx <= vx1; vx++) {
@@ -1653,7 +1703,7 @@ function ropeBlocked(ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
   if (d < 24) return false;
   const sx = ax + dx / d * 8, sy = ay + dy / d * 8; // skip the bit of rope right at the hook or corner
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train') && hw) return !wLos(sx, sy, bx, by);
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive') && hw) return !wLos(sx, sy, bx, by);
   return lineBlocked(sx, sy, bx, by, chunksBetween(Math.min(ay, by) - 60, Math.max(ay, by) + 60));
 }
 const triSide = (p, a, b) => (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
@@ -1937,7 +1987,7 @@ function burst(x, y, color, n, spd) {
 }
 let bannerTimer = 0;
 function banner(small, big, detail) {
-  const el = $(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' ? 'wbanner' : 'banner'); // the arena modes use the world HUD
+  const el = $(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive' ? 'wbanner' : 'banner'); // the arena modes use the world HUD
   el.textContent = '';
   const s = document.createElement('small'); s.textContent = small;
   el.append(s, document.createTextNode(big));
@@ -2086,7 +2136,7 @@ function syncPeers(dt) {
     const age = Math.min(0.15, Math.max(0, (now - pe.updatedAt) / 1000));
     const vx = clamp(num(pr.vx) || 0, -MAXV, MAXV), vy = clamp(num(pr.vy) || 0, -MAXV, MAXV);
     let s = peerState.get(pe.peer);
-    const wb = teamKind === 'world' || teamKind === 'pvp' || teamKind === 'story', WB = hw ? hw.wt * TS : WPX, HB = hw ? hw.ht * TS : HPX;
+    const wb = teamKind === 'world' || teamKind === 'pvp' || teamKind === 'story' || teamKind === 'dive', WB = hw ? hw.wt * TS : WPX, HB = hw ? hw.ht * TS : HPX;
     const tx = clamp(x + vx * age, 0, wb ? WB : W), ty = clamp(y + vy * age, wb ? 0 : SUMMIT_Y - 800, wb ? HB : 10);
     if (!s) { s = { id: pe.peer, rx: tx, ry: ty, hist: [], bots: [], trailAcc: 0 }; peerState.set(pe.peer, s); }
     s.tx = tx; s.ty = ty; s.vx = vx; s.vy = vy;
@@ -2164,6 +2214,7 @@ function sendPresence(dt) {
     }) : null;
   }
   if (teamKind === 'story') storyPresence(pr);
+  if (teamKind === 'dive') divePresence(pr);
   if (teamKind === 'world' || teamKind === 'pvp' || teamKind === 'story') pr.fx = (ab.active.invis > 0 ? 1 : 0) | (ab.active.shrink > 0 ? 2 : 0) | (ab.active.fly > 0 ? 4 : 0) | (ab.active.shield > 0 ? 8 : 0);
   if (teamKind === 'pvp') pvpPresence(pr);
   const kk = admKicks();
@@ -2268,7 +2319,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-train', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-hr', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-train', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-hr', 'scr-dive', 'scr-dshop', 'scr-dive-res', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -2355,7 +2406,7 @@ function toMenu() {
   ab.active = {}; ab.cd = {};
   kfCloseMenu();
   if (typeof sDlg !== 'undefined') { sDlg.lines = null; $('dlg').hidden = true; $('radio').hidden = true; }
-  story = null; storyHost = false; train = null;
+  story = null; storyHost = false; train = null; dive = null; diveHost = false;
   pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true; $('r-hint').hidden = true; $('k-hint').hidden = true; $('k-roster').hidden = true;
   trial = null; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false;
   toCheckpoint(0);
@@ -3162,6 +3213,14 @@ function drawHat(id, face) {
       ctx.fillStyle = '#f3f0ff'; ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8 + Math.sin(t * 3) * 3; ctx.beginPath(); ctx.arc(0, -18, 2.8, 0, 6.283); ctx.fill();
       break;
     }
+    case 'starfish': {
+      // a little starfish perched on your head
+      ctx.fillStyle = c; ctx.beginPath();
+      for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5 + Math.sin(t) * 0.05, r = k % 2 ? 2.6 : 6.4; ctx.lineTo(Math.cos(a) * r, -19 + Math.sin(a) * r); }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(-1, -20, 1.5, 1.5); ctx.fillRect(1.5, -18, 1.5, 1.5);
+      break;
+    }
     case 'racehelm': {
       // a racing helmet with a stripe and a dark visor
       ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0, -11, 7.8, Math.PI * 0.95, Math.PI * 2.05); ctx.fill();
@@ -3463,6 +3522,7 @@ function render(dt) {
   if (state === 'play') { emitTrail(me, dt, particles); P.trailAcc = me.trailAcc; }
   if (A) drawRopeW(P.x, P.y, A, rope.w, rope.L, save.eq.rope);
   drawClimber(me);
+  drawPet(dt);
   drawGrit();
 
   updateParticles(particles, dt);
@@ -4012,18 +4072,18 @@ function stepWorld(dt) {
   if (rope && !grabbing) detach();
   if (!rope && grabbing && P.stun <= 0 && wAim && wAim.valid && !(mode === 'pvp' && pvp && Date.now() < pvp.me.netUntil)) worldAttach(wAim);
   if (rope && !ropeAnchor()) detach();
-  const fly = ab.active.fly > 0, feather = ab.active.feather > 0, km = chessSpeed() * gSpd();
+  const fly = ab.active.fly > 0, feather = ab.active.feather > 0, km = chessSpeed() * gSpd() * (mode === 'dive' ? 1 + 0.08 * dUp('grapple') : 1);
   let ax = 0, ay = fly ? 0 : feather ? G * 0.3 : G;
   if (ab.active.flip > 0 && !fly) ay = -ay; // Gravity Flip
   if (fly && !rope) { ax = dir * 1700; ay += ((held('KeyS', 'ArrowDown') ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0)) * 1700; }
   else if (rope) ax = dir * SWING * km * (mode === 'pvp' && pvp && pvp.me.od > Date.now() ? 1.6 : 1);
   else if (!P.ground) ax = dir * (feather ? 1000 : AIR) * km;
   // water (Story Mode, the Sunken Ruins): you float up unless you swim; currents push, bubbles lift
-  const wk = mode === 'story' && story ? storyWaterAt(P.x, P.y) : 0;
+  const wk = mode === 'story' && story ? storyWaterAt(P.x, P.y) : mode === 'dive' && dive ? diveWaterAt(P.x, P.y) : 0;
   if (wk && !fly) {
     const up = (held('KeyS', 'ArrowDown') && !gbCharging() ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0);
-    ay = up ? up * 1250 : -140;
-    if (!rope) ax = dir * 1000;
+    ay = up ? up * 1250 * (mode === 'dive' ? 1 + 0.1 * dUp('fins') : 1) : -140;
+    if (!rope) ax = dir * 1000 * (mode === 'dive' ? 1 + 0.1 * dUp('fins') : 1);
     if (wk === 2) ax += 640; else if (wk === 3) ax -= 640; else if (wk === 4) ay -= 1500;
     if (!P.wet && Math.abs(P.vy) > 320) { burst(P.x, P.y, '#8fe3ff', 14, 220); sfx('jump', 0.4); }
   }
@@ -4392,11 +4452,13 @@ function updateWorldHud(dt) {
   if (mode === 'trial' && trial) trialHudFast();
   if (mode === 'story' && story) storyHudFast();
   if (mode === 'train' && train) trainHud();
+  if (mode === 'dive' && dive) diveHud();
   wHudT -= dt;
   if (wHudT > 0) return;
   wHudT = 0.4;
   if (mode === 'story' && story) storyHudSlow();
   else if (mode === 'train' && train) trainHudSlow();
+  else if (mode === 'dive' && dive) diveHudSlow();
   else if (mode === 'trial' && trial) {
     $('w-found').textContent = 'Falls ' + trial.deaths + (trState().best[trial.n] ? ' · Best ' + fmtTime(trState().best[trial.n]) : '');
     $('w-team').textContent = '';
@@ -4471,6 +4533,7 @@ function sceneKey() {
   if (mode === 'story' && story && story.L) return ['day', 'frost', 'ruins', 'volcano', 'storm'][story.L.ch.id - 1] || 'day';
   if (mode === 'pvp' && pvp) return pvp.hr ? (HR_SCENE[pvp.cfg.map] || 'day') : pvp.chess ? 'dusk' : pvp.ctf ? ({ run: 'desert', sky: 'day', forts: 'jungle' }[pvp.cfg.map] || 'day') : 'dusk';
   if (mode === 'train') return 'dusk';
+  if (mode === 'dive') return 'ruins';
   return 'day';
 }
 const hsh = (i) => { const v = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
@@ -4765,8 +4828,8 @@ function renderWorld(dt) {
   ctx.fillStyle = '#ff5a6e';
   for (const s of hw.shots) if (inView(s.x, s.y)) { ctx.beginPath(); ctx.arc(s.x, s.y, 5, 0, 6.283); ctx.fill(); }
   // teammates
-  if (teamKind === 'world' || teamKind === 'pvp' || teamKind === 'story') for (const s of peerState.values()) {
-    if (!s.playing || (mode === 'pvp' && !pvpPeerVisible(s)) || (mode === 'story' && (!story || !s.raw || s.raw.ss !== story.sid)) || mode === 'train') continue;
+  if (teamKind === 'world' || teamKind === 'pvp' || teamKind === 'story' || teamKind === 'dive') for (const s of peerState.values()) {
+    if (!s.playing || (mode === 'pvp' && !pvpPeerVisible(s)) || (mode === 'story' && (!story || !s.raw || s.raw.ss !== story.sid)) || (mode === 'dive' && (!dive || !s.raw || s.raw.ds !== dive.sid)) || mode === 'train') continue;
     const fx = s.fx || 0;
     const o = { x: s.rx, y: s.ry, vx: s.vx, vy: s.vy, base: s.c, eq: s.eq, anchor: s.a ? { x: s.a[0], y: s.a[1] } : null, label: s.n, face: (s.vx || 0) < 0 ? -1 : 1, hist: s.hist, trailAcc: s.trailAcc, alpha: fx & 1 ? (mode === 'pvp' ? 0.12 : 0.3) : 1, sc: fx & 2 ? 0.55 : 1, title: s.ti ? TITLE : '' };
     emitTrail(o, dt, particles); s.trailAcc = o.trailAcc;
@@ -4804,18 +4867,21 @@ function renderWorld(dt) {
   if (mode === 'trial' && trial) trialRender(dt);
   if (mode === 'story' && story) storyRender(dt);
   if (mode === 'train' && train) trainRender();
+  if (mode === 'dive' && dive) diveRender();
   if (mode !== 'pvp' || (pvp && pvp.me.alive)) {
     if (A) drawRopeW(P.x, P.y, A, rope.w, rope.L, ab.active.static > 0 ? 'r_bolt' : save.eq.rope);
     if (ab.active.flip > 0) { ctx.save(); ctx.translate(P.x, P.y); ctx.scale(1, -1); ctx.translate(-P.x, -P.y); drawClimber(me); ctx.restore(); } else drawClimber(me);
     if (ab.active.shield > 0) for (let k = 0; k < Math.max(1, ab.shieldHits || 1); k++) shieldBubble(P.x, P.y, curR() + k * 7);
     if (mode === 'pvp' && pvp) pvpMeOverlay();
     drawRewindGhost();
+    drawPet(dt);
   }
   drawForged();
   drawGrit();
   updateParticles(particles, dt);
   drawParticles(particles);
   if (mode === 'story' && story) storyOverlay();
+  if (mode === 'dive' && dive) diveOverlay();
 }
 function worldFrame(dt) {
   const sc = wScale();
@@ -4828,6 +4894,7 @@ function worldFrame(dt) {
     else if (mode === 'trial' && trial) trialTick(dt);
     else if (mode === 'story' && story) storyTick(dt);
     else if (mode === 'train' && train) trainTick(dt);
+    else if (mode === 'dive' && dive) diveTick(dt);
   } else { acc = 0; wAim = null; gt += dt; }
   if (mode === 'pvp' && pvp && (state === 'play' || (pvp.online && state !== 'menu'))) pvpTick(dt);
   sendPresence(dt);
@@ -7708,7 +7775,7 @@ function refreshLast() {
 document.querySelectorAll('#scr-menu .mode').forEach((el) => el.addEventListener('click', () => { if (/^m-(solo|coop|race|world|trial|pvp|tag|ctf|chess)$/.test(el.id)) { save.last = el.id; saveDirty = true; } }));
 $('m-last').addEventListener('click', () => { const src = save.last && document.getElementById(save.last); if (src) src.click(); });
 refreshLast();
-const BACKS = ['b-back-coop', 'b-back-start', 'b-back-race', 'b-lobby-leave', 'b-res-menu', 'b-sum-menu', 'b-set-back', 'g-back', 'l-back', 'b-w-back', 'b-p-back', 'b-g-back', 'b-c-back', 'b-h-back', 'b-k-back', 'b-p-leave', 'b-pr-menu', 'b-tr-back', 'b-ach-back', 'b-help-back', 'b-adm-back', 'b-trr-list'];
+const BACKS = ['b-back-coop', 'b-back-start', 'b-back-race', 'b-lobby-leave', 'b-res-menu', 'b-sum-menu', 'b-set-back', 'g-back', 'l-back', 'b-w-back', 'b-p-back', 'b-g-back', 'b-c-back', 'b-h-back', 'b-dv-back', 'b-k-back', 'b-p-leave', 'b-pr-menu', 'b-tr-back', 'b-ach-back', 'b-help-back', 'b-adm-back', 'b-trr-list'];
 function menuBack() {
   const sec = document.getElementById(current);
   const b = sec && BACKS.map(id => sec.querySelector('#' + id)).find(Boolean);
@@ -7760,7 +7827,7 @@ function touchSeen() { if (!touchUsed) { touchUsed = true; touchRefresh(); } }
 addEventListener('touchstart', touchSeen, { passive: true, capture: true });
 function snapAim() {
   // touch aim assist: snap to the nearest ring within a thumb's width of your finger
-  const R2 = 70, tower = !(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train') || !hw;
+  const R2 = 70, tower = !(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive') || !hw;
   let best = null, bd = R2;
   const consider = (x, y, toScreen) => {
     if (Math.hypot(x - P.x, y - P.y) > (tower ? RANGE * gRng() : curRange()) * 0.97) return;
@@ -7847,13 +7914,13 @@ function touchLayout() {
     if (!tag && !pvp.hr) tbtn(pad, 'big', 'Ult', keyOf('special'), { tap: true });
     tbtn(pad, 'big', tag ? 'Tag<br>shot' : pvp.hr ? 'Use<br>item' : 'Shoot', keyOf('attack'), pvp.hr ? { tap: true } : undefined);
   }
-  if (mode === 'world' || mode === 'story' || mode === 'train' || (pv && !kf)) {
+  if (mode === 'world' || mode === 'story' || mode === 'train' || mode === 'dive' || (pv && !kf)) {
     const h = hs();
     for (let i = 0; i < 5; i++) { const id = h.slots[i]; const b = tbtn(abl, 'ab', '<b>' + (i + 1) + '</b>' + (id ? ABIL[id].n.split(' ')[0] : '—'), 'Digit' + (i + 1), { tap: true }); if (!id) b.style.opacity = '.4'; }
   }
   if (mode === 'world') tbtn(side, 'sm', '⚙', keyOf('equip'), { tap: true }).title = 'Equip';
   if (mode === 'world' || pv) tbtn(side, 'sm', '🗺', keyOf('map'), { tap: true }).title = 'Map';
-  if ((pv && pvp.hr) || mode === 'world' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'solo' || mode === 'coop' || (mode === 'race' && !raceCountdown())) tbtn(side, 'sm', mode === 'world' ? '🔥' : '↺', keyOf('reset'), { tap: true }).title = mode === 'world' ? 'Campfire' : mode === 'trial' ? 'Restart' : 'Checkpoint';
+  if ((pv && pvp.hr) || mode === 'world' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive' || mode === 'solo' || mode === 'coop' || (mode === 'race' && !raceCountdown())) tbtn(side, 'sm', mode === 'world' ? '🔥' : '↺', keyOf('reset'), { tap: true }).title = mode === 'world' ? 'Campfire' : mode === 'trial' ? 'Restart' : 'Checkpoint';
   tbtn(side, 'sm', SET.mute ? '🔇' : '🔊', keyOf('mute'), { tap: true }).title = 'Mute';
   tbtn(side, 'sm', '?', keyOf('help'), { tap: true }).title = 'How to play';
   tbtn(side, 'sm', 'II', 'Escape', { tap: true }).title = 'Pause';
@@ -9464,6 +9531,416 @@ $('b-tr-code').addEventListener('click', () => {
 $('tr-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('b-tr-code').click(); });
 $('m-train').addEventListener('click', () => startTrain('arena'));
 
+
+// =================================================================
+// ---------- Treasure Dive: 10 underwater caves, Pearls, the Pearl Shop and pets ----------
+// =================================================================
+const DIVE_LEVELS = 10, DIVE_SURF = 6; // the water surface is at row 6
+const DUPS = [
+  ['tank', 'Air tank', 'Hold your breath 4 seconds longer per level.'],
+  ['fins', 'Fins', 'Swim 10% faster per level.'],
+  ['lamp', 'Lamp', 'See farther in the dark.'],
+  ['magnet', 'Treasure magnet', 'Pulls nearby treasure to you.'],
+  ['bag', 'Bigger bag', 'Carry 1 more piece of treasure per level.'],
+  ['grapple', 'Strong grapple', 'Swing harder underwater.'],
+];
+const PETS = [
+  { id: 'goldie', n: 'Goldie the fish', d: 'A little goldfish that swims beside you.', cost: 40 },
+  { id: 'jelly', n: 'Jelly', d: 'A glowing jellyfish that bobs along.', cost: 50 },
+  { id: 'pinch', n: 'Pinch the crab', d: 'A crab that scuttles through the air after you.', cost: 45 },
+  { id: 'shelly', n: 'Shelly the turtle', d: 'A slow, steady little sea turtle.', cost: 60 },
+];
+const TREASURE = { coin: { n: 'Gold coin', v: 2, c: '#ffd34d' }, gem: { n: 'Gem', v: 5, c: '#5fd8ff' }, chest: { n: 'Treasure chest', v: 12, c: '#d9a441' }, pearl: { n: 'Pearl', v: 0, c: '#f3f0ff' } };
+function dv() {
+  let d = save.dive;
+  if (!d || typeof d !== 'object') d = save.dive = {};
+  d.pearls = clampInt(d.pearls || 0, 0, 1e7);
+  if (!d.up || typeof d.up !== 'object') d.up = {};
+  for (const [k] of DUPS) d.up[k] = clampInt(d.up[k] || 0, 0, 5);
+  d.lv = clampInt(d.lv || 0, 0, DIVE_LEVELS); // levels beaten
+  if (!d.best || typeof d.best !== 'object') d.best = {};
+  if (!Array.isArray(d.pets)) d.pets = [];
+  return d;
+}
+const dUp = (k) => dv().up[k];
+const diveAirMax = () => 15 + 4 * dUp('tank');
+const diveBagMax = () => 3 + dUp('bag');
+const diveQuota = (L) => 20 + L * 10;
+let dive = null, diveHost = false, diveLast = 0;
+
+function buildDive(L, seed) {
+  const r = mulberry(seed * 7919 + L * 131), wt = 64, ht = 34 + L * 5, g = new Uint8Array(wt * ht);
+  const inb = (x, y) => x >= 0 && y >= 0 && x < wt && y < ht;
+  const get = (x, y) => inb(x, y) ? g[y * wt + x] : TMETAL;
+  const dig = (cx, cy, rad) => { for (let y = -rad; y <= rad; y++) for (let x = -rad; x <= rad; x++) if (x * x + y * y <= rad * rad + 1) { const X = cx + x, Y = cy + y; if (X > 1 && X < wt - 2 && Y > DIVE_SURF && Y < ht - 2) g[Y * wt + X] = TAIR; } };
+  for (let y = DIVE_SURF + 1; y < ht; y++) for (let x = 0; x < wt; x++) g[y * wt + x] = TROCK;
+  for (let x = 0; x < wt; x++) { g[x] = TROCK; g[wt + x] = TROCK; }
+  for (let y = 0; y < ht; y++) { g[y * wt] = TMETAL; g[y * wt + wt - 1] = TMETAL; }
+  for (let y = DIVE_SURF + 1; y < DIVE_SURF + 4; y++) for (let x = 2; x < wt - 2; x++) g[y * wt + x] = TAIR; // the open lagoon at the top
+  // tunnels winding down, and chambers along them
+  const chambers = [];
+  const walkers = 2 + (L > 4 ? 1 : 0);
+  for (let w = 0; w < walkers; w++) {
+    let x = 8 + Math.floor(r() * (wt - 16)), y = DIVE_SURF + 2, dir = r() < 0.5 ? -1 : 1;
+    while (y < ht - 4) {
+      dig(Math.round(x), Math.round(y), 2 + (r() < 0.3 ? 1 : 0));
+      if (r() < 0.07) { const rad = 3 + Math.floor(r() * 3); dig(Math.round(x), Math.round(y), rad); chambers.push({ x: Math.round(x), y: Math.round(y), rad }); }
+      if (r() < 0.12) dir = -dir;
+      x = clamp(x + dir * (0.6 + r() * 1.2), 4, wt - 5); y += 0.35 + r() * 0.5;
+    }
+    const rad = 4 + Math.floor(r() * 2); dig(Math.round(x), ht - 6, rad); chambers.push({ x: Math.round(x), y: ht - 6, rad });
+  }
+  // side passages linking the tunnels
+  for (let k = 0; k < 3 + L; k++) { const y = DIVE_SURF + 6 + Math.floor(r() * (ht - DIVE_SURF - 12)), x0 = 4 + Math.floor(r() * 20), x1 = x0 + 15 + Math.floor(r() * 25); for (let x = x0; x <= Math.min(wt - 5, x1); x++) dig(x, y + Math.round(Math.sin(x / 4) * 1.5), 1); }
+  const open = (x, y) => get(x, y) === TAIR;
+  const openCells = []; for (let y = DIVE_SURF + 2; y < ht - 2; y++) for (let x = 2; x < wt - 2; x++) if (open(x, y) && open(x, y - 1) && open(x + 1, y)) openCells.push([x, y]);
+  const px = (t) => t * TS + TS / 2;
+  // treasure: deeper is worth more
+  const items = []; let n = 0;
+  const count = 10 + L * 2;
+  for (let k = 0; k < count * 6 && n < count; k++) {
+    const [x, y] = openCells[Math.floor(r() * openCells.length)], depth = (y - DIVE_SURF) / (ht - DIVE_SURF);
+    if (items.some(q => Math.abs(q.tx - x) < 3 && Math.abs(q.ty - y) < 3) || depth < 0.12) continue;
+    const roll = r() + depth * 0.6;
+    const k2 = r() < 0.12 ? 'pearl' : roll > 1.15 ? 'chest' : roll > 0.75 ? 'gem' : 'coin';
+    items.push({ id: 't' + n, k: k2, tx: x, ty: y, x: px(x), y: px(y), home: true }); n++;
+  }
+  // bubble columns rise from vents on tunnel floors
+  const vents = [];
+  for (let k = 0; k < 400 && vents.length < 3 + Math.floor(L / 2); k++) {
+    const [x, y] = openCells[Math.floor(r() * openCells.length)];
+    if (get(x, y + 1) !== TROCK || y < DIVE_SURF + 6 || vents.some(v => Math.abs(v.tx - x) < 6)) continue;
+    let top = y; while (top > DIVE_SURF && open(x, top - 1)) top--;
+    vents.push({ tx: x, x: px(x), y: (y + 1) * TS, top: top * TS });
+  }
+  // currents in some chambers
+  const currents = chambers.filter(() => r() < 0.25 + L * 0.04).slice(0, 2 + Math.floor(L / 2)).map(c => ({ x0: (c.x - c.rad) * TS, x1: (c.x + c.rad + 1) * TS, y0: (c.y - c.rad) * TS, y1: (c.y + c.rad + 1) * TS, fx: (r() < 0.5 ? -1 : 1) * (450 + L * 40), fy: (r() - 0.5) * 300 }));
+  // fish (they only chase a little way from home) and eels (hiding in the walls)
+  const fish = [];
+  for (let k = 0; k < 3 + L && openCells.length; k++) { const [x, y] = openCells[Math.floor(r() * openCells.length)]; if (y < DIVE_SURF + 5) continue; fish.push({ hx: px(x), hy: px(y), x: px(x), y: px(y), ph: r() * 6.28, chase: false, cool: 0, k: r() < 0.5 ? 0 : 1 }); }
+  const eels = [];
+  if (L >= 3) for (let k = 0; k < 400 && eels.length < L - 2; k++) {
+    const [x, y] = openCells[Math.floor(r() * openCells.length)];
+    const side = get(x - 1, y) === TROCK ? -1 : get(x + 1, y) === TROCK ? 1 : 0;
+    if (!side || y < DIVE_SURF + 8 || eels.some(e => Math.hypot(e.hx - px(x), e.hy - px(y)) < 240)) continue;
+    eels.push({ hx: px(x) + side * 14, hy: px(y), x: px(x) + side * 14, y: px(y), dir: -side, out: 0, cool: 0 });
+  }
+  const img = document.createElement('canvas'); img.width = wt; img.height = ht;
+  { const ic = img.getContext('2d'), id2 = ic.createImageData(wt, ht);
+    for (let y = 0; y < ht; y++) for (let x = 0; x < wt; x++) { const v = g[y * wt + x], c = v === TAIR ? (y > DIVE_SURF ? [40, 110, 160] : [150, 200, 240]) : v === TMETAL ? [75, 91, 117] : [70, 80, 96]; const o = (y * wt + x) * 4; id2.data[o] = c[0]; id2.data[o + 1] = c[1]; id2.data[o + 2] = c[2]; id2.data[o + 3] = 255; }
+    ic.putImageData(id2, 0, 0); }
+  const pal = { n: 'Treasure Dive ' + L, top: '#7fc8b8', rock: '#4a5a6a', deep: '#2e3a4a' };
+  const dock = { x: px(6), y: DIVE_SURF * TS - PR - 2 };
+  for (let x = 3; x <= 9; x++) g[DIVE_SURF * wt + x] = TROCK; // the boat dock
+  return { name: 'Treasure Dive ' + L, L, img, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings: [], items, vents, currents, fish, eels, dock, start: dock,
+    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
+}
+const diveWaterAt = (x, y) => (dive && hw && y > DIVE_SURF * TS + 4 && !wSolid(Math.floor(x / TS), Math.floor(y / TS))) ? (diveVentAt(x, y) ? 4 : 1) : 0;
+function diveVentAt(x, y) { for (const v of hw.vents || []) if (Math.abs(x - v.x) < 22 && y < v.y && y > v.top) return true; return false; }
+function startDive(L, seed, coopSid) {
+  hw = buildDive(L, seed); mode = 'dive'; story = null; train = null; trial = null;
+  ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0;
+  dive = { L, seed, sid: coopSid || 0, air: diveAirMax(), bag: [], haul: 0, pearls: 0, got: new Set(), done: false, time: 0, outs: 0, rocks: [], rubble: [], caveT: 6, inv: 0, res: null };
+  detach(); P.x = hw.dock.x; P.y = hw.dock.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.inv = 0; P.stun = 0;
+  particles.length = 0; runHeight = 0;
+  const sc = wScale();
+  wcamX = clamp(P.x - cw / sc / 2, 0, Math.max(0, hw.wt * TS - cw / sc)); wcamY = clamp(P.y - ch / sc * 0.55, 0, Math.max(0, hw.ht * TS - ch / sc));
+  wRegion = hw.name; $('w-region').textContent = hw.name; regionT = gt;
+  state = 'play'; show(null);
+  $('hud').hidden = true; $('whud').hidden = false;
+  $('w-ult').hidden = true; $('w-mini').hidden = true; $('w-hint').hidden = true; $('p-hint').hidden = true;
+  $('t-hint').hidden = false; $('t-timer').hidden = false; $('w-hp').hidden = true; $('w-slots').hidden = !hs().ab.length;
+  buildSlots(); canvas.focus();
+  banner('Treasure Dive', 'Level ' + L, 'Bank ' + diveQuota(L) + ' worth of treasure at your boat. S dives, W swims up.');
+}
+function diveDrop(why) {
+  // lose one piece of what you're carrying; it sinks where you are
+  if (!dive.bag.length) return;
+  const it = dive.bag.pop(); it.x = P.x; it.y = P.y; it.home = false; it.drop = gt + 1.2; dive.got.delete(it.id);
+  burst(P.x, P.y, TREASURE[it.k].c, 12, 180);
+  if (why) banner(why, 'You dropped a ' + TREASURE[it.k].n.toLowerCase());
+}
+function diveHurt(fx, fy, why) {
+  if (dive.inv > 0 || ADM.god) return;
+  dive.inv = 1; sfx('hurt'); detach();
+  const dx = P.x - fx, dy = P.y - fy, d = Math.hypot(dx, dy) || 1; P.vx = dx / d * 420; P.vy = dy / d * 420;
+  diveDrop(why);
+}
+function diveSurface(lost) {
+  detach(); P.x = hw.dock.x; P.y = hw.dock.y; P.vx = 0; P.vy = 0; P.hist.length = 0; dive.air = diveAirMax();
+  if (lost) { for (const it of dive.bag) { it.home = true; dive.got.delete(it.id); } dive.bag = []; }
+}
+function diveTick(dt) {
+  const D = dive, c = hw; if (!D || D.done) return;
+  D.time += dt; D.inv -= dt;
+  // co-op: treasure your partner picked up disappears for you too, and their banked haul counts
+  let team = D.haul;
+  if (teamKind === 'dive' && D.sid) for (const s of peerState.values()) {
+    const r = s.raw; if (!r || r.ds !== D.sid) continue;
+    if (Array.isArray(r.dg)) for (const id of r.dg.slice(0, 80)) if (typeof id === 'string' && !D.got.has(id)) { const it = c.items.find(q => q.id === id); if (it && it.home) { D.got.add(id); it.taken = true; } }
+    team += clampInt(r.dh, 0, 9999);
+    if (r.dd === 1) { diveWin(true); return; }
+  }
+  D.team = team;
+  // air
+  const head = diveWaterAt(P.x, P.y - PR + 3);
+  if (head && !ADM.god) D.air = Math.min(diveAirMax(), D.air + dt * (head === 4 ? 3 : -1)); else D.air = Math.min(diveAirMax(), D.air + dt * 5);
+  if (head && Math.random() < dt * 3) particles.push({ k: 'ring', x: P.x + P.face * 6, y: P.y - 8, vx: (Math.random() - 0.5) * 20, vy: -60, life: 0.8, color: '#e8fffb' });
+  if (D.air <= 0) { D.outs++; sfx('hurt'); banner('Out of air!', 'Back to the boat', D.bag.length ? 'You lost what you were carrying.' : 'Bubble columns refill your air.'); diveSurface(true); return; }
+  // currents
+  for (const q of c.currents) if (P.x > q.x0 && P.x < q.x1 && P.y > q.y0 && P.y < q.y1 && !rope) { P.vx += q.fx * dt; P.vy += q.fy * dt; }
+  // treasure: pick up (magnet pulls it in), and bank it at the boat
+  const mag = dUp('magnet') ? 50 + 30 * dUp('magnet') : 0;
+  for (const it of c.items) {
+    if (it.taken || dive.bag.includes(it)) continue;
+    if (!it.home && it.drop < gt) { it.y = Math.min(it.y + 40 * dt, it.y + 40); if (wSolid(Math.floor(it.x / TS), Math.floor((it.y + 10) / TS))) it.y -= 40 * dt; }
+    const d = Math.hypot(P.x - it.x, P.y - it.y);
+    if (mag && d < mag && D.bag.length < diveBagMax()) { it.x += (P.x - it.x) * Math.min(1, dt * 4); it.y += (P.y - it.y) * Math.min(1, dt * 4); }
+    if (d < 34 && (!it.drop || it.drop < gt)) {
+      if (D.bag.length >= diveBagMax()) { if (gt - (D.fullT || 0) > 3) { D.fullT = gt; banner('Bag full', 'Take it up to your boat'); } continue; }
+      D.bag.push(it); D.got.add(it.id); sfx('pickup'); burst(it.x, it.y, TREASURE[it.k].c, 12, 180); presenceClock = 0;
+    }
+  }
+  for (const it of D.bag) { it.x = P.x; it.y = P.y - 26; }
+  if (D.bag.length && Math.hypot(P.x - c.dock.x, P.y - c.dock.y) < 90) {
+    let v = 0, pr = 0; for (const it of D.bag) { if (it.k === 'pearl') pr++; else v += TREASURE[it.k].v; it.taken = true; }
+    D.bag = []; D.haul += v; D.pearls += pr; sfx('capture'); presenceClock = 0;
+    banner('Banked', '+' + v + (pr ? ' · +' + pr + ' pearl' + (pr > 1 ? 's' : '') : ''), 'Level goal: ' + Math.min((D.team || 0) + v, 9999) + ' / ' + diveQuota(D.L));
+  }
+  // fish chase a short way, then swim home
+  for (const f of c.fish) {
+    f.ph += dt; f.cool -= dt;
+    const dp = Math.hypot(P.x - f.x, P.y - f.y), home = Math.hypot(f.x - f.hx, f.y - f.hy);
+    if (!f.chase && dp < 170 && head && f.cool <= 0) f.chase = true;
+    if (f.chase && (home > 260 || dp > 300)) { f.chase = false; f.cool = 2; }
+    const tx = f.chase ? P.x : f.hx + Math.cos(f.ph * 0.6) * 70, ty = f.chase ? P.y : f.hy + Math.sin(f.ph * 1.1) * 30, sp = f.chase ? 190 + D.L * 8 : 70;
+    const dx = tx - f.x, dy = ty - f.y, d = Math.hypot(dx, dy) || 1, nx = f.x + dx / d * sp * dt, ny = f.y + dy / d * sp * dt;
+    if (!wSolid(Math.floor(nx / TS), Math.floor(ny / TS)) && ny > DIVE_SURF * TS + 10) { f.x = nx; f.y = ny; }
+    f.face = dx < 0 ? -1 : 1;
+    if (dp < 30) { diveHurt(f.x, f.y, 'A fish bumped you!'); f.chase = false; f.cool = 2.5; }
+  }
+  // eels lunge out of the walls
+  for (const e of c.eels) {
+    e.cool -= dt;
+    const dp = Math.hypot(P.x - e.hx, P.y - e.hy);
+    if (e.out <= 0 && e.cool <= 0 && dp < 130) { e.out = 1.1; e.cool = 3; }
+    if (e.out > 0) { e.out -= dt; const k2 = Math.sin(Math.max(0, e.out) / 1.1 * Math.PI); e.x = e.hx + e.dir * 110 * k2; e.y = e.hy; if (Math.hypot(P.x - e.x, P.y - e.y) < 30) { diveHurt(e.x, e.y, 'An eel bit you!'); D.air = Math.max(0, D.air - 1.5); } } else { e.x = e.hx; e.y = e.hy; }
+  }
+  // cave-ins: dust, then rocks fall and pile up for a while
+  if (D.L >= 2) {
+    D.caveT -= dt;
+    if (D.caveT <= 0) {
+      D.caveT = Math.max(4, 9 - D.L * 0.5) + Math.random() * 3;
+      const tx = Math.floor((P.x + (Math.random() - 0.5) * 300) / TS); let ty = Math.floor(P.y / TS);
+      while (ty > DIVE_SURF + 1 && !wSolid(tx, ty - 1)) ty--;
+      if (wSolid(tx, ty - 1) && ty > DIVE_SURF + 1) D.rocks.push({ x: tx * TS + TS / 2, y: ty * TS + 10, vy: 0, warn: 1.1, tx });
+    }
+    for (let k = D.rocks.length - 1; k >= 0; k--) {
+      const q = D.rocks[k];
+      if (q.warn > 0) { q.warn -= dt; if (Math.random() < 0.5) particles.push({ k: 'dot', x: q.x + (Math.random() - 0.5) * 30, y: q.y, vx: 0, vy: 60, life: 0.6, color: '#8a7a6a' }); continue; }
+      q.vy = Math.min(q.vy + 900 * dt, 420); q.y += q.vy * dt;
+      if (Math.hypot(P.x - q.x, P.y - q.y) < 32) { diveHurt(q.x, q.y, 'Falling rocks!'); }
+      const ty = Math.floor((q.y + 16) / TS);
+      if (wSolid(q.tx, ty)) {
+        D.rocks.splice(k, 1); burst(q.x, q.y, '#8a7a6a', 14, 160);
+        const cy = ty - 1, i = cy * c.wt + q.tx;
+        if (c.g[i] === TAIR && !circleRect(P.x, P.y, PR + 2, q.tx * TS, cy * TS, TS, TS)) { c.g[i] = TROCK; D.rubble.push({ i, until: gt + 10 }); }
+      }
+    }
+    for (let k = D.rubble.length - 1; k >= 0; k--) { const q = D.rubble[k]; if (gt > q.until) { if (c.g[q.i] === TROCK) c.g[q.i] = TAIR; D.rubble.splice(k, 1); } }
+  }
+  if (D.team >= diveQuota(D.L)) diveWin(false);
+}
+function diveWin(fromPeer) {
+  const D = dive; if (D.done) return;
+  D.done = true; detach(); for (const k in keys) keys[k] = false; presenceClock = 0;
+  const d = dv(), L = D.L, first = d.lv < L;
+  const bonusP = 3 + L, tok = D.haul + (first ? 10 + L * 2 : 0);
+  d.pearls += D.pearls + bonusP;
+  if (first) d.lv = L;
+  const best = d.best[L] || 0; if (D.haul > best) d.best[L] = D.haul;
+  const extra = [];
+  if (L === DIVE_LEVELS && !ownsSkin('deepdiver')) { for (const iid of Object.values(skinEq('deepdiver'))) save.owned[iid] = Math.max(1, save.owned[iid] || 0); extra.push('New skin: Deep Diver!'); }
+  if (tok) addTokens(tok, P.x, P.y);
+  D.res = { tok, pearls: D.pearls + bonusP, first, extra, fromPeer };
+  writeSave(); sfx('win'); state = 'over';
+  banner('Level complete', 'Treasure Dive ' + L);
+  setTimeout(() => { if (dive && dive.done) showDiveResult(); }, 1400);
+}
+function showDiveResult() {
+  const D = dive, r = D.res, joiner = teamKind === 'dive' && !diveHost;
+  $('dr-title').textContent = 'Level ' + D.L + ' complete!';
+  $('dr-sub').textContent = 'You banked ' + D.haul + ' · +' + r.tok + ' tokens · +' + r.pearls + ' pearls · ' + fmtTime(D.time) + (D.outs ? ' · ran out of air ' + D.outs + 'x' : '') + (r.extra.length ? ' · ' + r.extra.join(' · ') : '');
+  $('dr-msg').textContent = joiner ? 'The host picks the next dive.' : D.L >= DIVE_LEVELS ? 'You beat the deepest cave!' : '';
+  $('b-dr-next').hidden = joiner || D.L >= DIVE_LEVELS; $('b-dr-retry').hidden = joiner;
+  show('scr-dive-res');
+}
+function diveRender() {
+  const c = hw, now = gt;
+  // the boat at the dock
+  const b = c.dock; ctx.fillStyle = '#8a5a3a'; ctx.beginPath(); ctx.moveTo(b.x - 70, b.y + PR + 2); ctx.lineTo(b.x + 70, b.y + PR + 2); ctx.lineTo(b.x + 50, b.y + PR + 26); ctx.lineTo(b.x - 50, b.y + PR + 26); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#e8e4f0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(b.x + 20, b.y + PR); ctx.lineTo(b.x + 20, b.y - 70); ctx.stroke();
+  ctx.fillStyle = '#ffd34d'; ctx.beginPath(); ctx.moveTo(b.x + 22, b.y - 68); ctx.lineTo(b.x + 60, b.y - 50); ctx.lineTo(b.x + 22, b.y - 34); ctx.closePath(); ctx.fill();
+  ctx.font = '600 13px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffd34d'; ctx.fillText('Bank treasure here', b.x, b.y - 80);
+  for (const v of c.vents) { ctx.strokeStyle = 'rgba(232,255,251,0.7)'; ctx.lineWidth = 1.5; for (let k = 0; k < 6; k++) { const yy = v.y - ((now * 90 + k * 37) % (v.y - v.top)); ctx.beginPath(); ctx.arc(v.x + Math.sin(now * 3 + k) * 6, yy, 3 + (k % 3), 0, 6.283); ctx.stroke(); } }
+  for (const q of c.currents) { ctx.strokeStyle = 'rgba(232,255,251,0.35)'; ctx.lineWidth = 2; for (let k = 0; k < 10; k++) { const yy = q.y0 + ((k * 53) % (q.y1 - q.y0)), xx = q.x0 + (((now * 140 * Math.sign(q.fx) + k * 71) % (q.x1 - q.x0)) + (q.x1 - q.x0)) % (q.x1 - q.x0); ctx.beginPath(); ctx.moveTo(xx, yy); ctx.lineTo(xx - Math.sign(q.fx) * 20, yy); ctx.stroke(); } }
+  for (const it of c.items) {
+    if (it.taken || dive.got.has(it.id) && !dive.bag.includes(it)) continue;
+    const T = TREASURE[it.k], y = it.y + (dive.bag.includes(it) ? 0 : Math.sin(now * 2 + it.x) * 3);
+    ctx.save(); ctx.translate(it.x, y); ctx.shadowBlur = 12; ctx.shadowColor = T.c; ctx.fillStyle = T.c;
+    if (it.k === 'coin') { ctx.beginPath(); ctx.arc(0, 0, 7, 0, 6.283); ctx.fill(); ctx.fillStyle = '#b8860b'; ctx.fillRect(-1.5, -4, 3, 8); }
+    else if (it.k === 'gem') { ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(8, -2); ctx.lineTo(0, 9); ctx.lineTo(-8, -2); ctx.closePath(); ctx.fill(); }
+    else if (it.k === 'chest') { ctx.fillRect(-12, -6, 24, 14); ctx.fillStyle = '#6b4a2a'; ctx.fillRect(-12, -9, 24, 5); ctx.fillStyle = '#ffd34d'; ctx.fillRect(-2, -3, 4, 5); }
+    else { ctx.beginPath(); ctx.arc(0, 0, 6, 0, 6.283); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillRect(-3, -3, 2, 2); }
+    ctx.restore();
+  }
+  for (const f of c.fish) {
+    ctx.save(); ctx.translate(f.x, f.y); ctx.scale(f.face || 1, 1);
+    ctx.fillStyle = f.chase ? '#ff7a5a' : f.k ? '#ffb347' : '#7fd8ff';
+    ctx.beginPath(); ctx.ellipse(0, 0, 16, 9, 0, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(-26, -9 + Math.sin(gt * 10) * 2); ctx.lineTo(-26, 9 + Math.sin(gt * 10) * 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#12101f'; ctx.beginPath(); ctx.arc(8, -2, 2.4, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
+  for (const e of c.eels) {
+    if (e.out <= 0) { ctx.fillStyle = 'rgba(255,230,120,' + (0.5 + 0.3 * Math.sin(gt * 3)) + ')'; ctx.fillRect(e.hx - 3, e.hy - 3, 2.5, 2.5); ctx.fillRect(e.hx + 2, e.hy - 3, 2.5, 2.5); continue; }
+    ctx.strokeStyle = '#3f6a3a'; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(e.hx, e.hy);
+    for (let k = 1; k <= 6; k++) { const f2 = k / 6; ctx.lineTo(e.hx + (e.x - e.hx) * f2, e.hy + Math.sin(gt * 12 + k) * 6 * (1 - f2)); }
+    ctx.stroke(); ctx.fillStyle = '#ffe58a'; ctx.beginPath(); ctx.arc(e.x, e.y - 3, 2.5, 0, 6.283); ctx.fill();
+  }
+  for (const q of dive.rocks) {
+    if (q.warn > 0) { ctx.strokeStyle = 'rgba(255,200,120,' + (0.4 + 0.4 * Math.sin(gt * 20)) + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(q.x - 14, q.y - 4); ctx.lineTo(q.x + 14, q.y - 4); ctx.stroke(); continue; }
+    ctx.fillStyle = '#7a6a5a'; ctx.beginPath(); for (let k = 0; k < 7; k++) { const a = k / 7 * 6.283, rr = 14 + (k % 2) * 4; ctx.lineTo(q.x + Math.cos(a) * rr, q.y + Math.sin(a) * rr); } ctx.closePath(); ctx.fill();
+  }
+}
+function diveOverlay() {
+  const c = hw, sc = wScale(), vw = cw / sc, vh = ch / sc, sy = DIVE_SURF * TS + 4;
+  // the water itself
+  ctx.fillStyle = 'rgba(20,90,140,0.32)'; ctx.fillRect(wcamX - 50, Math.max(sy, wcamY - 50), vw + 100, vh + 100);
+  ctx.strokeStyle = 'rgba(191,243,255,0.8)'; ctx.lineWidth = 3; ctx.beginPath();
+  for (let x = Math.floor(wcamX / 20) * 20 - 20; x < wcamX + vw + 40; x += 20) { const y = sy + Math.sin(x / 50 + gt * 2) * 4; if (x === Math.floor(wcamX / 20) * 20 - 20) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+  ctx.stroke();
+  // it gets darker the deeper you go; your lamp lights the way
+  const depth = clamp((P.y - sy) / (c.ht * TS - sy), 0, 1), dark = Math.min(0.96, depth * (0.55 + dive.L * 0.04));
+  if (dark > 0.05) {
+    const rad = 200 + 70 * dUp('lamp');
+    const g = ctx.createRadialGradient(P.x, P.y, rad * 0.35, P.x, P.y, rad);
+    g.addColorStop(0, 'rgba(4,10,24,0)'); g.addColorStop(1, 'rgba(4,10,24,' + dark + ')');
+    ctx.fillStyle = g; ctx.fillRect(wcamX - 50, wcamY - 50, vw + 100, vh + 100);
+  }
+  // your air and your bag, over your head
+  const AM = diveAirMax();
+  if (dive.air < AM - 0.05) {
+    const f = Math.max(0, dive.air / AM), n = 10;
+    for (let k = 0; k < n; k++) { const x = P.x - (n - 1) * 3.5 + k * 7, y = P.y - 40; ctx.strokeStyle = f < 0.3 ? '#ff8a7a' : '#e8fffb'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, 3, 0, 6.283); ctx.stroke(); if (k < Math.ceil(f * n)) { ctx.fillStyle = f < 0.3 ? 'rgba(255,138,122,0.8)' : 'rgba(143,227,255,0.8)'; ctx.fill(); } }
+  }
+}
+function diveHud() {
+  const D = dive, el = $('t-timer');
+  const txt = 'Dive ' + D.L + ' · banked ' + (D.team || D.haul) + ' / ' + diveQuota(D.L) + ' · bag ' + D.bag.length + '/' + diveBagMax();
+  if (el.textContent !== txt) el.textContent = txt;
+}
+function diveHudSlow() {
+  const D = dive, v = D.bag.reduce((a, it) => a + TREASURE[it.k].v, 0);
+  $('w-found').textContent = 'Air ' + Math.ceil(D.air) + 's · carrying ' + v + (D.bag.some(it => it.k === 'pearl') ? ' + pearls' : '') + ' · depth ' + Math.max(0, Math.round((P.y - DIVE_SURF * TS) / TS)) + ' m · R: back to the boat (you drop what you carry)';
+  if (teamKind === 'dive') renderWorldTeam($('w-team')); else $('w-team').textContent = '';
+}
+function divePresence(pr) {
+  if (diveHost && diveLast && dive) pr.dl = [dive.L, diveLast, dive.seed];
+  pr.dhs = diveHost ? 1 : 0;
+  if (dive && dive.sid) { pr.ds = dive.sid; pr.dg = [...dive.got].slice(0, 80); pr.dh = dive.haul; pr.dd = dive.done && !(dive.res && dive.res.fromPeer) ? 1 : 0; }
+}
+function diveLobbyTick() {
+  if (teamKind !== 'dive' || diveHost) return;
+  for (const s of peerState.values()) {
+    const dl = s.raw && s.raw.dl;
+    if (!Array.isArray(dl) || num(dl[0]) == null || num(dl[1]) == null || dl[1] === diveLast) continue;
+    if (dive && dive.sid === dl[1]) continue;
+    diveLast = dl[1]; startDive(clampInt(dl[0], 1, DIVE_LEVELS), clampInt(dl[2], 1, 1e9), dl[1]);
+  }
+  if (current === 'scr-dive') renderDiveMenu();
+}
+function divePick(L) {
+  const seed = 1 + Math.floor(Math.random() * 1e9);
+  if (teamKind === 'dive') { if (!diveHost) return; diveLast = Date.now() % 1e9; presenceClock = 0; startDive(L, seed, diveLast); }
+  else startDive(L, seed, 0);
+}
+function renderDiveMenu() {
+  const d = dv(), box = $('dv-levels'); box.textContent = '';
+  const inRoom = teamKind === 'dive';
+  for (let L = 1; L <= DIVE_LEVELS; L++) {
+    const open = L <= d.lv + 1, b = document.createElement('button'); b.type = 'button'; b.className = 'snode' + (open ? '' : ' locked');
+    const n = document.createElement('b'); n.textContent = 'Level ' + L;
+    const sm = document.createElement('small'); sm.textContent = open ? 'Goal ' + diveQuota(L) + (d.best[L] ? ' · best ' + d.best[L] : '') + (L <= d.lv ? ' · ✓' : '') : '🔒 beat level ' + (L - 1);
+    b.append(n, sm); b.disabled = !open || (inRoom && !diveHost);
+    if (open) b.addEventListener('click', () => divePick(L));
+    box.append(b);
+  }
+  $('dv-pearls').textContent = d.pearls + ' pearls';
+  $('dv-best').textContent = 'Levels beaten: ' + d.lv + ' of ' + DIVE_LEVELS + (ownsSkin('deepdiver') ? ' · Deep Diver skin unlocked!' : '');
+  $('dv-coop-box').hidden = !inRoom; $('dv-code').textContent = teamCode;
+  $('b-dv-host').hidden = inRoom || !roomApi; $('dv-join').hidden = inRoom || !roomApi;
+  $('dv-coop-msg').textContent = inRoom ? (diveHost ? 'You\'re the host: pick a level and your friends dive with you.' : 'The host picks the level. You\'ll join it automatically.') : 'Dive together: one of you hosts, the others join with the code. Treasure anyone banks counts for the whole team.';
+  if (inRoom) renderWorldTeam($('dv-team'));
+}
+// ----- the Pearl Shop: diving gear, pets and ocean items -----
+let dsTab = 'gear';
+function renderDiveShop() {
+  const d = dv(), list = $('ds-list'); list.textContent = '';
+  $('ds-pearls').textContent = d.pearls + ' pearls';
+  const tabs = $('ds-tabs'); tabs.textContent = '';
+  for (const [k, n] of [['gear', 'Diving gear'], ['pets', 'Pets'], ['items', 'Ocean items']]) { const b = document.createElement('button'); b.type = 'button'; b.textContent = n; b.setAttribute('aria-pressed', String(dsTab === k)); b.addEventListener('click', () => { dsTab = k; renderDiveShop(); }); tabs.append(b); }
+  const row = (title, desc, label, ok, fn) => {
+    const r = document.createElement('div'); r.className = 'abrow';
+    const tx = document.createElement('div'); tx.className = 'txt'; const b = document.createElement('b'); b.textContent = title; const sp = document.createElement('span'); sp.textContent = desc; tx.append(b, sp);
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn'; btn.textContent = label; btn.disabled = !ok; btn.addEventListener('click', fn);
+    r.append(tx, btn); list.append(r);
+  };
+  const buy = (cost, fn) => { const q = dv(); if (q.pearls < cost) return; q.pearls -= cost; fn(q); writeSave(); sfx('capture'); renderDiveShop(); };
+  if (dsTab === 'gear') for (const [k, n, desc] of DUPS) { const lv = d.up[k], cost = 5 * (lv + 1); row(n + ' · Lv ' + lv + ' / 5', desc, lv >= 5 ? 'Max' : 'Upgrade · ' + cost + ' pearls', lv < 5 && d.pearls >= cost, () => buy(cost, q => { q.up[k]++; })); }
+  else if (dsTab === 'pets') {
+    row('No pet', 'Nobody follows you around.', save.pet ? 'Choose' : 'Chosen', !!save.pet, () => { save.pet = null; writeSave(); renderDiveShop(); });
+    for (const p of PETS) { const own = d.pets.includes(p.id); row(p.n, p.d + ' Follows you in every mode.', own ? (save.pet === p.id ? 'With you' : 'Choose') : 'Buy · ' + p.cost + ' pearls', own ? save.pet !== p.id : d.pearls >= p.cost, () => { if (own) { save.pet = p.id; writeSave(); renderDiveShop(); } else buy(p.cost, q => { q.pets.push(p.id); save.pet = p.id; }); }); }
+  } else for (const it of ITEMS.filter(i => i.pearl)) { const own = !!save.owned[it.id]; row(it.n, CATS.find(c => c.id === it.cat).one + ' · equip it in your Locker', own ? 'Owned' : 'Buy · ' + it.pearl + ' pearls', !own && d.pearls >= it.pearl, () => buy(it.pearl, () => { save.owned[it.id] = 1; })); }
+}
+// ----- pets: they follow you everywhere -----
+const petPos = { x: 0, y: 0 };
+function drawPet(dt) {
+  if (!save.pet || !dv().pets.includes(save.pet)) return;
+  const tx = P.x - (P.face || 1) * 36, ty = P.y - 34 + Math.sin(gt * 3) * 5;
+  if (Math.hypot(petPos.x - tx, petPos.y - ty) > 600) { petPos.x = tx; petPos.y = ty; }
+  const k = Math.min(1, dt * 4); petPos.x += (tx - petPos.x) * k; petPos.y += (ty - petPos.y) * k;
+  const x = petPos.x, y = petPos.y, f = P.x >= x ? 1 : -1;
+  ctx.save(); ctx.translate(x, y); ctx.scale(f, 1);
+  if (save.pet === 'goldie') { ctx.fillStyle = '#ffb347'; ctx.beginPath(); ctx.ellipse(0, 0, 9, 6, 0, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(-15, -5 + Math.sin(gt * 12) * 2); ctx.lineTo(-15, 5 + Math.sin(gt * 12) * 2); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#12101f'; ctx.beginPath(); ctx.arc(4, -1.5, 1.6, 0, 6.283); ctx.fill(); }
+  else if (save.pet === 'jelly') { ctx.fillStyle = 'rgba(255,122,217,0.75)'; ctx.shadowBlur = 12; ctx.shadowColor = '#ff7ad9'; ctx.beginPath(); ctx.arc(0, 0, 8, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(255,122,217,0.6)'; ctx.lineWidth = 1.5; for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(k * 4, 0); ctx.quadraticCurveTo(k * 4 + Math.sin(gt * 4 + k) * 3, 7, k * 4, 13); ctx.stroke(); } }
+  else if (save.pet === 'pinch') { ctx.fillStyle = '#e0443a'; ctx.beginPath(); ctx.ellipse(0, 0, 9, 6, 0, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.arc(9, -6, 3.5, 0, 6.283); ctx.arc(-9, -6, 3.5, 0, 6.283); ctx.fill(); ctx.strokeStyle = '#e0443a'; ctx.lineWidth = 1.5; for (let k = -1; k <= 1; k += 2) for (let j = 0; j < 3; j++) { ctx.beginPath(); ctx.moveTo(k * 5, 3); ctx.lineTo(k * (9 + j * 2), 8 + Math.sin(gt * 14 + j) * 1.5); ctx.stroke(); } ctx.fillStyle = '#12101f'; ctx.fillRect(-3, -5, 2, 2); ctx.fillRect(1, -5, 2, 2); }
+  else if (save.pet === 'shelly') { ctx.fillStyle = '#5a8a3a'; ctx.beginPath(); ctx.ellipse(0, 0, 10, 7, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#8fd36b'; ctx.beginPath(); ctx.arc(11, -2, 3.5, 0, 6.283); ctx.fill(); ctx.fillRect(-8, 0, 4, 3); ctx.fillRect(5, 0, 4, 3); ctx.fillStyle = '#12101f'; ctx.fillRect(12, -3.5, 1.5, 1.5); }
+  ctx.restore();
+}
+$('m-dive').addEventListener('click', () => { renderDiveMenu(); $('dv-err').hidden = true; show('scr-dive'); });
+$('b-dv-back').addEventListener('click', () => { if (teamKind === 'dive') toMenu(); else show('scr-menu'); });
+$('b-dv-shop').addEventListener('click', () => { renderDiveShop(); show('scr-dshop'); });
+$('b-ds-back').addEventListener('click', () => { renderDiveMenu(); show('scr-dive'); });
+$('b-dr-next').addEventListener('click', () => { if (dive && dive.L < DIVE_LEVELS) divePick(dive.L + 1); });
+$('b-dr-retry').addEventListener('click', () => { if (dive) divePick(dive.L); });
+$('b-dr-map').addEventListener('click', () => { dive = null; state = 'menu'; mode = 'solo'; $('whud').hidden = true; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false; refreshMenu(); renderDiveMenu(); show('scr-dive'); });
+$('b-dv-host').addEventListener('click', async () => {
+  const err = $('dv-err'); err.hidden = true;
+  try { await joinRoom('dive', newCode()); diveHost = true; renderDiveMenu(); }
+  catch (e) { team = null; err.textContent = 'Could not open a co-op room. Try again in a moment.'; err.hidden = false; }
+});
+const tryDiveJoin = async () => {
+  const err = $('dv-err'); err.hidden = true;
+  const code = readCode($('dv-code-in'));
+  if (code.length < 4) { err.textContent = 'Codes are 5 letters and numbers.'; err.hidden = false; return; }
+  try { await joinRoom('dive', code); diveHost = false; diveLast = 0; renderDiveMenu(); }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join "' + code + '". Check the code and try again.'); err.hidden = false; }
+};
+$('b-dv-join').addEventListener('click', tryDiveJoin);
+$('dv-code-in').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryDiveJoin(); });
+$('b-dv-copy').addEventListener('click', () => copyCode($('b-dv-copy'), $('dv-code')));
+
 // =================================================================
 // ---------- Achievements and skins ----------
 // =================================================================
@@ -9611,14 +10088,14 @@ function renderSkins() {
   const s = achState(), owned = SKINS.filter(k => ownsSkin(k.id)).length;
   $('l-count').textContent = 'You own ' + owned + ' of ' + SKINS.length + ' skins. Earn them with gold medals in Time Trials. Tap one to preview it.';
   const grid = $('l-items'); grid.textContent = '';
-  const list = [...(ownsSkin('admin') ? [ADMIN_SKIN] : []), PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, ...PALETTES.filter(p => p.race), ...SKINS];
+  const list = [...(ownsSkin('admin') ? [ADMIN_SKIN] : []), PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.deepdiver, ...PALETTES.filter(p => p.race), ...SKINS];
   for (const k of list) {
-    const need = k === ADMIN_SKIN || k.story || k.race ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
+    const need = k === ADMIN_SKIN || k.story || k.race || k.dive ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
     const eq = skinEq(k.id), wearing = own && Object.keys(eq).every(c => save.eq[c] === eq[c]);
     const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = k.cols[0];
     const t = document.createElement('b'); t.textContent = hidden && !own ? 'Secret skin' : k.n;
     const sm = document.createElement('small'); sm.style.color = own ? 'var(--mint)' : 'var(--dim)';
-    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : k.story ? 'Unlock: finish Chapter ' + k.story + ' of Story Mode' : k.race ? 'Unlock: win a Hook Racing race on ' + ((HR_TRACKS.find(t => t.id === k.race) || {}).n || 'its track') : 'Unlock: ' + need + ' gold medals';
+    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : k.story ? 'Unlock: finish Chapter ' + k.story + ' of Story Mode' : k.dive ? 'Unlock: beat level 10 of Treasure Dive' : k.race ? 'Unlock: win a Hook Racing race on ' + ((HR_TRACKS.find(t => t.id === k.race) || {}).n || 'its track') : 'Unlock: ' + need + ' gold medals';
     const strip = document.createElement('span'); strip.className = 'strip'; strip.style.background = 'linear-gradient(90deg, ' + k.cols.join(', ') + ')';
     b.append(t, sm, strip);
     b.setAttribute('aria-pressed', String(wearing));
@@ -10262,7 +10739,7 @@ $('b-adm-tower').addEventListener('click', () => goTower($('adm-m').value));
 $('b-adm-summit').addEventListener('click', () => goTower(TOP_M));
 
 // ---------- loop ----------
-let last = performance.now(), acc = 0, storyLobbyT = 0;
+let last = performance.now(), acc = 0, storyLobbyT = 0, diveLobbyT = 0;
 function frame(ts) {
   const dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
   st = sharedTime();
@@ -10270,8 +10747,9 @@ function frame(ts) {
   touchTick(dt);
   admTick(dt);
   syncPeers(dt);
+  if (teamKind === 'dive') { diveLobbyT -= dt; if (diveLobbyT <= 0) { diveLobbyT = 0.3; diveLobbyTick(); } }
   if (teamKind === 'story') { storyLobbyT -= dt; if (storyLobbyT <= 0) { storyLobbyT = 0.3; storyLobbyTick(); } }
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
   const camX = (W - viewW()) / 2;
   mouse.wx = camX + mouse.sx / scale; mouse.wy = camY + mouse.sy / scale;
   if (state === 'play') {
