@@ -6533,13 +6533,13 @@ function hrTick(dt) {
   if (now > pvp.start + 1000 && ((rs.length && fins === rs.length) || (H.firstFin && now - H.firstFin > 30000) || now > pvp.start + 8 * 60000)) finishHr();
 }
 function hrBotTick(b, dt, now) {
-  if (!b.hr) { b.spd = { easy: 1.05, medium: 1.2, hard: 1.35 }[b.diff] || 1.2; b.hr = hrRacer(pvp.start); b.wp = 1; b.wpT = Math.max(now, pvp.start); } // the first waypoint ahead of the start line
+  if (!b.hr) { b.spd = { easy: 1.15, medium: 1.35, hard: 1.5 }[b.diff] || 1.35; b.hr = hrRacer(pvp.start); b.wp = 1; b.wpT = Math.max(now, pvp.start); } // the first waypoint ahead of the start line
   if (now < pvp.start || pvp.over) return;
   if (b.hr.fin || now < b.freezeUntil) { b.rope = null; if (now < b.freezeUntil) { b.vx = 0; b.vy = 0; return; } }
   const wps = hw.wps;
   let w = wps[b.wp % wps.length];
   if (!b.hr.fin) {
-    if (Math.hypot(w.x - b.x, w.y - b.y) < 130) { b.wp = (b.wp + 1) % wps.length; b.wpT = now; w = wps[b.wp]; }
+    if (Math.hypot(w.x - b.x, w.y - b.y) < 160) { b.wp = (b.wp + 1) % wps.length; b.wpT = now; w = wps[b.wp]; }
     else if (now - b.wpT > 6000) { burst(b.x, b.y, '#c7d2ff', 12, 160); b.x = w.x; b.y = w.y; b.vx = 0; b.vy = 0; b.rope = null; b.hist.length = 0; burst(w.x, w.y, '#c7d2ff', 12, 160); b.wp = (b.wp + 1) % wps.length; b.wpT = now; w = wps[b.wp]; } // stuck: back on the track
     b.target = w; botBrain(b, w, dt, now);
   }
