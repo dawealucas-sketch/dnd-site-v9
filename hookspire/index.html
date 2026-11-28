@@ -4522,11 +4522,11 @@ function sceneLayer(th, kind, col, p, cx, cy, base, near) {
   const i0 = Math.floor(-ox / SW) - 1, i1 = Math.floor((cw - ox) / SW) + 2;
   if (kind === 'peaks' || kind === 'volcano') {
     ctx.beginPath(); ctx.moveTo(0, ch);
-    for (let i = i0; i <= i1; i++) { const x = i * SW + ox, h = (near ? 70 : 140) + hsh(i * 3 + (near ? 9 : 1)) * (near ? 80 : 170); ctx.lineTo(x, by); ctx.lineTo(x + SW / 2, by - h); }
+    for (let i = i0; i <= i1; i++) { const x = i * SW + ox, h = (near ? 35 : 70) + hsh(i * 3 + (near ? 9 : 1)) * (near ? 45 : 100); ctx.lineTo(x, by); ctx.lineTo(x + SW / 2, by - h); }
     ctx.lineTo(cw + SW, by); ctx.lineTo(cw, ch); ctx.closePath(); ctx.fill();
-    if (th.snowcap && !near) { ctx.fillStyle = 'rgba(255,255,255,0.85)'; for (let i = i0; i <= i1; i++) { const x = i * SW + ox, h = 140 + hsh(i * 3 + 1) * 170; ctx.beginPath(); ctx.moveTo(x + SW / 2, by - h); ctx.lineTo(x + SW / 2 - SW * 0.14, by - h + h * 0.28); ctx.lineTo(x + SW / 2 + SW * 0.14, by - h + h * 0.28); ctx.closePath(); ctx.fill(); } }
+    if (th.snowcap && !near) { ctx.fillStyle = 'rgba(255,255,255,0.85)'; for (let i = i0; i <= i1; i++) { const x = i * SW + ox, h = 70 + hsh(i * 3 + 1) * 100; ctx.beginPath(); ctx.moveTo(x + SW / 2, by - h); ctx.lineTo(x + SW / 2 - SW * 0.14, by - h + h * 0.28); ctx.lineTo(x + SW / 2 + SW * 0.14, by - h + h * 0.28); ctx.closePath(); ctx.fill(); } }
     if (kind === 'volcano' && !near) {
-      const vx = cw * 0.28 + ox * 0.5, vh = ch * 0.42;
+      const vx = cw * 0.28 + ox * 0.5, vh = ch * 0.26;
       ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(vx - vh * 1.1, by); ctx.lineTo(vx - vh * 0.16, by - vh); ctx.lineTo(vx + vh * 0.16, by - vh); ctx.lineTo(vx + vh * 1.1, by); ctx.closePath(); ctx.fill();
       const gl = ctx.createRadialGradient(vx, by - vh, 4, vx, by - vh, vh * 0.35); gl.addColorStop(0, 'rgba(255,170,60,0.9)'); gl.addColorStop(1, 'rgba(255,90,31,0)');
       ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(vx, by - vh, vh * 0.35, 0, 6.283); ctx.fill();
@@ -4535,7 +4535,7 @@ function sceneLayer(th, kind, col, p, cx, cy, base, near) {
   }
   if (kind === 'city') {
     for (let i = i0; i <= i1; i++) {
-      const x = i * SW + ox, h = (near ? 60 : 120) + hsh(i * 5 + (near ? 2 : 0)) * (near ? 120 : 220), w = SW - 8;
+      const x = i * SW + ox, h = (near ? 30 : 70) + hsh(i * 5 + (near ? 2 : 0)) * (near ? 60 : 140), w = SW - 8;
       ctx.fillStyle = col; ctx.fillRect(x, by - h, w, h + ch);
       if (!near) for (let r = 0; r < h / 18 - 1; r++) for (let c = 0; c < 3; c++) { if (hsh(i * 31 + r * 7 + c) < 0.55) continue; ctx.fillStyle = hsh(i + r + c) > 0.5 ? 'rgba(255,61,242,0.55)' : 'rgba(61,242,255,0.55)'; ctx.fillRect(x + 8 + c * 18, by - h + 10 + r * 18, 8, 7); }
     }
@@ -4543,17 +4543,17 @@ function sceneLayer(th, kind, col, p, cx, cy, base, near) {
   }
   if (kind === 'castle') {
     for (let i = i0; i <= i1; i++) {
-      const x = i * SW + ox, h = (near ? 50 : 110) + hsh(i * 3 + (near ? 4 : 0)) * 90;
+      const x = i * SW + ox, h = (near ? 30 : 60) + hsh(i * 3 + (near ? 4 : 0)) * 60;
       ctx.fillStyle = col; ctx.fillRect(x, by - h, SW * 0.7, h + ch);
       for (let b = 0; b < 5; b++) ctx.fillRect(x + b * SW * 0.15, by - h - 10, SW * 0.08, 10); // battlements
-      if (!near && hsh(i + 11) > 0.4) { const tx = x + SW * 0.55, th2 = h + 60 + hsh(i) * 60; ctx.fillRect(tx, by - th2, 26, th2 + ch); ctx.beginPath(); ctx.moveTo(tx - 6, by - th2); ctx.lineTo(tx + 13, by - th2 - 40); ctx.lineTo(tx + 32, by - th2); ctx.closePath(); ctx.fill();
+      if (!near && hsh(i + 11) > 0.4) { const tx = x + SW * 0.55, th2 = h + 40 + hsh(i) * 40; ctx.fillRect(tx, by - th2, 26, th2 + ch); ctx.beginPath(); ctx.moveTo(tx - 6, by - th2); ctx.lineTo(tx + 13, by - th2 - 40); ctx.lineTo(tx + 32, by - th2); ctx.closePath(); ctx.fill();
         ctx.fillStyle = 'rgba(255,220,140,' + (0.35 + 0.25 * Math.sin(gt * 2 + i)) + ')'; ctx.fillRect(tx + 9, by - th2 + 20, 8, 12); }
     }
     return;
   }
   if (kind === 'cave') {
     for (let i = i0; i <= i1; i++) {
-      const x = i * SW + ox, h = (near ? 60 : 110) + hsh(i * 3 + (near ? 5 : 0)) * 120;
+      const x = i * SW + ox, h = (near ? 40 : 70) + hsh(i * 3 + (near ? 5 : 0)) * 80;
       ctx.fillStyle = col;
       ctx.beginPath(); ctx.moveTo(x, -10); ctx.lineTo(x + SW / 2, h * (near ? 0.9 : 1.2)); ctx.lineTo(x + SW, -10); ctx.closePath(); ctx.fill(); // stalactites
       ctx.beginPath(); ctx.moveTo(x, ch + 10); ctx.lineTo(x + SW / 2, by - h * 0.6); ctx.lineTo(x + SW, ch + 10); ctx.closePath(); ctx.fill(); // stalagmites
@@ -4587,8 +4587,8 @@ function drawScene(th, cx, cy, sx, onSpire) {
   if (th.flash && hsh(Math.floor(t * 0.7)) > 0.85 && (t * 0.7) % 1 < 0.06) { ctx.fillStyle = 'rgba(230,220,255,0.18)'; ctx.fillRect(0, 0, cw, ch); }
   drawSpire(sx != null ? sx : spireX(cx), ch * 0.98, ch * 0.84, th.spire, th.glow, t);
   if (onSpire) { onSpire(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; } // things on the Spire sit behind the hills
-  sceneLayer(th, th.kind, th.far, 0.05, cx, cy, 0.7, false);
-  sceneLayer(th, th.kind, th.mid, 0.14, cx, cy, 0.84, true);
+  sceneLayer(th, th.kind, th.far, 0.05, cx, cy, 0.83, false);
+  sceneLayer(th, th.kind, th.mid, 0.14, cx, cy, 0.94, true);
   if (th.parts) for (let k = 0; k < 26; k++) {
     const a = hsh(k), b = hsh(k + 40), c = hsh(k + 80);
     if (th.parts === 'snow') { const x = ((a * cw + t * 12 * (b + 0.5) - cx * 0.06) % cw + cw) % cw, y = (b * ch + t * 28 * (0.5 + c)) % ch; ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.arc(x, y, 1.5 + c * 2, 0, 6.283); ctx.fill(); }
@@ -4605,7 +4605,7 @@ function renderMenuScene(dt) {
   const cx = gt * 25, wide = cw > 1000, side = (cw - 680) / 4; // on wide screens the Spire stands in the margin beside the menu panel
   const sx = wide ? cw - Math.max(130, side) : cw * 0.8;
   const k = Math.max(0.3, Math.min(cw, ch) / 1900); // small: far away on the Spire's wall
-  const h = ch * 0.84, by = ch * 0.98, w = h * 0.11, N = 13, seg = 0.95, cyc = N * seg + 2.2, tc = gt % cyc;
+  const h = ch * 0.84, by = ch * 0.98, w = h * 0.11, N = 14, seg = 0.95, cyc = N * seg + 2.2, tc = gt % cyc;
   const ring = (i) => { const f = 0.06 + i * 0.07, ww = w - w * 0.65 * f; return { x: sx + (i % 2 ? 1 : -1) * (ww + 6), y: by - h * 0.9 * f }; }; // rings right on the tower's wall
   const L = Math.max(14, ch * 0.022), top = { x: sx, y: by - h * 0.92 };
   const hang = (r) => ({ x: r.x, y: r.y + L });
