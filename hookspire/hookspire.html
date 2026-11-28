@@ -352,6 +352,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
         <button class="mode" id="m-story"><b>Story Mode</b><small>The Fallen Spire. The whole story, in five chapters. Play solo or with a friend.</small></button>
         <button class="mode" id="m-dive"><b>Treasure Dive</b><small>10 underwater caves. Grab treasure and get back up before your air runs out. Solo or co-op.</small></button>
+        <button class="mode" id="m-dshop"><b>🐚 Pearl Shop</b><small>Spend pearls from Treasure Dive on diving gear, pets that follow you everywhere, and ocean items.</small></button>
         <button class="mode" id="m-train" hidden><b>Training Arena</b><small>Spend Grit on upgrades and run drills to earn more.</small></button>
       </div>
     </div>
@@ -741,9 +742,12 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   <section class="panel wide" id="scr-dive" hidden>
     <div class="head-row"><h2>Treasure Dive</h2><span class="note" id="dv-pearls"></span></div>
     <p>Dive into a cave full of treasure, grab what you can carry and bring it back up to your boat. Watch your air: bubble columns refill it, and so does the surface. Fish and eels knock treasure out of your hands, currents push you around, and the roof can cave in. Every dive is a new cave. Bank enough treasure to beat the level.</p>
+    <div class="shopcard" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;margin:10px 0;border:2px solid var(--mint);border-radius:12px;background:rgba(95,216,255,0.10)">
+      <div><b style="font-size:1.25em">🐚 Pearl Shop</b><br><span class="note" id="dv-shop-sum">Spend pearls on diving gear, pets and ocean hats, trails and auras.</span></div>
+      <button class="btn primary" id="b-dv-shop" style="font-size:1.1em;padding:12px 22px">Open the Pearl Shop</button>
+    </div>
     <div id="dv-levels" class="snodes"></div>
     <p class="note" id="dv-best"></p>
-    <div class="row"><button class="btn primary" id="b-dv-shop">Pearl Shop</button></div>
     <div class="adm-sec">
       <h3 style="color:var(--mint)">Co-op</h3>
       <p class="note" id="dv-coop-msg"></p>
@@ -770,7 +774,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <h2 id="dr-title"></h2>
     <p id="dr-sub"></p>
     <p class="note" id="dr-msg"></p>
-    <div class="row"><button class="btn primary" id="b-dr-next">Next level</button><button class="btn" id="b-dr-retry">Dive again</button><button class="btn" id="b-dr-map">Back to the levels</button></div>
+    <div class="row"><button class="btn primary" id="b-dr-next">Next level</button><button class="btn" id="b-dr-retry">Dive again</button><button class="btn" id="b-dr-shop">🐚 Pearl Shop</button><button class="btn" id="b-dr-map">Back to the levels</button></div>
   </section>
 
   <section class="panel wide" id="scr-duel" hidden>
@@ -940,6 +944,10 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <div class="row">
           <input class="adm-in" type="number" id="adm-grit" min="0" max="9999999" value="500" aria-label="Grit">
           <button class="btn" id="b-adm-gadd">Add Grit</button><button class="btn" id="b-adm-gset">Set Grit</button><button class="btn" id="b-adm-gall">Grit Blast, arena + max upgrades</button>
+        </div>
+        <div class="row">
+          <input class="adm-in" type="number" id="adm-pearl" min="0" max="9999999" value="500" aria-label="Pearls">
+          <button class="btn" id="b-adm-padd">Add pearls</button><button class="btn" id="b-adm-pset">Set pearls</button>
         </div>
         <div class="seg small">
           <button type="button" id="b-adm-items">All items and skins</button>
@@ -9779,8 +9787,8 @@ function diveTick(dt) {
   for (const e of c.eels) {
     e.cool -= dt;
     const dp = Math.hypot(P.x - e.hx, P.y - e.hy);
-    if (e.out <= 0 && e.cool <= 0 && dp < 130) { e.out = 1.1; e.cool = 3; }
-    if (e.out > 0) { e.out -= dt; const k2 = Math.sin(Math.max(0, e.out) / 1.1 * Math.PI); e.x = e.hx + e.dir * 110 * k2; e.y = e.hy; if (Math.hypot(P.x - e.x, P.y - e.y) < 30) { diveHurt(e.x, e.y, 'An eel bit you!'); D.air = Math.max(0, D.air - 1.5); } } else { e.x = e.hx; e.y = e.hy; }
+    if (e.out <= 0 && e.cool <= 0 && (dp < 210 || Math.random() < dt * 0.5)) { e.out = 1.5; e.cool = 1.2 + Math.random() * 0.8; }
+    if (e.out > 0) { e.out -= dt; const k2 = Math.sin(Math.max(0, e.out) / 1.5 * Math.PI); e.x = e.hx + e.dir * 110 * k2; e.y = e.hy; if (Math.hypot(P.x - e.x, P.y - e.y) < 30) { diveHurt(e.x, e.y, 'An eel bit you!'); D.air = Math.max(0, D.air - 1.5); } } else { e.x = e.hx; e.y = e.hy; }
   }
   // cave-ins: dust, then rocks fall and pile up for a while
   if (D.L >= 2) {
@@ -9933,6 +9941,7 @@ function renderDiveMenu() {
     box.append(b);
   }
   $('dv-pearls').textContent = d.pearls + ' pearls';
+  $('dv-shop-sum').textContent = 'You have ' + d.pearls + ' pearl' + (d.pearls === 1 ? '' : 's') + '. Spend them on diving gear, pets and ocean hats, trails and auras.';
   $('dv-best').textContent = 'Levels beaten: ' + d.lv + ' of ' + DIVE_LEVELS + (ownsSkin('deepdiver') ? ' · Deep Diver skin unlocked!' : '');
   $('dv-coop-box').hidden = !inRoom; $('dv-code').textContent = teamCode;
   $('b-dv-host').hidden = inRoom || !roomApi; $('dv-join').hidden = inRoom || !roomApi;
@@ -9976,8 +9985,12 @@ function drawPet(dt) {
 }
 $('m-dive').addEventListener('click', () => { renderDiveMenu(); $('dv-err').hidden = true; show('scr-dive'); });
 $('b-dv-back').addEventListener('click', () => { if (teamKind === 'dive') toMenu(); else show('scr-menu'); });
-$('b-dv-shop').addEventListener('click', () => { renderDiveShop(); show('scr-dshop'); });
-$('b-ds-back').addEventListener('click', () => { renderDiveMenu(); show('scr-dive'); });
+let dsFrom = 'scr-dive';
+const openDiveShop = (from) => { dsFrom = from; renderDiveShop(); show('scr-dshop'); };
+$('b-dv-shop').addEventListener('click', () => openDiveShop('scr-dive'));
+$('m-dshop').addEventListener('click', () => openDiveShop('scr-menu'));
+$('b-dr-shop').addEventListener('click', () => openDiveShop('scr-dive-res'));
+$('b-ds-back').addEventListener('click', () => { if (dsFrom === 'scr-menu') { refreshMenu(); show('scr-menu'); } else if (dsFrom === 'scr-dive-res' && dive && dive.res) show('scr-dive-res'); else { renderDiveMenu(); show('scr-dive'); } });
 $('b-dr-next').addEventListener('click', () => { if (dive && dive.L < DIVE_LEVELS) divePick(dive.L + 1); });
 $('b-dr-retry').addEventListener('click', () => { if (dive) divePick(dive.L); });
 $('b-dr-map').addEventListener('click', () => { dive = null; state = 'menu'; mode = 'solo'; $('whud').hidden = true; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false; refreshMenu(); renderDiveMenu(); show('scr-dive'); });
@@ -11112,6 +11125,9 @@ function giveGrit() {
   const g = gs(); g.atk = 1; g.arena = 1; g.sec.drill = 1; g.sec.relic = 1; g.sec.code = 1;
   for (const [k] of GSTATS) g.up[k] = 15;
 }
+const pearlIn = () => clampInt($('adm-pearl').value, 0, 9999999);
+$('b-adm-padd').addEventListener('click', () => { const d = dv(); d.pearls = Math.min(9999999, d.pearls + pearlIn()); admDone('Pearls: ' + d.pearls); });
+$('b-adm-pset').addEventListener('click', () => { const d = dv(); d.pearls = pearlIn(); admDone('Pearls: ' + d.pearls); });
 $('b-adm-gadd').addEventListener('click', () => { const g = gs(); g.g = Math.min(9999999, g.g + gritIn()); admDone('Grit: ' + g.g); });
 $('b-adm-gset').addEventListener('click', () => { const g = gs(); g.g = gritIn(); admDone('Grit: ' + g.g); });
 $('b-adm-gall').addEventListener('click', () => { giveGrit(); admDone('Grit Blast unlocked, the Training Arena is open, the level cap is 15 and every upgrade is maxed.'); });
