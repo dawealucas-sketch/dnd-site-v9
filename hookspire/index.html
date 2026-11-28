@@ -54,6 +54,27 @@ body { background: var(--night); color: var(--ink); font-family: var(--ui); font
 #banner.show, #wbanner.show { opacity: 1; }
 
 /* Overlay */
+#overlay.main { place-items: center start; background: linear-gradient(90deg, rgba(8,6,18,.85) 0%, rgba(8,6,18,.55) 32%, rgba(8,6,18,0) 62%); }
+.mainmenu { display: grid; gap: clamp(18px, 4vh, 34px); align-content: center; padding: 10px clamp(8px, 5vw, 72px); }
+.mainmenu .logo { font-size: clamp(52px, 10vw, 96px); text-shadow: 0 4px 24px rgba(0,0,0,.5); }
+.mm-list { display: grid; gap: 2px; justify-items: start; }
+.mm-item { font-family: var(--display); font-size: clamp(26px, 4.2vw, 40px); letter-spacing: .02em; color: #f3ecdf; background: none; border: 0; padding: 4px 0; cursor: pointer; text-align: left; text-shadow: 0 2px 12px rgba(0,0,0,.6); transition: color .15s, transform .15s; }
+.mm-item:hover, .mm-item:focus-visible { color: var(--rope); transform: translateX(12px); outline: none; }
+.mm-item:hover::before, .mm-item:focus-visible::before { content: '▸ '; }
+.mm-cont { font-size: clamp(18px, 2.6vw, 24px); color: var(--mint); }
+.mm-foot { margin: 0; color: var(--dim); font-size: 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.pcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; }
+.pcols .msec { align-content: start; }
+.mainmenu { justify-self: start; }
+.pcols .modes, #scr-coll .modes { grid-template-columns: 1fr; gap: 6px; }
+#scr-coll .modes.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#scr-play .mode, #scr-coll .mode { display: flex; align-items: center; gap: 10px; padding: 11px 14px; }
+#scr-play .mode small, #scr-coll .mode small { display: none; }
+.mode .mi { font-style: normal; font-size: 20px; width: 26px; text-align: center; }
+.pdesc { margin: 0; box-sizing: border-box; width: 100%; min-height: 2.8em; color: var(--dim); font-size: 14px; padding: 10px 14px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
+.pdesc b { color: var(--ink); }
+@media (max-width: 720px) { .pcols { grid-template-columns: 1fr; } }
+@media (max-height: 520px) { .mainmenu { gap: 10px; } .mainmenu .logo { font-size: 44px; } .mm-item { font-size: 22px; padding: 2px 0; } .mm-cont { font-size: 16px; } }
 #overlay { position: fixed; inset: 0; display: grid; place-items: center; overflow-y: auto; background: radial-gradient(ellipse at 50% 40%, rgba(18,15,36,.2), rgba(8,6,18,.65)); padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .panel { width: min(600px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 26px clamp(18px, 4vw, 32px); display: grid; gap: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.45); backdrop-filter: blur(6px); }
 .panel.wide { width: min(880px, 100%); }
@@ -344,54 +365,73 @@ body.touch #ed-tip { display: none; }
   <div class="hint" id="w-hint"><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump · <b>S</b> let out · <b>A / D</b> swing · <b>1–5</b> abilities · <b>Tab</b> equip · <b>M</b> map · <b>R</b> campfire · <b>Esc</b> pause</div>
 </div>
 
-<div id="overlay">
-  <section class="panel" id="scr-menu">
-    <div class="head-row">
-      <h1 class="logo" id="m-logo">Hook<span>spire</span></h1>
-      <span class="tok"><span class="coin"></span><span id="m-tokens">0</span> tokens</span>
+<div id="overlay" class="main">
+  <section class="mainmenu" id="scr-menu">
+    <h1 class="logo" id="m-logo">Hook<span>spire</span></h1>
+    <nav class="mm-list" aria-label="Main menu">
+      <button class="mm-item mm-cont" id="m-last" hidden></button>
+      <button class="mm-item" id="mm-play">Play</button>
+      <button class="mm-item" id="mm-coll">Shop &amp; Collection</button>
+      <button class="mm-item" id="mm-prof">Profile</button>
+      <button class="mm-item" id="b-settings">Settings</button>
+      <button class="mm-item" id="b-help">How to Play</button>
+    </nav>
+    <p class="mm-foot"><span class="tok"><span class="coin"></span><span id="m-tokens">0</span> tokens</span> <span id="mm-who"></span></p>
+  </section>
+
+  <section class="panel wide" id="scr-play" hidden>
+    <div class="head-row"><h2>Play</h2><button class="link" id="b-pl-back">Back</button></div>
+    <div class="pcols">
+      <div class="msec"><span class="label">Climb</span>
+        <div class="modes">
+          <button class="mode" id="m-solo"><i class="mi" aria-hidden="true">🧗</i><b>Climb</b><small>Reach the summit at 780 m. Checkpoints every 60 m.</small></button>
+          <button class="mode" id="m-coop"><i class="mi" aria-hidden="true">🤝</i><b>Co-op Climb</b><small>Climb with friends and hook onto each other.</small></button>
+          <button class="mode" id="m-race"><i class="mi" aria-hidden="true">🏁</i><b>Race</b><small>Race bots and friends to a height or against the clock.</small></button>
+          <button class="mode" id="m-trial"><i class="mi" aria-hidden="true">⏱️</i><b>Time Trials</b><small>30 courses against the clock. Gold medals unlock skins.</small></button>
+        </div>
+      </div>
+      <div class="msec"><span class="label">Explore</span>
+        <div class="modes">
+          <button class="mode" id="m-world"><i class="mi" aria-hidden="true">🌍</i><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
+          <button class="mode" id="m-story"><i class="mi" aria-hidden="true">📖</i><b>Story Mode</b><small>The Fallen Spire. The whole story, in five chapters. Play solo or with a friend.</small></button>
+          <button class="mode" id="m-dive"><i class="mi" aria-hidden="true">🤿</i><b>Treasure Dive</b><small>10 underwater caves. Grab treasure and get back up before your air runs out. Solo or co-op.</small></button>
+          <button class="mode" id="m-bld"><i class="mi" aria-hidden="true">🧱</i><b>Level Builder</b><small>Build your own levels with blocks, rings, hazards and coins. Play them, share them with a code, or build together online.</small></button>
+          <button class="mode" id="m-train" hidden><i class="mi" aria-hidden="true">💪</i><b>Training Arena</b><small>Spend Grit on upgrades and run drills to earn more.</small></button>
+        </div>
+      </div>
+      <div class="msec"><span class="label">Battle</span>
+        <div class="modes">
+          <button class="mode" id="m-pvp"><i class="mi" aria-hidden="true">💥</i><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
+          <button class="mode" id="m-duel"><i class="mi" aria-hidden="true">🗡️</i><b>Duel Arena</b><small>1 vs 1 sword fights, best of 5 rounds. Every round changes the arena. Win to unlock new swords.</small></button>
+          <button class="mode" id="m-tag"><i class="mi" aria-hidden="true">🏷️</i><b>Hook Tag</b><small>Tag or be tagged. Classic or Infection, with bots or friends.</small></button>
+          <button class="mode" id="m-ctf"><i class="mi" aria-hidden="true">🚩</i><b>Capture the Flag</b><small>Red vs Blue. Steal their flag and bring it home. First to 3.</small></button>
+          <button class="mode" id="m-hr"><i class="mi" aria-hidden="true">🏎️</i><b>Hook Racing</b><small>3-lap races on 10 tracks. Boost rings, shortcuts and items. Solo, teams or online.</small></button>
+          <button class="mode" id="m-chess"><i class="mi" aria-hidden="true">♛</i><b>Kingfall</b><small>Real-time chess battle. Command your pieces and take the enemy King.</small></button>
+        </div>
+      </div>
     </div>
-    <p>Aim with the mouse, hold Space to fire your grappling hook, and swing up a 780 m tower. Every checkpoint brings one new hazard.</p>
+    <p class="pdesc" id="pl-desc">Point at a mode to see what it is.</p>
+  </section>
+
+  <section class="panel" id="scr-coll" hidden>
+    <div class="head-row"><h2>Shop &amp; Collection</h2><button class="link" id="b-co-back">Back</button></div>
+    <p class="mm-foot"><span class="tok"><span class="coin"></span><span id="co-tokens">0</span> tokens</span> · <span id="co-pearls">0</span> pearls</p>
+    <div class="modes two">
+      <button class="mode shop" id="m-gacha"><i class="mi" aria-hidden="true">🎰</i><b>Gacha</b><small>Spend 5 tokens to spin for hats, colors, ropes, trails and auras.</small></button>
+      <button class="mode" id="m-dshop"><i class="mi" aria-hidden="true">🐚</i><b>Pearl Shop</b><small>Spend pearls from Treasure Dive on diving gear, pets that follow you everywhere, and ocean items.</small></button>
+      <button class="mode shop" id="m-locker"><i class="mi" aria-hidden="true">🎒</i><b>Locker</b><small>Equip items and skins you've won.</small></button>
+      <button class="mode shop" id="m-ach"><i class="mi" aria-hidden="true">🏆</i><b>Achievements</b><small>30 to earn. Unlock them all for a title.</small></button>
+    </div>
+    <p class="pdesc" id="co-desc">Point at one to see what it is.</p>
+  </section>
+
+  <section class="panel" id="scr-prof" hidden>
+    <div class="head-row"><h2>Profile</h2><button class="link" id="b-pf-back">Back</button></div>
     <div class="profile">
       <label for="name">Climber name</label>
       <input type="text" id="name" maxlength="16" placeholder="Climber" autocomplete="off" spellcheck="false">
       <p class="titled" id="m-title" hidden></p>
       <div class="swatches" id="swatches" role="radiogroup" aria-label="Climber color"></div>
-    </div>
-    <button class="btn primary lastplay" id="m-last" hidden></button>
-    <div class="msec"><span class="label">Climb</span>
-      <div class="modes two">
-        <button class="mode" id="m-solo"><b>Climb</b><small>Reach the summit at 780 m. Checkpoints every 60 m.</small></button>
-        <button class="mode" id="m-coop"><b>Co-op Climb</b><small>Climb with friends and hook onto each other.</small></button>
-        <button class="mode" id="m-race"><b>Race</b><small>Race bots and friends to a height or against the clock.</small></button>
-        <button class="mode" id="m-trial"><b>Time Trials</b><small>30 courses against the clock. Gold medals unlock skins.</small></button>
-      </div>
-    </div>
-    <div class="msec"><span class="label">Explore</span>
-      <div class="modes two">
-        <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
-        <button class="mode" id="m-story"><b>Story Mode</b><small>The Fallen Spire. The whole story, in five chapters. Play solo or with a friend.</small></button>
-        <button class="mode" id="m-dive"><b>Treasure Dive</b><small>10 underwater caves. Grab treasure and get back up before your air runs out. Solo or co-op.</small></button>
-        <button class="mode" id="m-bld"><b>Level Builder</b><small>Build your own levels with blocks, rings, hazards and coins. Play them, share them with a code, or build together online.</small></button>
-        <button class="mode" id="m-dshop"><b>🐚 Pearl Shop</b><small>Spend pearls from Treasure Dive on diving gear, pets that follow you everywhere, and ocean items.</small></button>
-        <button class="mode" id="m-train" hidden><b>Training Arena</b><small>Spend Grit on upgrades and run drills to earn more.</small></button>
-      </div>
-    </div>
-    <div class="msec"><span class="label">Battle</span>
-      <div class="modes two">
-        <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
-        <button class="mode" id="m-tag"><b>Hook Tag</b><small>Tag or be tagged. Classic or Infection, with bots or friends.</small></button>
-        <button class="mode" id="m-ctf"><b>Capture the Flag</b><small>Red vs Blue. Steal their flag and bring it home. First to 3.</small></button>
-        <button class="mode" id="m-duel"><b>Duel Arena</b><small>1 vs 1 sword fights, best of 5 rounds. Every round changes the arena. Win to unlock new swords.</small></button>
-        <button class="mode" id="m-hr"><b>Hook Racing</b><small>3-lap races on 10 tracks. Boost rings, shortcuts and items. Solo, teams or online.</small></button>
-        <button class="mode" id="m-chess"><b>Kingfall</b><small>Real-time chess battle. Command your pieces and take the enemy King.</small></button>
-      </div>
-    </div>
-    <div class="msec"><span class="label">Collection</span>
-      <div class="modes">
-        <button class="mode shop" id="m-gacha"><b>Gacha</b><small>Spend 5 tokens to spin for hats, colors, ropes, trails and auras.</small></button>
-        <button class="mode shop" id="m-locker"><b>Locker</b><small>Equip items and skins you've won.</small></button>
-        <button class="mode shop" id="m-ach"><b>Achievements</b><small>30 to earn. Unlock them all for a title.</small></button>
-      </div>
     </div>
     <dl class="stats">
       <div><dt>Best height</dt><dd id="s-best">0 m</dd></div>
@@ -400,7 +440,6 @@ body.touch #ed-tip { display: none; }
       <div><dt>Race wins</dt><dd id="s-wins">0</dd></div>
       <div><dt>Achievements</dt><dd id="s-ach">0/30</dd></div>
     </dl>
-    <div class="links"><button class="link" id="b-help">Controls and tower guide</button><button class="link" id="b-settings">Settings</button></div>
     <p class="note">Progress, tokens and items save in this browser on this device. Play with a keyboard and mouse, or with touch on a phone or tablet held sideways.</p>
   </section>
 
@@ -2435,11 +2474,15 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-train', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-hr', 'scr-bld', 'scr-bres', 'scr-duel', 'scr-dive', 'scr-dshop', 'scr-dive-res', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-train', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-hr', 'scr-play', 'scr-coll', 'scr-prof', 'scr-bld', 'scr-bres', 'scr-duel', 'scr-dive', 'scr-dshop', 'scr-dive-res', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
+var menuReturn = null;
 function show(id) {
+  if (id === 'scr-menu' && menuReturn) id = menuReturn;
+  if (id === 'scr-coll') { $('co-tokens').textContent = String(save.tokens); $('co-pearls').textContent = String(dv().pearls); }
   current = id;
   $('overlay').hidden = !id;
+  $('overlay').classList.toggle('main', id === 'scr-menu');
   for (const s of screens) $(s).hidden = s !== id;
 }
 function refreshMenu() {
@@ -2448,6 +2491,7 @@ function refreshMenu() {
   $('s-sum').textContent = String(save.summits);
   $('s-wins').textContent = String(save.raceWins);
   $('m-tokens').textContent = String(save.tokens);
+  $('mm-who').textContent = (save.name || 'Climber') + ' · best ' + Math.floor(save.best) + ' m';
   $('m-train').hidden = !(save.grit && save.grit.arena === 1);
   if (achRefresh) achRefresh();
   if (typeof refreshLast === 'function' && $('m-last')) try { refreshLast(); } catch (e) {}
@@ -7924,12 +7968,22 @@ $('b-help2').addEventListener('click', () => openModeHelp(true), { capture: true
 function refreshLast() {
   const b = $('m-last'), src = save.last && document.getElementById(save.last);
   b.hidden = !src || src.disabled;
-  if (src) b.textContent = '▶  Play ' + src.querySelector('b').textContent + ' again';
+  if (src) b.textContent = '▶ Continue: ' + src.querySelector('b').textContent;
 }
-document.querySelectorAll('#scr-menu .mode').forEach((el) => el.addEventListener('click', () => { if (/^m-(solo|coop|race|world|trial|pvp|tag|ctf|chess)$/.test(el.id)) { save.last = el.id; saveDirty = true; } }));
-$('m-last').addEventListener('click', () => { const src = save.last && document.getElementById(save.last); if (src) src.click(); });
+document.querySelectorAll('#scr-play .mode').forEach((el) => el.addEventListener('click', () => { menuReturn = 'scr-play'; if (/^m-(solo|coop|race|world|trial|pvp|tag|ctf|chess|story|dive|bld|duel|hr)$/.test(el.id)) { save.last = el.id; saveDirty = true; } }, true));
+document.querySelectorAll('#scr-coll .mode').forEach((el) => el.addEventListener('click', () => { menuReturn = 'scr-coll'; }, true));
+document.querySelectorAll('#scr-menu .mm-item').forEach((el) => el.addEventListener('click', () => { menuReturn = null; }, true));
+for (const [box, out] of [['scr-play', 'pl-desc'], ['scr-coll', 'co-desc']]) document.querySelectorAll('#' + box + ' .mode').forEach((el) => {
+  const say = () => { const d = $(out); d.textContent = ''; const b = document.createElement('b'); b.textContent = el.querySelector('b').textContent + ': '; d.append(b, document.createTextNode(el.querySelector('small').textContent)); };
+  el.addEventListener('pointerenter', say); el.addEventListener('focus', say);
+});
+$('mm-play').addEventListener('click', () => show('scr-play'));
+$('mm-coll').addEventListener('click', () => show('scr-coll'));
+$('mm-prof').addEventListener('click', () => show('scr-prof'));
+for (const id of ['b-pl-back', 'b-co-back', 'b-pf-back']) $(id).addEventListener('click', () => { menuReturn = null; refreshMenu(); show('scr-menu'); });
+$('m-last').addEventListener('click', () => { const src = save.last && document.getElementById(save.last); if (src) { menuReturn = 'scr-play'; src.click(); } });
 refreshLast();
-const BACKS = ['b-back-coop', 'b-back-start', 'b-back-race', 'b-lobby-leave', 'b-res-menu', 'b-sum-menu', 'b-set-back', 'g-back', 'l-back', 'b-w-back', 'b-p-back', 'b-g-back', 'b-c-back', 'b-h-back', 'b-bl-back', 'b-du-back', 'b-dv-back', 'b-k-back', 'b-p-leave', 'b-pr-menu', 'b-tr-back', 'b-ach-back', 'b-help-back', 'b-adm-back', 'b-trr-list'];
+const BACKS = ['b-pl-back', 'b-co-back', 'b-pf-back', 'b-back-coop', 'b-back-start', 'b-back-race', 'b-lobby-leave', 'b-res-menu', 'b-sum-menu', 'b-set-back', 'g-back', 'l-back', 'b-w-back', 'b-p-back', 'b-g-back', 'b-c-back', 'b-h-back', 'b-bl-back', 'b-du-back', 'b-dv-back', 'b-k-back', 'b-p-leave', 'b-pr-menu', 'b-tr-back', 'b-ach-back', 'b-help-back', 'b-adm-back', 'b-trr-list'];
 function menuBack() {
   const sec = document.getElementById(current);
   const b = sec && BACKS.map(id => sec.querySelector('#' + id)).find(Boolean);
@@ -10087,9 +10141,9 @@ $('b-dv-back').addEventListener('click', () => { if (teamKind === 'dive') toMenu
 let dsFrom = 'scr-dive';
 const openDiveShop = (from) => { dsFrom = from; renderDiveShop(); show('scr-dshop'); };
 $('b-dv-shop').addEventListener('click', () => openDiveShop('scr-dive'));
-$('m-dshop').addEventListener('click', () => openDiveShop('scr-menu'));
+$('m-dshop').addEventListener('click', () => openDiveShop('scr-coll'));
 $('b-dr-shop').addEventListener('click', () => openDiveShop('scr-dive-res'));
-$('b-ds-back').addEventListener('click', () => { if (dsFrom === 'scr-menu') { refreshMenu(); show('scr-menu'); } else if (dsFrom === 'scr-dive-res' && dive && dive.res) show('scr-dive-res'); else { renderDiveMenu(); show('scr-dive'); } });
+$('b-ds-back').addEventListener('click', () => { if (dsFrom === 'scr-coll') { refreshMenu(); show('scr-coll'); } else if (dsFrom === 'scr-dive-res' && dive && dive.res) show('scr-dive-res'); else { renderDiveMenu(); show('scr-dive'); } });
 $('b-dr-next').addEventListener('click', () => { if (dive && dive.L < DIVE_LEVELS) divePick(dive.L + 1); });
 $('b-dr-retry').addEventListener('click', () => { if (dive) divePick(dive.L); });
 $('b-dr-map').addEventListener('click', () => { dive = null; state = 'menu'; mode = 'solo'; $('whud').hidden = true; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false; refreshMenu(); renderDiveMenu(); show('scr-dive'); });
