@@ -54,7 +54,7 @@ body { background: var(--night); color: var(--ink); font-family: var(--ui); font
 #banner.show, #wbanner.show { opacity: 1; }
 
 /* Overlay */
-#overlay { position: fixed; inset: 0; display: grid; place-items: center; overflow-y: auto; background: radial-gradient(ellipse at 50% 40%, rgba(18,15,36,.35), rgba(8,6,18,.8)); padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+#overlay { position: fixed; inset: 0; display: grid; place-items: center; overflow-y: auto; background: radial-gradient(ellipse at 50% 40%, rgba(18,15,36,.2), rgba(8,6,18,.65)); padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .panel { width: min(600px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 26px clamp(18px, 4vw, 32px); display: grid; gap: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.45); backdrop-filter: blur(6px); }
 .panel.wide { width: min(880px, 100%); }
 .head-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
@@ -2672,6 +2672,7 @@ function drawBackground(camM) {
     }
     ctx.globalAlpha = 1;
   }
+  drawSpire(cw * 0.8, ch * 1.02, ch * 0.92, 'rgba(24,18,52,0.35)', '#ffd34d', gt);
   const shift2 = -camY * scale * 0.25;
   ctx.fillStyle = 'rgba(10,8,26,0.14)';
   for (let k = 0; k < 7; k++) {
@@ -4457,6 +4458,164 @@ $('w-code-in').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryWo
 
 // ----- Hookworld drawing -----
 const wScale = () => Math.min(cw / 1300, ch / 760);
+
+// ---------- backgrounds: a themed scene for every place, always with the Spire in the distance ----------
+const SCENES = {
+  day:     { sky: ['#5c8fd6', '#cfe9ff'], sun: '#fff6c9', far: '#a9c8e6', mid: '#8fb7dc', spire: 'rgba(90,115,160,0.55)', glow: '#ffe58a', kind: 'hills', clouds: 'rgba(255,255,255,0.75)' },
+  dusk:    { sky: ['#3b2a6b', '#ff9a6b'], sun: '#ffd0a0', far: '#7a4f7a', mid: '#4a3560', spire: 'rgba(40,28,70,0.7)', glow: '#ffd34d', kind: 'hills', clouds: 'rgba(255,200,180,0.4)' },
+  menu:    { sky: ['#241a4a', '#ff8a5c'], sun: '#ffc78a', far: '#6a3f6a', mid: '#3a2850', spire: 'rgba(28,20,52,0.85)', glow: '#ffd34d', kind: 'peaks', clouds: 'rgba(255,190,170,0.35)', stars: true },
+  frost:   { sky: ['#6f9cc6', '#e8f4ff'], sun: '#ffffff', far: '#c9dcef', mid: '#e8f4ff', spire: 'rgba(100,125,160,0.55)', glow: '#bff3ff', kind: 'peaks', snowcap: true, clouds: 'rgba(255,255,255,0.75)', parts: 'snow' },
+  ruins:   { sky: ['#0f3f5a', '#2f8fa8'], far: '#1f5f78', mid: '#174a60', spire: 'rgba(20,70,95,0.75)', glow: '#5fe3d0', kind: 'water', parts: 'bubbles', rays: true },
+  volcano: { sky: ['#3a1218', '#ff7a3d'], sun: '#ffb347', far: '#4a2028', mid: '#2a1418', spire: 'rgba(50,24,30,0.8)', glow: '#ff8a3d', kind: 'volcano', parts: 'embers', clouds: 'rgba(80,40,40,0.5)' },
+  storm:   { sky: ['#1a1433', '#5a3f8a'], moon: '#e8e0ff', stars: true, far: '#3a2f5a', mid: '#2a2145', spire: 'rgba(80,65,110,0.8)', glow: '#c79bff', kind: 'peaks', clouds: 'rgba(58,47,90,0.85)', flash: true },
+  neon:    { sky: ['#0a0818', '#3a1a5a'], moon: '#ff3df2', stars: true, far: '#1e1b3a', mid: '#120f24', spire: 'rgba(42,36,80,0.9)', glow: '#3df2ff', kind: 'city' },
+  haunted: { sky: ['#14121f', '#4a4060'], moon: '#f3f0d8', stars: true, far: '#2a2638', mid: '#1c1a28', spire: 'rgba(48,44,68,0.9)', glow: '#9fb6d8', kind: 'castle', clouds: 'rgba(60,55,80,0.6)' },
+  desert:  { sky: ['#f0a060', '#ffe3b0'], sun: '#fff1c9', far: '#e0b070', mid: '#c49a5a', spire: 'rgba(150,105,60,0.55)', glow: '#fff1c9', kind: 'dunes' },
+  jungle:  { sky: ['#4a8a6a', '#c8ffd0'], sun: '#fff6c9', far: '#3f7a4a', mid: '#2f5a36', spire: 'rgba(60,95,65,0.6)', glow: '#c8ff9e', kind: 'jungle', parts: 'fireflies' },
+  cave:    { sky: ['#120f24', '#2e2845'], far: '#2a2240', mid: '#1c1830', spire: 'rgba(58,48,96,0.8)', glow: '#c7a8ff', kind: 'cave', parts: 'sparkles' },
+};
+const HR_SCENE = { hr_meadow: 'day', hr_ice: 'frost', hr_ruins: 'ruins', hr_volcano: 'volcano', hr_storm: 'storm', hr_neon: 'neon', hr_haunted: 'haunted', hr_dunes: 'desert', hr_jungle: 'jungle', hr_crystal: 'cave' };
+function sceneKey() {
+  if (mode === 'story' && story && story.L) return ['day', 'frost', 'ruins', 'volcano', 'storm'][story.L.ch.id - 1] || 'day';
+  if (mode === 'pvp' && pvp) return pvp.hr ? (HR_SCENE[pvp.cfg.map] || 'day') : pvp.chess ? 'dusk' : pvp.ctf ? ({ run: 'desert', sky: 'day', forts: 'jungle' }[pvp.cfg.map] || 'day') : 'dusk';
+  if (mode === 'train') return 'dusk';
+  return 'day';
+}
+const hsh = (i) => { const v = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+const spireX = (cx) => clamp(cw * 0.72 - cx * 0.012, cw * 0.2, cw * 0.88);
+function drawSpire(x, by, h, body, glow, t) {
+  const w = h * 0.11;
+  ctx.save();
+  ctx.fillStyle = body;
+  ctx.beginPath(); ctx.moveTo(x - w, by); ctx.lineTo(x - w * 0.35, by - h * 0.9); ctx.lineTo(x, by - h); ctx.lineTo(x + w * 0.35, by - h * 0.9); ctx.lineTo(x + w, by); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = glow; ctx.globalAlpha = 0.22; ctx.lineWidth = Math.max(1, h * 0.004);
+  for (let k = 1; k < 8; k++) { const f = k / 8, yy = by - h * 0.9 * f, ww = w - w * 0.65 * f; ctx.beginPath(); ctx.moveTo(x - ww, yy); ctx.lineTo(x + ww, yy); ctx.stroke(); }
+  ctx.fillStyle = glow;
+  for (let k = 1; k < 8; k++) { ctx.globalAlpha = 0.35 + 0.25 * Math.sin(t * 1.5 + k); const yy = by - h * 0.9 * (k - 0.5) / 8; ctx.fillRect(x - 1.5, yy - h * 0.012, 3, h * 0.024); }
+  const cy = by - h - h * 0.045 + Math.sin(t * 1.2) * h * 0.006;
+  ctx.globalAlpha = 1; ctx.shadowBlur = h * 0.06; ctx.shadowColor = glow;
+  ctx.beginPath(); ctx.moveTo(x, cy - h * 0.035); ctx.lineTo(x + h * 0.018, cy); ctx.lineTo(x, cy + h * 0.035); ctx.lineTo(x - h * 0.018, cy); ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0; ctx.globalAlpha = 0.45; ctx.strokeStyle = glow; ctx.lineWidth = Math.max(1, h * 0.004);
+  ctx.beginPath(); ctx.ellipse(x, cy, h * 0.06, h * 0.015, Math.sin(t * 0.5) * 0.2, 0, 6.283); ctx.stroke();
+  ctx.restore();
+}
+function sceneLayer(th, kind, col, p, cx, cy, base, near) {
+  // one silhouette layer that slides with the camera (p = how much)
+  const ox = -cx * p, oy = clamp(-cy * p * 0.25, -ch * 0.1, ch * 0.1), by = ch * base + oy;
+  ctx.fillStyle = col;
+  if (kind === 'hills' || kind === 'water' || kind === 'dunes' || kind === 'jungle') {
+    const amp = kind === 'dunes' ? 26 : kind === 'jungle' ? 18 : 34, fr = kind === 'dunes' ? 190 : kind === 'jungle' ? 40 : 150;
+    ctx.beginPath(); ctx.moveTo(0, ch);
+    for (let x = 0; x <= cw + 8; x += 8) {
+      let y = by + Math.sin((x - ox) / fr) * amp + Math.sin((x - ox) / (fr * 0.37)) * amp * 0.3;
+      if (kind === 'jungle') y -= Math.abs(Math.sin((x - ox) / 23)) * 16; // bumpy treetops
+      if (kind === 'water') y += Math.sin((x - ox) / 30 + gt) * 4;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(cw, ch); ctx.closePath(); ctx.fill();
+    if (kind === 'water' && !near) for (let i = Math.floor(-ox / 260) - 1; i < Math.floor((cw - ox) / 260) + 2; i++) { // sunken columns
+      if (hsh(i) < 0.45) continue; const x = i * 260 + ox, h = 60 + hsh(i + 7) * 90; ctx.fillRect(x, by - h, 22, h + 10); if (hsh(i + 3) > 0.5) ctx.fillRect(x - 6, by - h - 8, 34, 8);
+    }
+    return;
+  }
+  const SW = kind === 'city' ? 70 : kind === 'castle' ? 200 : kind === 'cave' ? 90 : 160;
+  const i0 = Math.floor(-ox / SW) - 1, i1 = Math.floor((cw - ox) / SW) + 2;
+  if (kind === 'peaks' || kind === 'volcano') {
+    ctx.beginPath(); ctx.moveTo(0, ch);
+    for (let i = i0; i <= i1; i++) { const x = i * SW + ox, h = (near ? 70 : 140) + hsh(i * 3 + (near ? 9 : 1)) * (near ? 80 : 170); ctx.lineTo(x, by); ctx.lineTo(x + SW / 2, by - h); }
+    ctx.lineTo(cw + SW, by); ctx.lineTo(cw, ch); ctx.closePath(); ctx.fill();
+    if (th.snowcap && !near) { ctx.fillStyle = 'rgba(255,255,255,0.85)'; for (let i = i0; i <= i1; i++) { const x = i * SW + ox, h = 140 + hsh(i * 3 + 1) * 170; ctx.beginPath(); ctx.moveTo(x + SW / 2, by - h); ctx.lineTo(x + SW / 2 - SW * 0.14, by - h + h * 0.28); ctx.lineTo(x + SW / 2 + SW * 0.14, by - h + h * 0.28); ctx.closePath(); ctx.fill(); } }
+    if (kind === 'volcano' && !near) {
+      const vx = cw * 0.28 + ox * 0.5, vh = ch * 0.42;
+      ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(vx - vh * 1.1, by); ctx.lineTo(vx - vh * 0.16, by - vh); ctx.lineTo(vx + vh * 0.16, by - vh); ctx.lineTo(vx + vh * 1.1, by); ctx.closePath(); ctx.fill();
+      const gl = ctx.createRadialGradient(vx, by - vh, 4, vx, by - vh, vh * 0.35); gl.addColorStop(0, 'rgba(255,170,60,0.9)'); gl.addColorStop(1, 'rgba(255,90,31,0)');
+      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(vx, by - vh, vh * 0.35, 0, 6.283); ctx.fill();
+    }
+    return;
+  }
+  if (kind === 'city') {
+    for (let i = i0; i <= i1; i++) {
+      const x = i * SW + ox, h = (near ? 60 : 120) + hsh(i * 5 + (near ? 2 : 0)) * (near ? 120 : 220), w = SW - 8;
+      ctx.fillStyle = col; ctx.fillRect(x, by - h, w, h + ch);
+      if (!near) for (let r = 0; r < h / 18 - 1; r++) for (let c = 0; c < 3; c++) { if (hsh(i * 31 + r * 7 + c) < 0.55) continue; ctx.fillStyle = hsh(i + r + c) > 0.5 ? 'rgba(255,61,242,0.55)' : 'rgba(61,242,255,0.55)'; ctx.fillRect(x + 8 + c * 18, by - h + 10 + r * 18, 8, 7); }
+    }
+    return;
+  }
+  if (kind === 'castle') {
+    for (let i = i0; i <= i1; i++) {
+      const x = i * SW + ox, h = (near ? 50 : 110) + hsh(i * 3 + (near ? 4 : 0)) * 90;
+      ctx.fillStyle = col; ctx.fillRect(x, by - h, SW * 0.7, h + ch);
+      for (let b = 0; b < 5; b++) ctx.fillRect(x + b * SW * 0.15, by - h - 10, SW * 0.08, 10); // battlements
+      if (!near && hsh(i + 11) > 0.4) { const tx = x + SW * 0.55, th2 = h + 60 + hsh(i) * 60; ctx.fillRect(tx, by - th2, 26, th2 + ch); ctx.beginPath(); ctx.moveTo(tx - 6, by - th2); ctx.lineTo(tx + 13, by - th2 - 40); ctx.lineTo(tx + 32, by - th2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(255,220,140,' + (0.35 + 0.25 * Math.sin(gt * 2 + i)) + ')'; ctx.fillRect(tx + 9, by - th2 + 20, 8, 12); }
+    }
+    return;
+  }
+  if (kind === 'cave') {
+    for (let i = i0; i <= i1; i++) {
+      const x = i * SW + ox, h = (near ? 60 : 110) + hsh(i * 3 + (near ? 5 : 0)) * 120;
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.moveTo(x, -10); ctx.lineTo(x + SW / 2, h * (near ? 0.9 : 1.2)); ctx.lineTo(x + SW, -10); ctx.closePath(); ctx.fill(); // stalactites
+      ctx.beginPath(); ctx.moveTo(x, ch + 10); ctx.lineTo(x + SW / 2, by - h * 0.6); ctx.lineTo(x + SW, ch + 10); ctx.closePath(); ctx.fill(); // stalagmites
+      if (!near && hsh(i + 5) > 0.55) { ctx.fillStyle = 'rgba(199,168,255,' + (0.45 + 0.25 * Math.sin(gt * 2 + i)) + ')'; ctx.beginPath(); ctx.moveTo(x + SW / 2, by - h * 0.6 - 30); ctx.lineTo(x + SW / 2 + 9, by - h * 0.6); ctx.lineTo(x + SW / 2 - 9, by - h * 0.6); ctx.closePath(); ctx.fill(); }
+    }
+  }
+}
+function drawScene(th, cx, cy, sx) {
+  const t = gt, R = Math.min(cw, ch);
+  const g = ctx.createLinearGradient(0, 0, 0, ch); g.addColorStop(0, th.sky[0]); g.addColorStop(1, th.sky[1]);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch);
+  if (th.stars) for (const st of stars) {
+    const x = ((st.u * cw - cx * 0.02) % cw + cw) % cw, y = st.v * ch * 0.7;
+    ctx.globalAlpha = 0.35 + 0.45 * Math.sin(t * 1.2 + st.tw); ctx.fillStyle = '#fff'; ctx.fillRect(x, y, st.s, st.s);
+  }
+  ctx.globalAlpha = 1;
+  if (th.sun || th.moon) {
+    const x = cw * 0.2 - cx * 0.008, y = ch * 0.2 + clamp(-cy * 0.004, -30, 30), r = R * 0.06, c = th.sun || th.moon;
+    const gl = ctx.createRadialGradient(x, y, r * 0.5, x, y, r * 3.5); gl.addColorStop(0, c); gl.addColorStop(0.3, c + '55'); gl.addColorStop(1, c + '00');
+    ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x, y, r * 3.5, 0, 6.283); ctx.fill();
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
+  }
+  if (th.rays) { ctx.fillStyle = 'rgba(191,243,255,0.06)'; for (let k = 0; k < 5; k++) { const x = cw * (0.1 + k * 0.2) + Math.sin(t * 0.3 + k) * 40 - cx * 0.01; ctx.beginPath(); ctx.moveTo(x - 30, 0); ctx.lineTo(x + 30, 0); ctx.lineTo(x + 140, ch); ctx.lineTo(x + 40, ch); ctx.closePath(); ctx.fill(); } }
+  if (th.clouds) {
+    ctx.fillStyle = th.clouds;
+    for (let k = 0; k < 6; k++) {
+      const span = cw + 400, x = ((k * 0.29 * cw + t * (8 + (k % 3) * 5) - cx * 0.03) % span + span) % span - 200, y = ch * (0.1 + (k % 3) * 0.09) + clamp(-cy * 0.01, -20, 20), w = 90 + hsh(k) * 80;
+      for (const [ex, ey, rx, ry] of [[0, 0, w, w * 0.28], [w * 0.4, -w * 0.12, w * 0.5, w * 0.25], [-w * 0.45, 2, w * 0.45, w * 0.2]]) { ctx.beginPath(); ctx.ellipse(x + ex, y + ey, rx, ry, 0, 0, 6.283); ctx.fill(); }
+    }
+  }
+  if (th.flash && hsh(Math.floor(t * 0.7)) > 0.85 && (t * 0.7) % 1 < 0.06) { ctx.fillStyle = 'rgba(230,220,255,0.18)'; ctx.fillRect(0, 0, cw, ch); }
+  drawSpire(sx != null ? sx : spireX(cx), ch * 0.98, ch * 0.84, th.spire, th.glow, t);
+  sceneLayer(th, th.kind, th.far, 0.05, cx, cy, 0.7, false);
+  sceneLayer(th, th.kind, th.mid, 0.14, cx, cy, 0.84, true);
+  if (th.parts) for (let k = 0; k < 26; k++) {
+    const a = hsh(k), b = hsh(k + 40), c = hsh(k + 80);
+    if (th.parts === 'snow') { const x = ((a * cw + t * 12 * (b + 0.5) - cx * 0.06) % cw + cw) % cw, y = (b * ch + t * 28 * (0.5 + c)) % ch; ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.arc(x, y, 1.5 + c * 2, 0, 6.283); ctx.fill(); }
+    else if (th.parts === 'embers') { const x = ((a * cw + Math.sin(t + k) * 20 - cx * 0.06) % cw + cw) % cw, y = ch - (b * ch + t * 30 * (0.5 + c)) % ch; ctx.fillStyle = 'rgba(255,' + Math.round(140 + c * 80) + ',60,' + (0.5 + 0.4 * c) + ')'; ctx.fillRect(x, y, 2 + c * 2, 2 + c * 2); }
+    else if (th.parts === 'bubbles') { const x = ((a * cw + Math.sin(t * 0.8 + k) * 14 - cx * 0.06) % cw + cw) % cw, y = ch - (b * ch + t * 24 * (0.5 + c)) % ch; ctx.strokeStyle = 'rgba(191,243,255,0.5)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(x, y, 2 + c * 4, 0, 6.283); ctx.stroke(); }
+    else if (th.parts === 'fireflies') { const x = ((a * cw + Math.sin(t * 0.5 + k) * 30 - cx * 0.06) % cw + cw) % cw, y = ch * (0.45 + b * 0.45) + Math.cos(t * 0.7 + k) * 20; ctx.fillStyle = 'rgba(220,255,140,' + (0.3 + 0.5 * Math.abs(Math.sin(t * 1.5 + k * 2))) + ')'; ctx.beginPath(); ctx.arc(x, y, 2.2, 0, 6.283); ctx.fill(); }
+    else if (th.parts === 'sparkles') { const x = ((a * cw - cx * 0.05) % cw + cw) % cw, y = b * ch, al = Math.max(0, Math.sin(t * 1.3 + k * 1.7)); ctx.strokeStyle = 'rgba(199,168,255,' + al + ')'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x - 4, y); ctx.lineTo(x + 4, y); ctx.moveTo(x, y - 4); ctx.lineTo(x, y + 4); ctx.stroke(); }
+  }
+}
+// the home screen: the Spire at sunset, with your own climber swinging from a ring in front of it
+const menuHist = [], menuParts = []; let menuTrail = 0;
+function renderMenuScene(dt) {
+  ctx = mainCtx; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cx = gt * 25, wide = cw > 1000, side = (cw - 680) / 4; // on wide screens, put them in the margins beside the menu panel
+  const sx = wide ? cw - Math.max(110, side) : cw * 0.8;
+  drawScene(SCENES.menu, cx, 0, sx);
+  const k = Math.max(1, Math.min(cw, ch) / 460), ax = wide ? Math.max(90, side) : cw * 0.25, ay = ch * 0.3;
+  const a = 0.85 * Math.sin(gt * 1.5), da = 0.85 * 1.5 * Math.cos(gt * 1.5), L = ch * 0.2;
+  const x = ax + Math.sin(a) * L, y = ay + Math.cos(a) * L;
+  ctx.setTransform(dpr * k, 0, 0, dpr * k, 0, 0);
+  const me = { x: x / k, y: y / k, vx: Math.cos(a) * L * da / k, vy: -Math.sin(a) * L * da / k, base: COLORS[save.color], eq: save.eq, anchor: { x: ax / k, y: ay / k }, face: Math.cos(a) * da < 0 ? -1 : 1, hist: menuHist, label: '', trailAcc: menuTrail };
+  pushHist(menuHist, me.x, me.y);
+  drawWRing(ax / k, ay / k, false);
+  drawRope(me.x, me.y, ax / k, ay / k, 0, save.eq.rope, 1);
+  emitTrail(me, dt, menuParts); menuTrail = me.trailAcc;
+  updateParticles(menuParts, dt); drawParticles(menuParts);
+  drawClimber(me);
+}
 function mixRGB(a, b, t) { return 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')'; }
 function drawWRing(x, y, targeted) {
   if (targeted) { ctx.fillStyle = 'rgba(94,230,193,0.25)'; ctx.beginPath(); ctx.arc(x, y, 22, 0, 6.283); ctx.fill(); }
@@ -4507,19 +4666,8 @@ function renderWorld(dt) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const col = clamp(Math.floor((wcamX + vw / 2) / TS), 0, hw.wt - 1);
   const under = clamp(((wcamY + vh / 2) / TS - hw.surf[col] - 3) / 8, 0, 1);
-  const g = ctx.createLinearGradient(0, 0, 0, ch);
-  g.addColorStop(0, mixRGB([86, 140, 214], [18, 13, 28], under)); g.addColorStop(1, mixRGB([200, 232, 255], [36, 27, 48], under));
-  ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch);
-  if (under < 1) {
-    ctx.globalAlpha = 1 - under;
-    for (const [c, par, amp, base, fr] of [['#b4d4ee', 0.12, 40, 0.55, 160], ['#9cc3e4', 0.25, 55, 0.68, 110]]) {
-      ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(0, ch);
-      const yoff = (HPw * 0.6 - wcamY) * sc * par;
-      for (let x = 0; x <= cw + 8; x += 8) ctx.lineTo(x, ch * base + yoff + Math.sin((x + wcamX * sc * par) / fr) * amp + Math.sin((x + wcamX * sc * par) / (fr * 0.37)) * amp * 0.3);
-      ctx.lineTo(cw, ch); ctx.closePath(); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
+  if (under < 1) drawScene(SCENES[sceneKey()] || SCENES.day, wcamX * sc, wcamY * sc - HPw * sc * 0.5);
+  if (under > 0) { ctx.fillStyle = 'rgba(18,13,28,' + under + ')'; ctx.fillRect(0, 0, cw, ch); } // deep underground, the sky fades to cave dark
   ctx.setTransform(dpr * sc, 0, 0, dpr * sc, (-wcamX + sx) * dpr * sc, (-wcamY + sy) * dpr * sc);
   const L = wcamX - 80, R = wcamX + vw + 80, U = wcamY - 80, D = wcamY + vh + 80;
   const inView = (x, y) => x > L && x < R && y > U && y < D;
@@ -10100,7 +10248,7 @@ function frame(ts) {
     for (const b of race.bots) { updateBot(b, dt, el); pushHist(b.hist, b.x, b.y); }
   }
   sendPresence(dt);
-  render(dt);
+  if (state === 'menu') renderMenuScene(dt); else render(dt);
   const pe = previewEq();
   if (pe) renderPreview($(current === 'scr-locker' ? 'l-canvas' : 'g-canvas'), pe, dt);
   updateHud(dt);
