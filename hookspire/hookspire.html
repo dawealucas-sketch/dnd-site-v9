@@ -358,7 +358,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
         <button class="mode" id="m-tag"><b>Hook Tag</b><small>Tag or be tagged. Classic or Infection, with bots or friends.</small></button>
         <button class="mode" id="m-ctf"><b>Capture the Flag</b><small>Red vs Blue. Steal their flag and bring it home. First to 3.</small></button>
-        <button class="mode" id="m-hr"><b>Hook Racing</b><small>3-lap races on 4 tracks. Boost rings, shortcuts and items. Solo, teams or online.</small></button>
+        <button class="mode" id="m-hr"><b>Hook Racing</b><small>3-lap races on 10 tracks. Boost rings, shortcuts and items. Solo, teams or online.</small></button>
         <button class="mode" id="m-chess"><b>Kingfall</b><small>Real-time chess battle. Command your pieces and take the enemy King.</small></button>
       </div>
     </div>
@@ -737,7 +737,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 
   <section class="panel wide" id="scr-hr" hidden>
     <h2>Hook Racing</h2>
-    <p>Race 3 laps around a looping track: right along the bottom, up the far end, back along the top, then down to the finish line. Pass every gate in order. Fly through orange boost rings, find the narrow shortcuts in the middle wall, and grab <b>?</b> boxes for items (press <kbd>E</kbd> to use one).</p>
+    <p>Race 3 laps around a looping track. Pass every gate in order: the next one glows green, and a checkered line marks the finish. Fly through orange boost rings, find the narrow shortcuts in the middle wall, and grab <b>?</b> boxes for items (press <kbd>E</kbd> to use one).</p>
     <div class="field"><span class="label">Track</span><div class="seg" id="h-track"></div><p class="note" id="h-track-note"></p><p class="note" id="h-rec"></p></div>
     <div class="field"><span class="label">Race type</span><div class="seg" id="h-teams"></div><p class="note">In a team race, every finishing place scores points for your team (10, 8, 6, 5, 4, 3, 2, 1). The team with the most points wins.</p></div>
     <div class="field" id="h-myteam-f"><span class="label">Your team (playing offline)</span><div class="seg" id="h-myteam"></div><p class="note">Online, the host puts everyone on a team in the lobby.</p></div>
@@ -753,7 +753,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
       <button class="btn" id="b-h-join">Join</button>
     </div>
     <p class="err" id="h-err" hidden></p>
-    <p class="note">Rewards: 5 tokens for finishing, plus 15 / 10 / 6 for 1st / 2nd / 3rd and 10 for a team win. Grit for a podium: 15 / 10 / 5. Win on all 4 tracks to unlock the Checkered skin.</p>
+    <p class="note">Rewards: 5 tokens for finishing, plus 15 / 10 / 6 for 1st / 2nd / 3rd and 10 for a team win. Grit for a podium: 15 / 10 / 5. Win on a track to unlock its racing skin (10 tracks, 10 skins).</p>
     <button class="link" id="b-h-back">Back to menu</button>
   </section>
 
@@ -1096,7 +1096,16 @@ const PALETTES = [
   { id: 'ninja', n: 'Ninja', cols: ['#e0484f', '#3a3550', '#111018'], hat: 'band', hc: '#e0484f', rope: 'plain', trail: 'dot', aura: 'ring', ac: '#e0484f' },
   { id: 'astronaut', n: 'Astronaut', cols: ['#ffffff', '#9aa3b5', '#ff8a3d'], hat: 'bubble', hc: '#ff8a3d', rope: 'chain', trail: 'spark', aura: 'orbit', ac: '#ff8a3d' },
   { id: 'samurai', n: 'Samurai', cols: ['#ffd34d', '#8a1f2b', '#2a2540'], hat: 'horns', hc: '#ffd34d', rope: 'plain', trail: 'leaf', aura: 'ring' },
-  { id: 'checkered', n: 'Checkered', cols: ['#ffffff', '#1b1631', '#ff5a6e', '#ffd34d'], hat: 'racehelm', hc: '#ff5a6e', rope: 'plain', rc: '#ffffff', trail: 'streak', aura: 'checker', ac: '#ffffff', glow: 8, race: true },
+  { id: 'checkered', n: 'Checkered', cols: ['#ffffff', '#1b1631', '#ff5a6e', '#ffd34d'], hat: 'racehelm', hc: '#ff5a6e', rope: 'plain', rc: '#ffffff', trail: 'streak', aura: 'checker', ac: '#ffffff', glow: 8, race: 'hr_meadow' },
+  { id: 'r_ice', n: 'Ice Racer', cols: ['#ffffff', '#bff3ff', '#5fd8ff', '#1f4f8a'], hat: 'racehelm', hc: '#5fd8ff', rope: 'glow', rc: '#bff3ff', trail: 'flake', aura: 'frost', ac: '#bff3ff', glow: 10, race: 'hr_ice' },
+  { id: 'r_reef', n: 'Reef Racer', cols: ['#e8fffb', '#5fe3d0', '#1fa3b5', '#14456b'], hat: 'racehelm', hc: '#5fe3d0', rope: 'glow', rc: '#5fe3d0', trail: 'ring', aura: 'tide', ac: '#5fe3d0', glow: 10, race: 'hr_ruins' },
+  { id: 'r_lava', n: 'Lava Racer', cols: ['#fff1c9', '#ffb347', '#ff5a1f', '#3a1a12'], hat: 'racehelm', hc: '#ff5a1f', rope: 'chain', rc: '#ff8a3d', trail: 'cinder', aura: 'magma', ac: '#ff8a3d', glow: 12, race: 'hr_volcano' },
+  { id: 'r_storm', n: 'Storm Racer', cols: ['#fff6c9', '#ffe14a', '#c79bff', '#4d4166'], hat: 'racehelm', hc: '#c79bff', rope: 'bolt', rc: '#ffe14a', trail: 'zap', aura: 'zap', ac: '#c79bff', glow: 14, race: 'hr_storm' },
+  { id: 'r_neon', n: 'Neon Racer', cols: ['#ff3df2', '#3df2ff', '#b77cff', '#1e1b3a'], hat: 'racehelm', hc: '#ff3df2', rope: 'grad', rc: '#3df2ff', trail: 'gstreak', aura: 'gring', ac: '#3df2ff', glow: 16, race: 'hr_neon' },
+  { id: 'r_phantom', n: 'Phantom Racer', cols: ['#e8e4f0', '#9fb6d8', '#6b6585', '#24202f'], hat: 'racehelm', hc: '#9fb6d8', rope: 'glow', rc: '#e8e4f0', trail: 'ghost', aura: 'pulse', ac: '#c7d2ff', glow: 10, race: 'hr_haunted' },
+  { id: 'r_sand', n: 'Sand Racer', cols: ['#fff1c9', '#f0d58a', '#c49a5a', '#8a6a3a'], hat: 'racehelm', hc: '#f0d58a', rope: 'plain', rc: '#c49a5a', trail: 'dot', aura: 'glow', ac: '#f0d58a', glow: 8, race: 'hr_dunes' },
+  { id: 'r_jungle', n: 'Jungle Racer', cols: ['#c8ff9e', '#5fd36b', '#2f8a3a', '#2f4a26'], hat: 'racehelm', hc: '#5fd36b', rope: 'plain', rc: '#8a6d52', trail: 'leaf', aura: 'orbit', ac: '#5fd36b', glow: 8, race: 'hr_jungle' },
+  { id: 'r_crystal', n: 'Crystal Racer', cols: ['#ffffff', '#c7a8ff', '#7fd8ff', '#4a4068'], hat: 'racehelm', hc: '#c7a8ff', rope: 'glow', rc: '#c7a8ff', trail: 'star', aura: 'rainbowring', ac: '#c7a8ff', glow: 14, race: 'hr_crystal' },
   { id: 'spireheart', n: 'Spireheart', cols: ['#ffe14a', '#5fd8ff', '#5fe3d0', '#ff8a3d', '#ffffff'], hat: 'spirecrown', hc: '#ffffff', rope: 'grad', rc: '#ffffff', trail: 'elements', aura: 'elements', ac: '#ffffff', glow: 18, story: 5 },
   { id: 'emberforged', n: 'Emberforged', cols: ['#fff1c9', '#ffb347', '#ff5a1f', '#3a1a12'], hat: 'forgehelm', hc: '#ffb347', rope: 'chain', rc: '#ff8a3d', trail: 'cinder', aura: 'magma', ac: '#ff8a3d', glow: 14, story: 4 },
   { id: 'tidecaller', n: 'Tidecaller', cols: ['#e8fffb', '#5fe3d0', '#1fa3b5', '#14456b'], hat: 'coralcrown', hc: '#ff8a7a', rope: 'glow', rc: '#5fe3d0', trail: 'ring', aura: 'tide', ac: '#5fe3d0', glow: 12, story: 3 },
@@ -1111,7 +1120,7 @@ for (const s of PALETTES) PAL_BY[s.id] = s;
 const SKINS = SKIN_ORDER.map(id => PAL_BY[id]);
 const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon', boltcrown: 'Bolt Crown', icecrown: 'Ice Crown', coralcrown: 'Coral Crown', glacier: 'Glacier Crown', forgehelm: 'Forge Helm', spirecrown: 'Spire Crown', racehelm: 'Racing Helmet' };
 const SKIN_BY = Object.create(null);
-for (const s of [...SKINS, PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.checkered]) {
+for (const s of [...SKINS, PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, ...PALETTES.filter(p => p.race)]) {
   SKIN_BY[s.id] = s;
   const base = { r: 5, ex: true, sk: s.id };
   ITEMS.push(Object.assign({ cat: 'hat', id: 'k_' + s.id + '_h', n: s.n + ' ' + HAT_NAMES[s.hat], k: s.hat, c: s.hc || s.cols[1], c2: s.cols[0] }, base));
@@ -6377,77 +6386,144 @@ $('c-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryCtfJo
 // ---------- Hook Racing (runs on the PvP engine) ----------
 // =================================================================
 const HR_TRACKS = [
-  { id: 'hr_meadow', n: 'Meadow Loop', d: 'Wide and friendly. One shortcut through the middle wall, near the far end.', pal: { n: 'Meadow Loop', top: '#8fd36b', rock: '#7a6a58', deep: '#574b3f' } },
-  { id: 'hr_ice', n: 'Glacier Circuit', d: 'Icy floors you slide on, and two narrow shortcuts.', pal: { n: 'Glacier Circuit', top: '#e8fbff', rock: '#6a7fa0', deep: '#4a5a78' } },
-  { id: 'hr_ruins', n: 'Sunken Speedway', d: 'Broken pillars everywhere. Weave between them.', pal: { n: 'Sunken Speedway', top: '#7fc8b8', rock: '#5a6b78', deep: '#3a4756' } },
-  { id: 'hr_volcano', n: 'Cinder Raceway', d: 'Low arches and tight gaps, with two shortcuts.', pal: { n: 'Cinder Raceway', top: '#ff8a3d', rock: '#3a2a2e', deep: '#1f1518' } },
+  { id: 'hr_meadow', n: 'Meadow Loop', skin: 'checkered', shape: 'loop', d: 'Wide and friendly. One shortcut through the middle wall, near the far end.', pal: { n: 'Meadow Loop', top: '#8fd36b', rock: '#7a6a58', deep: '#574b3f' },
+    ob: [[40, 31, 3, 6], [52, 22, 3, 5], [75, 30, 3, 7], [88, 22, 2, 4], [80, 2, 3, 6], [50, 11, 3, 6], [25, 12, 3, 5], [65, 2, 2, 4]], sc: [99] },
+  { id: 'hr_ice', n: 'Glacier Circuit', skin: 'r_ice', shape: 'loop', ice: true, d: 'Icy floors you slide on, and two narrow shortcuts.', pal: { n: 'Glacier Circuit', top: '#e8fbff', rock: '#6a7fa0', deep: '#4a5a78' },
+    ob: [[36, 30, 3, 7], [58, 22, 3, 6], [82, 31, 3, 6], [70, 2, 3, 7], [44, 11, 3, 6], [28, 2, 3, 5]], sc: [96, 20] },
+  { id: 'hr_ruins', n: 'Sunken Speedway', skin: 'r_reef', shape: 'loop', d: 'Broken pillars everywhere. Weave between them.', pal: { n: 'Sunken Speedway', top: '#7fc8b8', rock: '#5a6b78', deep: '#3a4756' },
+    ob: [[30, 22, 2, 6], [34, 31, 2, 6], [48, 26, 3, 3], [64, 22, 2, 5], [68, 31, 2, 6], [86, 26, 3, 3], [78, 11, 2, 6], [60, 2, 2, 6], [46, 7, 3, 3], [30, 11, 2, 6]], sc: [100] },
+  { id: 'hr_volcano', n: 'Cinder Raceway', skin: 'r_lava', shape: 'loop', d: 'Low arches and tight gaps, with two shortcuts.', pal: { n: 'Cinder Raceway', top: '#ff8a3d', rock: '#3a2a2e', deep: '#1f1518' },
+    ob: [[38, 22, 6, 4], [38, 33, 6, 4], [72, 22, 6, 4], [72, 33, 6, 4], [60, 2, 6, 4], [60, 13, 6, 4], [30, 2, 5, 4], [30, 13, 5, 4]], sc: [94, 22] },
+  { id: 'hr_storm', n: 'Storm Sky', skin: 'r_storm', shape: 'loop', d: 'Floating clouds and storm winds: a tailwind on the bottom straight, a headwind on the top.', pal: { n: 'Storm Sky', top: '#c79bff', rock: '#4d4166', deep: '#2e2645' },
+    ob: [[34, 26, 4, 3], [64, 30, 4, 3], [90, 24, 3, 3], [76, 8, 4, 3], [46, 5, 4, 3], [22, 10, 3, 3]], sc: [99, 22], winds: [[18, 56, 22, 37, 600], [62, 104, 2, 17, 350]] },
+  { id: 'hr_neon', n: 'Neon City', skin: 'r_neon', shape: 'tall', wt: 124, d: 'Climbs four levels, then drops all the way down. Boost rings everywhere.', pal: { n: 'Neon City', top: '#ff3df2', rock: '#1e1b3a', deep: '#120f24' },
+    ob: [[40, 49, 2, 7], [70, 44, 2, 5], [50, 35, 2, 6], [80, 30, 2, 5], [44, 16, 2, 5], [74, 21, 2, 6], [60, 2, 2, 5], [36, 8, 2, 5]], sc: [[94, 41]], boostsX: true },
+  { id: 'hr_haunted', n: 'Haunted Castle', skin: 'r_phantom', shape: 'tall', wt: 190, d: 'The longest track: four levels of narrow gaps. A hidden shortcut is somewhere in the walls...', pal: { n: 'Haunted Castle', top: '#8a86a0', rock: '#3a3550', deep: '#24202f' },
+    ob: [[30, 44, 2, 8], [46, 49, 2, 7], [62, 44, 2, 8], [80, 49, 2, 7], [100, 44, 2, 8], [120, 49, 2, 7], [140, 44, 2, 8], [158, 49, 2, 7],
+         [150, 30, 2, 7], [130, 34, 2, 7], [108, 30, 2, 7], [86, 34, 2, 7], [64, 30, 2, 7], [44, 34, 2, 7],
+         [36, 16, 2, 7], [58, 20, 2, 7], [80, 16, 2, 7], [104, 20, 2, 7], [126, 16, 2, 7], [150, 20, 2, 7],
+         [160, 2, 2, 7], [136, 6, 2, 7], [112, 2, 2, 7], [70, 6, 2, 7], [48, 2, 2, 7], [28, 6, 2, 7]], sc: [[160, 41]], fake: [[110, 13, 2, 3]] },
+  { id: 'hr_dunes', n: 'Sand Dunes', skin: 'r_sand', shape: 'loop', d: 'Long rolling dunes on the floor and wide open air above them.', pal: { n: 'Sand Dunes', top: '#f0d58a', rock: '#c49a5a', deep: '#8a6a3a' },
+    ob: [[26, 34, 10, 3], [30, 33, 4, 1], [56, 33, 12, 4], [60, 32, 5, 1], [86, 34, 10, 3], [70, 14, 10, 3], [36, 14, 8, 3]], sc: [97] },
+  { id: 'hr_jungle', n: 'Jungle Vines', skin: 'r_jungle', shape: 'tall', wt: 124, d: 'Four levels thick with rings to swing on, and two shortcuts.', pal: { n: 'Jungle Vines', top: '#5fd36b', rock: '#4a6a3a', deep: '#2f4a26' },
+    ob: [[50, 48, 3, 8], [80, 30, 3, 5], [40, 20, 3, 7], [90, 2, 3, 5]], sc: [[94, 41], [94, 13]], extraRings: true },
+  { id: 'hr_crystal', n: 'Crystal Caves', skin: 'r_crystal', shape: 'loop', crys: true, d: 'Glowing crystal pillars. You can hook the crystals.', pal: { n: 'Crystal Caves', top: '#c7a8ff', rock: '#4a4068', deep: '#2e2845' },
+    ob: [[32, 28, 3, 9], [46, 22, 2, 7], [60, 30, 3, 7], [74, 22, 2, 6], [88, 29, 3, 8], [84, 2, 2, 8], [66, 9, 3, 8], [48, 2, 2, 7], [30, 9, 2, 8]], sc: [98, 21] },
 ];
 const HR_IDS = HR_TRACKS.map(t => t.id), HR_LAPS = 3, HR_PTS = [10, 8, 6, 5, 4, 3, 2, 1];
 const HR_ITEMS = ['boost', 'shield', 'slow'], HR_ITEM_N = { boost: 'Speed burst', shield: 'Shield', slow: 'Slow shot' };
-const HR_NEXT = ['the far end', 'the top straight', 'the top-left', 'the finish line'];
 const hcfg = Object.assign({ track: 'hr_meadow', teams: false, team: 0, nb: 5, diff: 'medium' }, save.hrCfg || {});
 if (!HR_IDS.includes(hcfg.track)) hcfg.track = 'hr_meadow';
 hcfg.teams = hcfg.teams === true; hcfg.team = hcfg.team === 1 ? 1 : 0; hcfg.nb = clampInt(hcfg.nb, 0, 7);
 if (!PDIFF[hcfg.diff]) hcfg.diff = 'medium';
 const saveHcfg = () => { save.hrCfg = Object.assign({}, hcfg); writeSave(); };
+// every track you've won gives you its racing skin
+function hrSkinSync() {
+  const w = save.hrWins && typeof save.hrWins === 'object' ? save.hrWins : {}, got = [];
+  for (const T of HR_TRACKS) if (w[T.id] && PAL_BY[T.skin] && !ownsSkin(T.skin)) { for (const iid of Object.values(skinEq(T.skin))) save.owned[iid] = Math.max(1, save.owned[iid] || 0); got.push(PAL_BY[T.skin].n); }
+  return got;
+}
 
 function buildRaceTrack(id) {
   if (arenaCache[id]) return arenaCache[id];
-  const T = HR_TRACKS.find(t => t.id === id) || HR_TRACKS[0], k = HR_IDS.indexOf(T.id);
-  const wt = 120, ht = 40, g = new Uint8Array(wt * ht);
-  const inb = (x, y) => x >= 0 && y >= 0 && x < wt && y < ht;
+  const T = HR_TRACKS.find(t => t.id === id) || HR_TRACKS[0];
+  const a = T.shape === 'tall' ? hrTall(T) : hrLoop(T);
+  arenaCache[id] = a;
+  return a;
+}
+function hrGrid(wt, ht) {
+  const g = new Uint8Array(wt * ht), inb = (x, y) => x >= 0 && y >= 0 && x < wt && y < ht;
   const get = (x, y) => inb(x, y) ? g[y * wt + x] : TMETAL;
   const fill = (x0, y0, w, h, v) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (inb(x, y)) g[y * wt + x] = v; };
-  // the loop: a bottom straight (going right), a shaft up the far end, a top straight (going left), and a shaft down
-  fill(0, 0, wt, 2, TROCK); fill(0, 37, wt, 3, TROCK); fill(0, 0, 1, ht, TMETAL); fill(wt - 1, 0, 1, ht, TMETAL);
-  fill(12, 17, 96, 5, TROCK);
-  if (k === 1) { fill(1, 37, wt - 2, 1, TICE); fill(12, 17, 96, 1, TICE); }
-  const OB = [
-    [[40, 31, 3, 6], [52, 22, 3, 5], [75, 30, 3, 7], [88, 22, 2, 4], [80, 2, 3, 6], [50, 11, 3, 6], [25, 12, 3, 5], [65, 2, 2, 4]],
-    [[36, 30, 3, 7], [58, 22, 3, 6], [82, 31, 3, 6], [70, 2, 3, 7], [44, 11, 3, 6], [28, 2, 3, 5]],
-    [[30, 22, 2, 6], [34, 31, 2, 6], [48, 26, 3, 3], [64, 22, 2, 5], [68, 31, 2, 6], [86, 26, 3, 3], [78, 11, 2, 6], [60, 2, 2, 6], [46, 7, 3, 3], [30, 11, 2, 6]],
-    [[38, 22, 6, 4], [38, 33, 6, 4], [72, 22, 6, 4], [72, 33, 6, 4], [60, 2, 6, 4], [60, 13, 6, 4], [30, 2, 5, 4], [30, 13, 5, 4]],
-  ][k];
-  for (const [x, y, w, h] of OB) fill(x, y, w, h, k === 1 ? TICE : TROCK);
-  const SC = [[99], [96, 20], [100], [94, 22]][k]; // shortcuts: 2-wide gaps through the middle wall
-  for (const x of SC) fill(x, 17, 2, 5, TAIR);
   const px = (tx) => tx * TS + TS / 2;
   const rings = [], ring = (tx, ty) => { const x = px(tx), y = px(ty); if (get(tx, ty) === TAIR && get(tx, ty + 1) === TAIR && !rings.some(q => Math.abs(q.x - x) < 60 && Math.abs(q.y - y) < 60)) rings.push({ x, y }); };
+  const free = (tx, ty) => { let y = ty; while (y > 2 && get(tx, y) !== TAIR) y--; return y; };
+  const zone = (x0, x1, y0, y1) => ({ x0: x0 * TS, x1: x1 * TS, y0: y0 * TS, y1: y1 * TS });
+  return { g, get, fill, px, rings, ring, free, zone };
+}
+function hrFinish(T, wt, ht, G, gates, boosts, boxes, spawns, wps, extra) {
+  const { g, px, free } = G, pal = T.pal;
+  const img = document.createElement('canvas'); img.width = wt; img.height = ht;
+  { const ic = img.getContext('2d'), id2 = ic.createImageData(wt, ht), top = hexRGB(pal.top), rock = hexRGB(pal.rock);
+    for (let y = 0; y < ht; y++) for (let x = 0; x < wt; x++) {
+      const v = g[y * wt + x];
+      const c = v === TAIR ? [150, 200, 240] : v === TMETAL ? [75, 91, 117] : v === TICE ? [169, 220, 245] : v === TCRYS ? [127, 216, 255] : (y > 0 && g[(y - 1) * wt + x] === TAIR ? top : rock);
+      const o = (y * wt + x) * 4; id2.data[o] = c[0]; id2.data[o + 1] = c[1]; id2.data[o + 2] = c[2]; id2.data[o + 3] = 255;
+    }
+    ic.putImageData(id2, 0, 0); }
+  return Object.assign({ name: T.n, img, wt, ht, g, get: G.get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings: G.rings, spawns, tspawns: null, gates,
+    boosts: boosts.map(([x, y, dx, dy]) => ({ x: px(x), y: px(free(x, y)), dx, dy })), boxes: boxes.map(([x, y]) => ({ x: px(x), y: px(free(x, y)) })),
+    wps: wps.map(([x, y]) => ({ x: px(x), y: px(free(x, y)) })), hwinds: [], fakes: [],
+    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null }, extra || {});
+}
+// the classic loop: a bottom straight (going right), a shaft up the far end, a top straight (going left), and a shaft down
+function hrLoop(T) {
+  const wt = 120, ht = 40, G = hrGrid(wt, ht), { fill, ring, zone } = G, solid = T.crys ? TCRYS : T.ice ? TICE : TROCK;
+  fill(0, 0, wt, 2, TROCK); fill(0, 37, wt, 3, TROCK); fill(0, 0, 1, ht, TMETAL); fill(wt - 1, 0, 1, ht, TMETAL);
+  fill(12, 17, 96, 5, TROCK);
+  if (T.ice) { fill(1, 37, wt - 2, 1, TICE); fill(12, 17, 96, 1, TICE); }
+  for (const [x, y, w, h] of T.ob) fill(x, y, w, h, solid);
+  for (const x of T.sc) fill(x, 17, 2, 5, TAIR);
   for (let x = 14; x < 108; x += 5) { ring(x, 25); ring(x + 2, 31); ring(x + 1, 5); ring(x + 3, 11); }
   for (let y = 34; y >= 4; y -= 3) ring(y % 2 ? 111 : 115, y);
   for (let y = 6; y <= 34; y += 5) ring(y % 2 ? 4 : 8, y);
-  for (const x of SC) { ring(x, 12); ring(x + 1, 8); ring(x, 26); }
-  const zone = (x0, x1, y0, y1) => ({ x0: x0 * TS, x1: x1 * TS, y0: y0 * TS, y1: y1 * TS });
+  for (const x of T.sc) { ring(x, 12); ring(x + 1, 8); ring(x, 26); }
   const gates = [zone(58, 62, 22, 37), zone(93, 97, 2, 17), zone(38, 42, 2, 17), zone(12, 16, 22, 37)];
-  const free = (tx, ty) => { let y = ty; while (y > 2 && get(tx, y) !== TAIR) y--; return y; };
-  const boosts = [[32, 28, 1, 0], [70, 27, 1, 0], [113, 24, 0, -1], [85, 8, -1, 0], [50, 7, -1, 0], [6, 22, 0, 1]].map(([x, y, dx, dy]) => ({ x: px(x), y: px(free(x, y)), dx, dy }));
-  const boxes = [[46, 34], [90, 34], [75, 6], [18, 6], [113, 16]].map(([x, y]) => ({ x: px(x), y: px(free(x, y)) }));
+  gates.forEach((q, i) => { q.n = ['the far end', 'the top straight', 'the top-left', 'the finish line'][i]; });
   const spawns = []; for (let i = 0; i < 8; i++) spawns.push({ x: 17 * TS + i * 44, y: 37 * TS - PR - 2 });
   const wps = [];
   for (let x = 20; x <= 104; x += 12) wps.push([x, 29]);
   wps.push([113, 32], [113, 25], [113, 18], [113, 11], [111, 6]);
   for (let x = 104; x >= 16; x -= 12) wps.push([x, 8]);
   wps.push([6, 9], [6, 18], [6, 27], [8, 34], [14, 32]);
-  const W2 = wps.map(([x, y]) => ({ x: px(x), y: px(free(x, y)) }));
-  const pal = T.pal;
-  const img = document.createElement('canvas'); img.width = wt; img.height = ht;
-  { const ic = img.getContext('2d'), id2 = ic.createImageData(wt, ht), top = hexRGB(pal.top), rock = hexRGB(pal.rock);
-    for (let y = 0; y < ht; y++) for (let x = 0; x < wt; x++) {
-      const v = g[y * wt + x];
-      const c = v === TAIR ? [150, 200, 240] : v === TMETAL ? [75, 91, 117] : v === TICE ? [169, 220, 245] : (y > 0 && g[(y - 1) * wt + x] === TAIR ? top : rock);
-      const o = (y * wt + x) * 4; id2.data[o] = c[0]; id2.data[o + 1] = c[1]; id2.data[o + 2] = c[2]; id2.data[o + 3] = 255;
-    }
-    ic.putImageData(id2, 0, 0); }
-  const a = { name: T.n, img, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings, spawns, tspawns: null, gates, boosts, boxes, wps: W2,
-    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
-  arenaCache[id] = a;
-  return a;
+  const winds = (T.winds || []).map(([x0, x1, y0, y1, fx]) => ({ x0: x0 * TS, x1: x1 * TS, y0: y0 * TS, y1: y1 * TS, fx }));
+  return hrFinish(T, wt, ht, G, gates,
+    [[32, 28, 1, 0], [70, 27, 1, 0], [113, 24, 0, -1], [85, 8, -1, 0], [50, 7, -1, 0], [6, 22, 0, 1]],
+    [[46, 34], [90, 34], [75, 6], [18, 6], [113, 16]], spawns, wps, { hwinds: winds });
+}
+// the tall loop: four floors stacked up. Right along the bottom, up the right side, left, up an inner shaft, right, up the right side again,
+// left along the top, then all the way down an outer channel on the left
+function hrTall(T) {
+  const wt = T.wt || 124, ht = 59, G = hrGrid(wt, ht), { fill, ring, zone, get } = G, R0 = wt - 13;
+  fill(0, 0, wt, 2, TROCK); fill(0, 56, wt, 3, TROCK); fill(0, 0, 1, ht, TMETAL); fill(wt - 1, 0, 1, ht, TMETAL);
+  fill(9, 13, 1, 31, TROCK);              // the wall between the outer channel and the middle floors
+  fill(10, 13, R0 - 10, 3, TROCK);        // floor 4 / floor 3: open only at the right
+  fill(19, 27, wt - 20, 3, TROCK);        // floor 3 / floor 2: open only at the inner shaft on the left
+  fill(10, 41, R0 - 10, 3, TROCK);        // floor 2 / floor 1: open only at the right
+  for (const [x, y, w, h] of T.ob) fill(x, y, w, h, TROCK);
+  for (const [x, y] of T.sc) fill(x, y, 2, 3, TAIR);
+  const fakes = [];
+  for (const [x, y, w, h] of T.fake || []) { fill(x, y, w, h, TAIR); fakes.push({ x: x * TS, y: y * TS, w: w * TS, h: h * TS }); }
+  const lanes = [[2, 12], [16, 26], [30, 40], [44, 55]];
+  for (const [a, b] of lanes) for (let x = 12; x < R0; x += (T.extraRings ? 4 : 5)) { ring(x, a + 3); ring(x + 2, a + 8); }
+  for (let y = 54; y >= 3; y -= 3) ring(y % 2 ? R0 + 2 : R0 + 7, y);
+  for (let y = 40; y >= 17; y -= 3) ring(y % 2 ? 12 : 16, y);
+  for (let y = 6; y <= 50; y += 6) ring(y % 2 ? 3 : 6, y);
+  for (const [x, y] of T.sc) { ring(x, y - 4); ring(x + 1, y + 6); }
+  for (const f of T.fake || []) { ring(f[0], f[1] - 4); ring(f[0] + 1, f[1] + 6); }
+  const mid = Math.floor(wt / 2);
+  const gates = [zone(mid - 2, mid + 2, 44, 56), zone(wt - 36, wt - 32, 30, 41), zone(28, 32, 30, 41), zone(mid - 2, mid + 2, 16, 27), zone(mid - 14, mid - 10, 2, 13), zone(28, 32, 2, 13), zone(10, 14, 44, 56)];
+  gates.forEach((q, i) => { q.n = ['the bottom floor', 'floor 2', 'the inner shaft', 'floor 3', 'the top floor', 'the drop on the left', 'the finish line'][i]; });
+  const spawns = []; for (let i = 0; i < 8; i++) spawns.push({ x: 16 * TS + i * 44, y: 56 * TS - PR - 2 });
+  const wps = [];
+  for (let x = 18; x <= R0 - 4; x += 12) wps.push([x, 50]);
+  for (let y = 50; y >= 33; y -= 6) wps.push([R0 + 5, y]);
+  for (let x = R0 - 4; x >= 14; x -= 12) wps.push([x, 35]);
+  for (let y = 35; y >= 20; y -= 6) wps.push([14, y]);
+  for (let x = 18; x <= R0 - 4; x += 12) wps.push([x, 21]);
+  for (let y = 21; y >= 6; y -= 6) wps.push([R0 + 5, y]);
+  for (let x = R0 - 4; x >= 12; x -= 12) wps.push([x, 7]);
+  for (let y = 8; y <= 50; y += 7) wps.push([4, y]);
+  wps.push([12, 50]);
+  const third = Math.floor(wt / 3), boosts = [[third, 50, 1, 0], [mid, 35, -1, 0], [third, 21, 1, 0], [mid, 7, -1, 0], [R0 + 5, 38, 0, -1], [4, 30, 0, 1]];
+  if (T.boostsX) boosts.push([third * 2, 50, 1, 0], [third, 35, -1, 0], [third * 2, 21, 1, 0], [third, 7, -1, 0], [R0 + 5, 10, 0, -1], [14, 30, 0, -1]);
+  return hrFinish(T, wt, ht, G, gates, boosts, [[mid + 10, 52], [third, 37], [third * 2, 23], [Math.floor(wt / 4), 9], [R0 + 5, 46]], spawns, wps, { fakes });
 }
 // ----- racers: lap, next gate, finish time, best lap, item -----
 function hrRacer(ls) { return { lap: 0, g: 0, fin: 0, best: 0, ls: ls || 0, item: null, bt: 0, box: {} }; }
 function initHr(pm) { pvp.hr = { laps: (pm.hr && pm.hr.laps) || HR_LAPS, me: hrRacer(pm.st), over: false, firstFin: 0, res: null, extra: [], grit: 0 }; }
 const hrPackR = (R) => [R.lap, R.g, Math.round(R.fin), Math.round(R.best)];
-const hrUnpack = (e) => Array.isArray(e) ? { lap: clampInt(e[0], 0, 9), g: clampInt(e[1], 0, 3), fin: clampInt(e[2], 0, 1e7), best: clampInt(e[3], 0, 1e7) } : null;
+const hrUnpack = (e) => Array.isArray(e) ? { lap: clampInt(e[0], 0, 9), g: clampInt(e[1], 0, 15), fin: clampInt(e[2], 0, 1e7), best: clampInt(e[3], 0, 1e7) } : null;
 function hrRacers() {
   const out = [], h = pvp.online ? hostPvpPeer() : null, hb = h && h.raw && h.raw.hr && Array.isArray(h.raw.hr.b) ? h.raw.hr.b : [];
   for (const v of pvpViews()) {
@@ -6463,7 +6539,7 @@ function hrRacers() {
 function hrScore(r) {
   const R = r.R; if (R.fin) return 1e9 - R.fin;
   const G2 = hw.gates[R.g], d = Math.hypot(r.v.x - (G2.x0 + G2.x1) / 2, r.v.y - (G2.y0 + G2.y1) / 2);
-  return R.lap * 4 + R.g + Math.max(0, 1 - d / 6000) * 0.99;
+  return R.lap * hw.gates.length + R.g + Math.max(0, 1 - d / 6000) * 0.99;
 }
 const hrStandings = () => hrRacers().sort((a, b) => hrScore(b) - hrScore(a));
 function hrPass(R, x, y, now, me) {
@@ -6472,7 +6548,7 @@ function hrPass(R, x, y, now, me) {
   if (x < G2.x0 || x > G2.x1 || y < G2.y0 || y > G2.y1) return;
   R.g++;
   if (me) sfx('checkpoint');
-  if (R.g < 4) return;
+  if (R.g < hw.gates.length) return;
   R.g = 0; R.lap++;
   const lt = now - R.ls; R.ls = now; if (!R.best || lt < R.best) R.best = lt;
   if (R.lap >= pvp.hr.laps) { R.fin = now - pvp.start; if (me) { sfx('win'); banner('Finished!', fmtTime(R.fin / 1000), 'Lap best ' + fmtTime(R.best / 1000)); } }
@@ -6504,7 +6580,7 @@ function hrUse(id, body, R, now, ux, uy) {
 function hrReset() {
   // stuck? R puts you back at the last gate you passed
   if (!pvpReady() || pvp.hr.me.fin) return;
-  const R = pvp.hr.me, G2 = hw.gates[(R.g + 3) % 4];
+  const R = pvp.hr.me, n = hw.gates.length, G2 = hw.gates[(R.g + n - 1) % n];
   let x = (G2.x0 + G2.x1) / 2, y = (G2.y0 + G2.y1) / 2;
   for (let k = 0; k < 12 && !circleFree(x, y, PR + 1); k++) y -= TS / 2;
   burst(P.x, P.y, '#c7d2ff', 12, 160); detach(); P.x = x; P.y = y; P.vx = 0; P.vy = 0; P.hist.length = 0;
@@ -6518,11 +6594,11 @@ function hrTick(dt) {
   pvp.lines = pvp.lines.filter(l => l.until > now);
   pvp.claims = pvp.claims.filter(c => now - c[7] < 2500).slice(-24);
   if (pvp.over) return;
-  if (now >= pvp.start) { hrPass(H.me, P.x, P.y, now, true); if (!H.me.fin) hrPickups(P, H.me, now, true); }
+  if (now >= pvp.start) { hrPass(H.me, P.x, P.y, now, true); if (!H.me.fin) hrPickups(P, H.me, now, true); if (!rope) hrWind(P, dt); }
   // the race ends when everyone is home, or 30 seconds after the winner
   const rs = hrRacers(), fins = rs.filter(r => r.R.fin).length;
   if (fins && !H.firstFin) { H.firstFin = now; if (!H.me.fin) banner('Someone finished!', '30 seconds left', 'Cross the line before time runs out.'); }
-  if (now > pvp.start + 1000 && ((rs.length && fins === rs.length) || (H.firstFin && now - H.firstFin > 30000) || now > pvp.start + 8 * 60000)) finishHr();
+  if (now > pvp.start + 1000 && ((rs.length && fins === rs.length) || (H.firstFin && now - H.firstFin > 30000) || now > pvp.start + 15 * 60000)) finishHr();
 }
 function hrBotTick(b, dt, now) {
   if (!b.hr) { b.spd = { easy: 1.15, medium: 1.35, hard: 1.5 }[b.diff] || 1.35; b.hr = hrRacer(pvp.start); b.wp = 1; b.wpT = Math.max(now, pvp.start); } // the first waypoint ahead of the start line
@@ -6541,6 +6617,7 @@ function hrBotTick(b, dt, now) {
   if (b.hr.fin) return;
   hrPass(b.hr, b.x, b.y, now, false);
   hrPickups(b, b.hr, now, false);
+  if (!b.rope) hrWind(b, dt);
   if (b.hr.item && Math.random() < dt * 0.5) { const d = Math.hypot(w.x - b.x, w.y - b.y) || 1; hrUse(b.id, b, b.hr, now, (w.x - b.x) / d, (w.y - b.y) / d); }
 }
 function finishHr() {
@@ -6567,7 +6644,7 @@ function finishHr() {
   if (R.fin && place === 0 && many) {
     if (!save.hrWins || typeof save.hrWins !== 'object') save.hrWins = {};
     if (!save.hrWins[T]) { save.hrWins[T] = 1; extra.push('First win on this track!'); }
-    if (HR_IDS.every(t => save.hrWins[t]) && !ownsSkin('checkered')) { for (const iid of Object.values(skinEq('checkered'))) save.owned[iid] = Math.max(1, save.owned[iid] || 0); extra.push('New skin: Checkered!'); }
+    for (const n of hrSkinSync()) extra.push('New skin: ' + n + '!');
   }
   pvp.reward = tok; pvp.won = won; H.grit = grit; H.extra = extra;
   sfx(won ? 'win' : 'lose');
@@ -6598,11 +6675,17 @@ function renderHrResults() {
     li.append(pl, dot, nm, res); list.append(li);
   });
 }
+function hrWind(body, dt) { for (const w of hw.hwinds) if (body.x > w.x0 && body.x < w.x1 && body.y > w.y0 && body.y < w.y1) body.vx += w.fx * dt; }
 function hrDraw() {
   const now = Date.now(), R = pvp.hr.me;
+  for (const f of hw.fakes) { // looks like solid stone... but isn't
+    ctx.fillStyle = hw.colB[0].rock; ctx.fillRect(f.x, f.y, f.w + 0.5, f.h + 0.5);
+    ctx.strokeStyle = 'rgba(199,210,255,' + (0.08 + 0.05 * Math.sin(gt * 2)) + ')'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(f.x + 10, f.y + 6); ctx.lineTo(f.x + 30, f.y + 40); ctx.lineTo(f.x + 22, f.y + f.h - 6); ctx.stroke();
+  }
+  if (hw.hwinds.length) { ctx.strokeStyle = 'rgba(230,220,255,0.35)'; ctx.lineWidth = 2; for (const w of hw.hwinds) for (let k = 0; k < 26; k++) { const y = w.y0 + ((k * 137) % (w.y1 - w.y0)), x = w.x0 + (((gt * 320 * Math.sign(w.fx) + k * 211) % (w.x1 - w.x0)) + (w.x1 - w.x0)) % (w.x1 - w.x0); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - Math.sign(w.fx) * 40, y); ctx.stroke(); } }
   hw.gates.forEach((G2, i) => {
-    const next = i === R.g && !R.fin, x = (G2.x0 + G2.x1) / 2;
-    if (i === 3) {
+    const next = i === R.g && !R.fin, x = (G2.x0 + G2.x1) / 2, last = i === hw.gates.length - 1;
+    if (last) {
       ctx.globalAlpha = next ? 0.95 : 0.65;
       for (let y = G2.y0; y < G2.y1; y += 20) for (let c = 0; c < 2; c++) { ctx.fillStyle = ((y / 20 + c) % 2) ? '#1b1631' : '#ffffff'; ctx.fillRect(x - 20 + c * 20, y, 20, 20); }
       ctx.globalAlpha = 1;
@@ -6610,7 +6693,7 @@ function hrDraw() {
       ctx.strokeStyle = next ? '#5ee6c1' : 'rgba(243,236,223,0.3)'; ctx.lineWidth = next ? 6 : 3; ctx.setLineDash([14, 10]);
       ctx.beginPath(); ctx.moveTo(x, G2.y0); ctx.lineTo(x, G2.y1); ctx.stroke(); ctx.setLineDash([]);
     }
-    if (next) { ctx.font = '700 15px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#5ee6c1'; ctx.fillText(i === 3 ? 'FINISH LINE' : 'NEXT GATE', x, G2.y0 + 22); }
+    if (next) { ctx.font = '700 15px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#5ee6c1'; ctx.fillText(last ? 'FINISH LINE' : 'NEXT GATE', x, G2.y0 + 22); }
   });
   for (const b of hw.boosts) {
     ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.dy, b.dx));
@@ -6637,7 +6720,7 @@ function hrHudFast(now) {
 }
 function hrHudSlow() {
   const H = pvp.hr, R = H.me;
-  $('w-found').textContent = (R.fin ? 'You finished! ' : 'Next: ' + HR_NEXT[R.g] + ' · ') + (R.item ? 'Item: ' + HR_ITEM_N[R.item] + ' (E)' : 'Grab ? boxes for items');
+  $('w-found').textContent = (R.fin ? 'You finished! ' : 'Next: ' + hw.gates[R.g].n + ' (gate ' + (R.g + 1) + ' of ' + hw.gates.length + ') · ') + (R.item ? 'Item: ' + HR_ITEM_N[R.item] + ' (E)' : 'Grab ? boxes for items');
   const el = $('w-team'); el.textContent = '';
   hrStandings().forEach((r, i) => {
     const row = document.createElement('div'); row.className = 'team-row';
@@ -6659,6 +6742,7 @@ function renderHrSetup() {
       el.append(b);
     }
   };
+  if (hrSkinSync().length) writeSave();
   const wins = save.hrWins && typeof save.hrWins === 'object' ? save.hrWins : {}, nWon = HR_IDS.filter(t => wins[t]).length;
   mk('h-track', HR_TRACKS.map(t => [t.id, t.n + (wins[t.id] ? ' ✓' : '')]), () => hcfg.track, v => { hcfg.track = v; });
   mk('h-teams', [[false, 'Free-for-all'], [true, '2 teams (points)']], () => hcfg.teams, v => { hcfg.teams = v; });
@@ -6666,9 +6750,9 @@ function renderHrSetup() {
   mk('h-nb', [0, 1, 2, 3, 4, 5, 6, 7].map(n => [n, String(n)]), () => hcfg.nb, v => { hcfg.nb = v; });
   mk('h-diff', Object.keys(PDIFF).map(k => [k, DIFF[k].n]), () => hcfg.diff, v => { hcfg.diff = v; });
   $('h-myteam-f').hidden = !hcfg.teams;
-  $('h-track-note').textContent = (HR_TRACKS.find(t => t.id === hcfg.track) || {}).d || '';
+  { const T = HR_TRACKS.find(t => t.id === hcfg.track) || HR_TRACKS[0]; $('h-track-note').textContent = T.d + ' Win here to unlock the ' + PAL_BY[T.skin].n + ' skin' + (ownsSkin(T.skin) ? ' (you have it).' : '.'); }
   const rec = save.hrBest && save.hrBest[hcfg.track] || {};
-  $('h-rec').textContent = 'Your best race ' + (rec.r ? fmtTime(rec.r / 1000) : '—') + ' · best lap ' + (rec.l ? fmtTime(rec.l / 1000) : '—') + ' · Tracks won ' + nWon + ' of 4' + (nWon >= 4 ? ' · Checkered skin unlocked!' : '');
+  $('h-rec').textContent = 'Your best race ' + (rec.r ? fmtTime(rec.r / 1000) : '—') + ' · best lap ' + (rec.l ? fmtTime(rec.l / 1000) : '—') + ' · Tracks won ' + nWon + ' of ' + HR_TRACKS.length;
   $('b-h-host').hidden = !roomApi; $('h-join').hidden = !roomApi;
 }
 $('m-hr').addEventListener('click', () => { renderHrSetup(); $('h-err').hidden = true; show('scr-hr'); });
@@ -7408,9 +7492,9 @@ function modeHelp(k) {
     ctf: { t: 'Capture the Flag', g: 'Touch the other team\'s flag to grab it, then bring it to your base while your own flag is home. First to 3 captures wins.',
       k: [...move, [K('up') + ' (hooked to an enemy)', 'Yank them'], ...abil, [K('map'), 'Map'], ['Esc', 'Pause']],
       tips: ['Stop a carrier on your side of the map by touching them or yanking them. Past the middle, they\'re safe.', 'Touch your own dropped flag to send it home. Otherwise it goes home after 20 seconds.', 'You can only score while your own flag is at your base.'] },
-    hr: { t: 'Hook Racing', g: 'Race 3 laps. Pass every gate in order: right along the bottom, up the far end, back along the top, then down to the finish line.',
+    hr: { t: 'Hook Racing', g: 'Race 3 laps. Pass every gate in order: the next one glows green, and the checkered line is the finish.',
       k: [...move, [K('attack'), 'Use your item'], [K('reset'), 'Stuck? Back to the last gate'], [K('up') + ' (hooked to a racer)', 'Yank them back'], ...abil, [K('map'), 'Map'], ['Esc', 'Pause']],
-      tips: ['Fly through the orange boost rings for a burst of speed.', 'Narrow gaps in the middle wall are shortcuts: hard to swing through, but fast.', 'Grab ? boxes for a speed burst (toward your aim), a shield, or a slow shot that hits the racer ahead of you.'] },
+      tips: ['Fly through the orange boost rings for a burst of speed.', 'Narrow gaps in the walls between straights are shortcuts: hard to swing through, but fast.', 'Grab ? boxes for a speed burst (toward your aim), a shield, or a slow shot that hits the racer ahead of you.'] },
     chess: { t: 'Kingfall', g: 'A real-time chess battle. Play any of your 8 pieces while the rest follow your orders. Take the enemy King to win.',
       k: [...move, [K('attack'), 'Attack (each piece has its own)'], [K('special'), 'Piece move · as the King, revive a piece'], ['1–8 / ' + K('equip'), 'Switch piece'], ['Click an order', 'Give one piece a new order'], [K('map'), 'Map'], ['Esc', 'Pause']],
       tips: ['Click a piece\'s order in the list on the left to change just that piece.', 'Every 30 seconds your King can bring back a taken piece. If you aren\'t playing it, it does that on its own.', 'Knights leap, Bishops dash diagonally, Rooks charge, and the Queen dashes any way.'] },
@@ -9335,14 +9419,14 @@ function renderSkins() {
   const s = achState(), owned = SKINS.filter(k => ownsSkin(k.id)).length;
   $('l-count').textContent = 'You own ' + owned + ' of ' + SKINS.length + ' skins. Earn them with gold medals in Time Trials. Tap one to preview it.';
   const grid = $('l-items'); grid.textContent = '';
-  const list = [...(ownsSkin('admin') ? [ADMIN_SKIN] : []), PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.checkered, ...SKINS];
+  const list = [...(ownsSkin('admin') ? [ADMIN_SKIN] : []), PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, ...PALETTES.filter(p => p.race), ...SKINS];
   for (const k of list) {
     const need = k === ADMIN_SKIN || k.story || k.race ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
     const eq = skinEq(k.id), wearing = own && Object.keys(eq).every(c => save.eq[c] === eq[c]);
     const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = k.cols[0];
     const t = document.createElement('b'); t.textContent = hidden && !own ? 'Secret skin' : k.n;
     const sm = document.createElement('small'); sm.style.color = own ? 'var(--mint)' : 'var(--dim)';
-    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : k.story ? 'Unlock: finish Chapter ' + k.story + ' of Story Mode' : k.race ? 'Unlock: win a Hook Racing race on all 4 tracks' : 'Unlock: ' + need + ' gold medals';
+    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : k.story ? 'Unlock: finish Chapter ' + k.story + ' of Story Mode' : k.race ? 'Unlock: win a Hook Racing race on ' + ((HR_TRACKS.find(t => t.id === k.race) || {}).n || 'its track') : 'Unlock: ' + need + ' gold medals';
     const strip = document.createElement('span'); strip.className = 'strip'; strip.style.background = 'linear-gradient(90deg, ' + k.cols.join(', ') + ')';
     b.append(t, sm, strip);
     b.setAttribute('aria-pressed', String(wearing));
