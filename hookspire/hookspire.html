@@ -9090,7 +9090,16 @@ const GSTATS = [
 ];
 const GRIT_CODE = 'NEVERLETGO';
 const SECRET_Y = -10 * CHUNK;                       // the 120 m checkpoint floor: its left wall is fake
-const RELIC = { x: 45, y: SUMMIT_Y - 250 };         // hidden just above the summit, by the left wall
+// the relic hangs just past the highest ring under the summit, toward the nearer wall: swing out to it on your way up
+let relicAt = null;
+function relicPos() {
+  if (relicAt) return relicAt;
+  let a = null;
+  for (const q of chunk(TOP_CHUNK - 1).anchors) if (q.kind === 'fixed' && (!a || q.y < a.y)) a = q;
+  relicAt = a ? { x: clamp(a.x + (a.x < W / 2 ? -1 : 1) * 110, 30, W - 30), y: a.y + 50 } : { x: 40, y: SUMMIT_Y + 90 };
+  return relicAt;
+}
+const RELIC = { get x() { return relicPos().x; }, get y() { return relicPos().y; } };
 let secretT = 0;
 function gs() {
   let g = save.grit;
