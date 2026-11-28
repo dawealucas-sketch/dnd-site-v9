@@ -326,6 +326,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   <div class="kroster" id="k-roster" hidden></div>
   <div class="kmenu" id="k-menu" hidden></div>
   <div class="hint" id="k-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>E</b> attack · <b>Q</b> piece move · <b>1–8 / Tab</b> switch · <b>O</b> order all · <b>M</b> map</div>
+  <div class="hint" id="d-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>E</b> or <b>Click</b> slash · <b>Q</b> sword power · <b>W</b> reel / yank · <b>Esc</b> pause</div>
   <div class="hint" id="r-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump / yank · <b>E</b> use item · <b>R</b> back to last gate · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
   <div class="hint" id="c-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / jump / yank a hooked enemy · <b>1–5</b> abilities · <b>M</b> map · <b>Esc</b> pause</div>
   <div class="hint" id="p-hint" hidden><b>H</b> help · <b>Mouse</b> aim · <b>Space</b> hook · <b>W</b> reel / yank a hooked player · <b>E</b> shoot · <b>Q</b> ultimate · <b>1–5</b> abilities · <b>Esc</b> pause</div>
@@ -367,6 +368,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <button class="mode" id="m-pvp"><b>PvP</b><small>Hook, yank and shoot friends and bots. Last one standing wins.</small></button>
         <button class="mode" id="m-tag"><b>Hook Tag</b><small>Tag or be tagged. Classic or Infection, with bots or friends.</small></button>
         <button class="mode" id="m-ctf"><b>Capture the Flag</b><small>Red vs Blue. Steal their flag and bring it home. First to 3.</small></button>
+        <button class="mode" id="m-duel"><b>Duel Arena</b><small>1 vs 1 sword fights, best of 5 rounds. Every round changes the arena. Win to unlock new swords.</small></button>
         <button class="mode" id="m-hr"><b>Hook Racing</b><small>3-lap races on 10 tracks. Boost rings, shortcuts and items. Solo, teams or online.</small></button>
         <button class="mode" id="m-chess"><b>Kingfall</b><small>Real-time chess battle. Command your pieces and take the enemy King.</small></button>
       </div>
@@ -779,6 +781,25 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <div class="row"><button class="btn primary" id="b-dr-next">Next level</button><button class="btn" id="b-dr-retry">Dive again</button><button class="btn" id="b-dr-map">Back to the levels</button></div>
   </section>
 
+  <section class="panel wide" id="scr-duel" hidden>
+    <div class="head-row"><h2>Duel Arena</h2><span class="note" id="du-rec"></span></div>
+    <p>A 1 vs 1 sword fight in a small arena. Swing on your hook to get close, then slash. Each round you have 3 hearts. First to win 3 rounds wins the duel. Every round the arena changes: low gravity, a lava floor, closing walls, an ice floor or strong wind.</p>
+    <div class="field"><span class="label">Your sword</span><div class="ablist" id="du-swords"></div><p class="note">Every sword has its own power on <b>Q</b>. New swords unlock at 1, 3, 5, 10, 15 and 25 duel wins.</p></div>
+    <div class="field"><span class="label">Bot difficulty</span><div class="seg" id="du-diff"></div></div>
+    <div class="row">
+      <button class="btn primary" id="b-du-start">Duel a bot</button>
+      <button class="btn" id="b-du-host">Host online duel</button>
+    </div>
+    <div class="join" id="du-join">
+      <label for="du-code">Join a friend's duel</label>
+      <input type="text" id="du-code" maxlength="6" placeholder="Duel code" autocomplete="off" spellcheck="false">
+      <button class="btn" id="b-du-join">Join</button>
+    </div>
+    <p class="err" id="du-err" hidden></p>
+    <p class="note">Rewards: 20 tokens for a duel win, 5 for a loss, plus 3 for every round you win. Win 10 duels to unlock the Duelist skin.</p>
+    <button class="link" id="b-du-back">Back to menu</button>
+  </section>
+
   <section class="panel wide" id="scr-hr" hidden>
     <h2>Hook Racing</h2>
     <p>Race 3 laps around a looping track. Pass every gate in order: the next one glows green, and a checkered line marks the finish. Fly through orange boost rings, find the narrow shortcuts in the middle wall, and grab <b>?</b> boxes for items (press <kbd>E</kbd> to use one).</p>
@@ -1150,6 +1171,7 @@ const PALETTES = [
   { id: 'r_sand', n: 'Sand Racer', cols: ['#fff1c9', '#f0d58a', '#c49a5a', '#8a6a3a'], hat: 'racehelm', hc: '#f0d58a', rope: 'plain', rc: '#c49a5a', trail: 'dot', aura: 'glow', ac: '#f0d58a', glow: 8, race: 'hr_dunes' },
   { id: 'r_jungle', n: 'Jungle Racer', cols: ['#c8ff9e', '#5fd36b', '#2f8a3a', '#2f4a26'], hat: 'racehelm', hc: '#5fd36b', rope: 'plain', rc: '#8a6d52', trail: 'leaf', aura: 'orbit', ac: '#5fd36b', glow: 8, race: 'hr_jungle' },
   { id: 'r_crystal', n: 'Crystal Racer', cols: ['#ffffff', '#c7a8ff', '#7fd8ff', '#4a4068'], hat: 'racehelm', hc: '#c7a8ff', rope: 'glow', rc: '#c7a8ff', trail: 'star', aura: 'rainbowring', ac: '#c7a8ff', glow: 14, race: 'hr_crystal' },
+  { id: 'duelist', n: 'Duelist', cols: ['#f3f0ff', '#c0c8d8', '#5a6478', '#2a2f3d'], hat: 'forgehelm', hc: '#c0c8d8', rope: 'chain', rc: '#e8e4f0', trail: 'spark', aura: 'pulse', ac: '#ff5a6e', glow: 10, duel: true },
   { id: 'deepdiver', n: 'Deep Diver', cols: ['#ffd98a', '#d9a441', '#1f4f8a', '#0b1e3f'], hat: 'bubble', hc: '#d9a441', rope: 'chain', rc: '#d9a441', trail: 'ring', aura: 'tide', ac: '#5fd8ff', glow: 10, dive: true },
   { id: 'spireheart', n: 'Spireheart', cols: ['#ffe14a', '#5fd8ff', '#5fe3d0', '#ff8a3d', '#ffffff'], hat: 'spirecrown', hc: '#ffffff', rope: 'grad', rc: '#ffffff', trail: 'elements', aura: 'elements', ac: '#ffffff', glow: 18, story: 5 },
   { id: 'emberforged', n: 'Emberforged', cols: ['#fff1c9', '#ffb347', '#ff5a1f', '#3a1a12'], hat: 'forgehelm', hc: '#ffb347', rope: 'chain', rc: '#ff8a3d', trail: 'cinder', aura: 'magma', ac: '#ff8a3d', glow: 14, story: 4 },
@@ -1165,7 +1187,7 @@ for (const s of PALETTES) PAL_BY[s.id] = s;
 const SKINS = SKIN_ORDER.map(id => PAL_BY[id]);
 const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon', boltcrown: 'Bolt Crown', icecrown: 'Ice Crown', coralcrown: 'Coral Crown', glacier: 'Glacier Crown', forgehelm: 'Forge Helm', spirecrown: 'Spire Crown', racehelm: 'Racing Helmet' };
 const SKIN_BY = Object.create(null);
-for (const s of [...SKINS, PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.deepdiver, ...PALETTES.filter(p => p.race)]) {
+for (const s of [...SKINS, PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.deepdiver, PAL_BY.duelist, ...PALETTES.filter(p => p.race)]) {
   SKIN_BY[s.id] = s;
   const base = { r: 5, ex: true, sk: s.id };
   ITEMS.push(Object.assign({ cat: 'hat', id: 'k_' + s.id + '_h', n: s.n + ' ' + HAT_NAMES[s.hat], k: s.hat, c: s.hc || s.cols[1], c2: s.cols[0] }, base));
@@ -1226,7 +1248,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0, story: null, grit: null, hrCfg: null, hrBest: null, hrWins: null, dive: null, pet: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0, story: null, grit: null, hrCfg: null, hrBest: null, hrWins: null, dive: null, pet: null, duel: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -1265,6 +1287,7 @@ try {
     if (s.hrWins && typeof s.hrWins === 'object') save.hrWins = s.hrWins;
     if (s.dive && typeof s.dive === 'object') save.dive = s.dive;
     if (typeof s.pet === 'string') save.pet = s.pet.slice(0, 20);
+    if (s.duel && typeof s.duel === 'object') save.duel = s.duel;
     if (typeof s.last === 'string' && /^m-[a-z]+$/.test(s.last)) save.last = s.last;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
@@ -1662,6 +1685,7 @@ canvas.addEventListener('pointerup', aimEnd); canvas.addEventListener('pointerca
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 canvas.addEventListener('pointerdown', (e) => {
   canvas.focus();
+  if (mode === 'pvp' && pvp && pvp.duel && e.pointerType !== 'touch' && e.button === 0) duelSlash();
   if (mode === 'pvp' && pvp && pvp.chess) {
     if (pvp.chess.picking) { const sc = wScale(); kfPickSpot(wcamX + e.clientX / sc, wcamY + e.clientY / sc); }
     else if (kfMenuOpen()) kfCloseMenu();
@@ -2327,7 +2351,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-train', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-hr', 'scr-dive', 'scr-dshop', 'scr-dive-res', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-train', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-hr', 'scr-duel', 'scr-dive', 'scr-dshop', 'scr-dive-res', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -2415,7 +2439,7 @@ function toMenu() {
   kfCloseMenu();
   if (typeof sDlg !== 'undefined') { sDlg.lines = null; $('dlg').hidden = true; $('radio').hidden = true; }
   story = null; storyHost = false; train = null; dive = null; diveHost = false;
-  pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true; $('r-hint').hidden = true; $('k-hint').hidden = true; $('k-roster').hidden = true;
+  pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true; $('r-hint').hidden = true; $('d-hint').hidden = true; $('k-hint').hidden = true; $('k-roster').hidden = true;
   trial = null; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false;
   toCheckpoint(0);
   runHeight = 0;
@@ -4082,6 +4106,7 @@ function stepWorld(dt) {
   if (rope && !ropeAnchor()) detach();
   const fly = ab.active.fly > 0, feather = ab.active.feather > 0, km = chessSpeed() * gSpd() * (mode === 'dive' ? 1 + 0.08 * dUp('grapple') : 1);
   let ax = 0, ay = fly ? 0 : feather ? G * 0.3 : G;
+  if (mode === 'pvp' && pvp && pvp.duel && pvp.duel.ch === 'lowgrav') ay *= 0.45;
   if (ab.active.flip > 0 && !fly) ay = -ay; // Gravity Flip
   if (fly && !rope) { ax = dir * 1700; ay += ((held('KeyS', 'ArrowDown') ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0)) * 1700; }
   else if (rope) ax = dir * SWING * km * (mode === 'pvp' && pvp && pvp.me.od > Date.now() ? 1.6 : 1);
@@ -4164,6 +4189,7 @@ function toast(msg) { banner('Ability', msg); }
 function useAbility(i) {
   const h = hs(), id = h.slots[i];
   if (!id || state !== 'play') return;
+  if (mode === 'pvp' && pvp && pvp.duel) return; // duels are sword + hook only
   if (mode === 'pvp' && pvp && (Date.now() < pvp.start || !pvp.me.alive || pvp.over || Date.now() < pvp.me.freezeUntil)) return;
   if (ab.cd[id] > 0 || ab.active[id] > 0) return;
   const A = ABIL[id];
@@ -5321,6 +5347,7 @@ function pvpGate(dt) {
 }
 function pvpReady() { const m = pvp && pvp.me, now = Date.now(); return !!(m && m.alive && now >= pvp.start && !pvp.over && now >= m.freezeUntil && state === 'play'); }
 function pvpShoot() {
+  if (pvp && pvp.duel) { duelSlash(); return; }
   if (pvp && pvp.hr) { if (pvpReady()) { const dx = mouse.wx - P.x, dy = mouse.wy - P.y, d = Math.hypot(dx, dy) || 1; hrUse(selfId(), P, pvp.hr.me, Date.now(), dx / d, dy / d); } return; }
   if (pvp && pvp.ctf) return;
   if (!pvpReady() || pvp.me.shotCd > 0) return;
@@ -5335,7 +5362,7 @@ function pvpShoot() {
   spawnShot(selfId(), m.team, P.x, P.y, dx / d, dy / d, { dmg: od ? 2 : 1 }); sfx('shoot');
   m.shotCd = SHOT_CD * (od ? 0.5 : 1);
 }
-function pvpUltKey() { if (pvp && (pvp.tag || pvp.ctf || pvp.hr)) return; if (pvpReady() && pvp.me.charge >= 100) useUlt(selfId(), pvp.me, P, pvp.me.ult, mouse.wx, mouse.wy); }
+function pvpUltKey() { if (pvp && pvp.duel) { duelSpecial(); return; } if (pvp && (pvp.tag || pvp.ctf || pvp.hr)) return; if (pvpReady() && pvp.me.charge >= 100) useUlt(selfId(), pvp.me, P, pvp.me.ult, mouse.wx, mouse.wy); }
 function pvpYank() {
   if (pvp && pvp.tag) return;
   if (!pvpReady() || !rope || rope.kind !== 'peer' || pvp.me.yankCd > 0) return;
@@ -5430,7 +5457,7 @@ function botBrain(b, tgt, dt, now) {
   b.wantUp = ty < b.y - 60;
 }
 function botPhysics(b, dt, now) {
-  let ax = 0, ay = G;
+  let ax = 0, ay = G * (pvp.duel && pvp.duel.ch === 'lowgrav' ? 0.45 : 1);
   if (b.rope) {
     // pump with the swing to build it up, then the brain lets go toward the target
     let push = Math.abs(b.vx) > 40 ? Math.sign(b.vx) : b.dir;
@@ -5473,6 +5500,7 @@ function botTick(b, dt, now) {
   if (pvp.tag) { tagBotTick(b, dt, now); return; }
   if (pvp.ctf) { ctfBotTick(b, dt, now); return; }
   if (pvp.hr) { hrBotTick(b, dt, now); return; }
+  if (pvp.duel) { duelBotTick(b, dt, now); return; }
   if (pvp.chess) { chessBotTick(b, dt, now); return; }
   if (now < pvp.start || pvp.over) return;
   b.charge = Math.min(100, b.charge + dt * 100 / ULT_TIME);
@@ -5505,7 +5533,7 @@ function botTick(b, dt, now) {
 
 // ----- match flow -----
 function startPvp(pm, online) {
-  hw = pm.chess ? buildKingfall() : pm.ctf ? buildCtf(pm.map) : pm.hr ? buildRaceTrack(pm.map) : buildArena(pm.map); mode = 'pvp'; lastPvpId = pm.id;
+  hw = pm.duel ? buildDuelArena() : pm.chess ? buildKingfall() : pm.ctf ? buildCtf(pm.map) : pm.hr ? buildRaceTrack(pm.map) : buildArena(pm.map); mode = 'pvp'; lastPvpId = pm.id;
   ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0;
   const tm = new Map(pm.tm || []), myId = online ? myPeerId : 'me';
   const myTeam = online ? (tm.has(myId) ? tm.get(myId) : 99) : (pm.teams ? (pm.mt === 1 ? 1 : 0) : 0);
@@ -5516,12 +5544,14 @@ function startPvp(pm, online) {
   if (pm.tag) initTag(pm, online);
   if (pm.ctf) initCtf(pm);
   if (pm.hr) initHr(pm);
+  if (pm.duel) initDuel(pm);
   if (pm.chess) initChess(pm, online);
   const sp = hw.spawns, off = pm.id % sp.length;
   if (!online || pvpHost) for (let k = 0; k < pm.nb; k++) {
     const id = 'b' + k, team = online ? (tm.has(id) ? tm.get(id) : k + 1) : (pm.teams ? (offCount[0] < offCount[1] ? 0 : 1) : k + 1);
     if (!online && pm.teams) offCount[team]++;
-    const b = makePvpBot(k, team, pm), idx = online ? Math.max(0, pm.tm.findIndex(e => e[0] === id)) : k + 1, s = hw.tspawns ? hw.tspawns[team & 1][idx % hw.tspawns[team & 1].length] : sp[(off + idx) % sp.length];
+    const b = makePvpBot(k, team, pm); if (pm.duel) b.sword = SWORDS[(pm.id + 5) % SWORDS.length].id;
+    const idx = online ? Math.max(0, pm.tm.findIndex(e => e[0] === id)) : k + 1, s = hw.tspawns ? hw.tspawns[team & 1][idx % hw.tspawns[team & 1].length] : sp[(off + idx) % sp.length];
     b.x = s.x; b.y = s.y; b.inv = pm.st + 2000; pvp.bots.push(b);
   }
   const myIdx = online ? Math.max(0, pm.tm.findIndex(e => e[0] === myId)) : 0, s = hw.tspawns ? hw.tspawns[myTeam & 1][myIdx % hw.tspawns[myTeam & 1].length] : sp[(off + myIdx) % sp.length];
@@ -5533,10 +5563,11 @@ function startPvp(pm, online) {
   state = 'play'; show(null);
   $('hud').hidden = true; $('whud').hidden = false; $('w-ult').hidden = false; $('w-hint').hidden = true; $('p-hint').hidden = false;
   { const mm = $('w-mini'); mm.width = 440; mm.height = Math.round(440 * hw.ht / hw.wt); mm.hidden = false; }
-  { const tg = !!pm.tag, cf = !!pm.ctf, kf = !!pm.chess, hr = !!pm.hr, alt = tg || cf || kf || hr; $('w-ult').hidden = alt; $('p-hint').hidden = alt; $('g-hint').hidden = !tg; $('c-hint').hidden = !cf; $('r-hint').hidden = !hr; $('k-hint').hidden = !kf; $('k-roster').hidden = !kf; $('w-slots').hidden = kf; $('w-hp').hidden = alt; $('t-timer').hidden = !alt; $('t-timer').style.borderColor = ''; }
+  { const tg = !!pm.tag, cf = !!pm.ctf, kf = !!pm.chess, hr = !!pm.hr, du = !!pm.duel, alt = tg || cf || kf || hr || du; $('w-ult').hidden = alt; $('p-hint').hidden = alt; $('d-hint').hidden = !du; $('g-hint').hidden = !tg; $('c-hint').hidden = !cf; $('r-hint').hidden = !hr; $('k-hint').hidden = !kf; $('k-roster').hidden = !kf; $('w-slots').hidden = kf || du; $('w-hp').hidden = alt; $('t-timer').hidden = !alt; $('t-timer').style.borderColor = ''; }
   if (pm.chess) chessPlaceMe();
+  if (pm.duel) duelPlace();
   $('wbanner').dataset.cd = '';
-  if (pvp && pvp.me) pvp.me.bonus = gHP();
+  if (pvp && pvp.me) pvp.me.bonus = pm.duel ? 0 : gHP();
   buildSlots(); lastHP = -1; wHP = P_HP;
   canvas.focus();
   firstHelp();
@@ -5554,6 +5585,13 @@ function hostStartPvp() {
   if (!myPeerId) return;
   const tg = pvpPm && pvpPm.tag, cf = pvpPm && pvpPm.ctf, hr = pvpPm && pvpPm.hr, ta = (pvpPm && pvpPm.ta) || {};
   const ids = [myPeerId, ...[...peerState.values()].map(s => s.id).sort()];
+  if (pvpPm && pvpPm.duel) {
+    if (ids.length !== 2) return;
+    pvpPm = { id: Date.now() % 1e9, st: Date.now() + 4500, map: 'duel', lv: 1, teams: false, nb: 0, df: pvpPm.df, duel: {}, ta: {}, tm: [[ids[0], 0], [ids[1], 1]] };
+    presenceClock = 0;
+    startPvp(pvpPm, true);
+    return;
+  }
   if (pvpPm && pvpPm.chess) {
     if (ids.length !== 2) return;
     let a = ta[ids[0]] === 1 ? 1 : ta[ids[0]] === 0 ? 0 : ta[ids[1]] === 0 ? 1 : 0; // the host's pick decides; the other player gets the other side
@@ -5576,6 +5614,7 @@ function hostStartPvp() {
   startPvp(pvpPm, true);
 }
 function pvpTick(dt) {
+  if (pvp.duel) { duelTick(dt); return; }
   if (pvp.hr) { hrTick(dt); return; }
   if (pvp.tag) { tagTick(dt); return; }
   if (pvp.ctf) { ctfTick(dt); return; }
@@ -5625,9 +5664,9 @@ function finishPvp(win) {
   setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1600);
 }
 function showPvpResults() {
-  $('pr-title').textContent = pvp.hr ? hrTitle() : pvp.won ? 'You win!' : pvp.chess ? (pvp.chess.win == null ? 'Draw' : KF_SIDE[pvp.chess.win] + ' wins') : pvp.ctf ? (pvp.ctf.win == null ? 'Draw' : TEAM_NAMES[pvp.ctf.win] + ' wins') : pvp.tag ? tagWinLabel(pvp.tag.win || []) : winnerLabel(pvp.winTeam);
+  $('pr-title').textContent = pvp.duel ? (pvp.won ? 'You win the duel!' : 'Duel lost') : pvp.hr ? hrTitle() : pvp.won ? 'You win!' : pvp.chess ? (pvp.chess.win == null ? 'Draw' : KF_SIDE[pvp.chess.win] + ' wins') : pvp.ctf ? (pvp.ctf.win == null ? 'Draw' : TEAM_NAMES[pvp.ctf.win] + ' wins') : pvp.tag ? tagWinLabel(pvp.tag.win || []) : winnerLabel(pvp.winTeam);
   const a = ARENAS.find(q => q.id === pvp.cfg.map);
-  $('pr-sub').textContent = pvp.hr ? hrSub() : pvp.chess ? 'Kingfall · White took ' + pvp.chess.kills[0] + ' · Black took ' + pvp.chess.kills[1] + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.ctf ? 'Capture the Flag · ' + ((CTF_MAPS.find(q => q.id === pvp.cfg.map) || {}).n || '') + ' · Red ' + pvp.ctf.score[0] + ' – ' + pvp.ctf.score[1] + ' Blue' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.tag ? 'Hook Tag · ' + TAGV[pvp.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pvp.tag.len / 60) + ' min' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : (a ? a.n : '') + ' · ' + pvp.cfg.lv + (pvp.cfg.lv === 1 ? ' life' : ' lives') + ' · ' + (pvp.cfg.teams ? '2 teams' : 'Free-for-all') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '');
+  $('pr-sub').textContent = pvp.duel ? 'Duel Arena · You ' + pvp.duel.score[0] + ' – ' + pvp.duel.score[1] + (pvp.duel.oppLeft ? ' (they left)' : '') + ' · +' + pvp.reward + ' tokens' : pvp.hr ? hrSub() : pvp.chess ? 'Kingfall · White took ' + pvp.chess.kills[0] + ' · Black took ' + pvp.chess.kills[1] + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.ctf ? 'Capture the Flag · ' + ((CTF_MAPS.find(q => q.id === pvp.cfg.map) || {}).n || '') + ' · Red ' + pvp.ctf.score[0] + ' – ' + pvp.ctf.score[1] + ' Blue' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : pvp.tag ? 'Hook Tag · ' + TAGV[pvp.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pvp.tag.len / 60) + ' min' + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '') : (a ? a.n : '') + ' · ' + pvp.cfg.lv + (pvp.cfg.lv === 1 ? ' life' : ' lives') + ' · ' + (pvp.cfg.teams ? '2 teams' : 'Free-for-all') + (pvp.reward ? ' · +' + pvp.reward + ' tokens' : '');
   renderPvpResults();
   const follower = pvp.online && !pvpHost;
   $('b-pr-again').hidden = follower;
@@ -5635,6 +5674,7 @@ function showPvpResults() {
   show('scr-pvp-res');
 }
 function renderPvpResults() {
+  if (pvp.duel) { renderDuelResults(); return; }
   if (pvp.hr) { renderHrResults(); return; }
   if (pvp.tag) { renderTagResults(); return; }
   if (pvp.ctf) { renderCtfResults(); return; }
@@ -5666,6 +5706,7 @@ function pvpPresence(pr) {
   pr.cl = pvp.claims.slice(-24).map(c => c.slice(0, 7));
   if (pvp.tag && pvpHost) pr.tg = tagPack(now);
   if (pvp.ctf && pvpHost) pr.cf = ctfPack(now);
+  if (pvp.duel) pr.du = duelPack(now);
   if (pvp.hr) pr.hr = { m: hrPackR(pvp.hr.me), b: pvpHost ? pvp.bots.map(b => [b.id, ...hrPackR(b.hr || hrRacer())]) : undefined };
   if (pvp.chess) chessPresence(pr, now);
   if (pvpHost) {
@@ -5679,7 +5720,9 @@ function hostPvpPeer() { let h = null; for (const s of peerState.values()) if (s
 function parsePm(v) {
   if (!v || typeof v !== 'object') return null;
   const id = num(v.id), st = num(v.st);
-  if (id == null || st == null || !(ARENA_IDS.includes(v.map) || CTF_IDS.includes(v.map) || HR_IDS.includes(v.map) || v.map === 'kingfall') || ![1, 3, 5].includes(v.lv)) return null;
+  if (id == null || st == null || !(ARENA_IDS.includes(v.map) || CTF_IDS.includes(v.map) || HR_IDS.includes(v.map) || v.map === 'kingfall' || v.map === 'duel') || ![1, 3, 5].includes(v.lv)) return null;
+  const duel = v.map === 'duel' && v.duel && typeof v.duel === 'object' ? {} : null;
+  if (v.map === 'duel' && !duel) return null;
   const tm = Array.isArray(v.tm) ? v.tm.slice(0, 16).filter(e => Array.isArray(e) && typeof e[0] === 'string' && num(e[1]) != null).map(e => [e[0].slice(0, 40), clampInt(e[1], 0, 99)]) : [];
   const tag = v.tag && typeof v.tag === 'object' && TAGV[v.tag.v] && TAG_LENS.includes(v.tag.len) ? { v: v.tag.v, len: v.tag.len } : null;
   const ctf = v.ctf && typeof v.ctf === 'object' && CTF_SIZES.includes(v.ctf.size) && CTF_IDS.includes(v.map) ? { size: v.ctf.size } : null;
@@ -5690,7 +5733,7 @@ function parsePm(v) {
   if (HR_IDS.includes(v.map) && !hr) return null;
   const ta = {};
   if (v.ta && typeof v.ta === 'object') for (const k of Object.keys(v.ta).slice(0, 16)) if (v.ta[k] === 0 || v.ta[k] === 1) ta[k.slice(0, 40)] = v.ta[k];
-  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 8), df: PDIFF[v.df] ? v.df : 'medium', tm, tag, ctf, chess, hr, ta };
+  return { id, st, map: v.map, lv: v.lv, teams: v.teams === true, nb: clampInt(v.nb, 0, 8), df: PDIFF[v.df] ? v.df : 'medium', tm, tag, ctf, chess, hr, duel, ta };
 }
 function syncRemoteBots(dt) {
   const h = hostPvpPeer(), ok = h && h.raw.pv && h.raw.pv.id === pvp.id && Array.isArray(h.raw.pb);
@@ -5724,6 +5767,7 @@ function pvpLobbyTick() {
 function pmText(pm) {
   const a = ARENAS.find(q => q.id === pm.map);
   if (pm.hr) { const T = HR_TRACKS.find(t => t.id === pm.map); return 'Hook Racing · ' + (T ? T.n : '') + ' · ' + HR_LAPS + ' laps · ' + (pm.teams ? '2 teams (points)' : 'Free-for-all') + ' · ' + (pm.nb ? pm.nb + ' ' + DIFF[pm.df].n.toLowerCase() + ' bot' + (pm.nb > 1 ? 's' : '') : 'no bots'); }
+  if (pm.duel) return 'Duel Arena · 1 vs 1 · best of 5 rounds' + (peerState.size !== 1 ? ' · waiting for exactly one other player' : '');
   if (pm.chess) return 'Kingfall · 1 vs 1 · ' + DIFF[pm.df].n.toLowerCase() + ' piece AI';
   if (pm.ctf) { const cm = CTF_MAPS.find(q => q.id === pm.map); return 'Capture the Flag · ' + (cm ? cm.n : '') + ' · ' + pm.ctf.size + ' vs ' + pm.ctf.size + ' · ' + DIFF[pm.df].n.toLowerCase() + ' bots fill empty spots'; }
   if (pm.tag) return 'Hook Tag · ' + TAGV[pm.tag.v].n + ' · ' + (a ? a.n : '') + ' · ' + (pm.tag.len / 60) + ' min · ' + (pm.nb ? pm.nb + ' ' + DIFF[pm.df].n.toLowerCase() + ' bot' + (pm.nb > 1 ? 's' : '') : 'no bots');
@@ -5767,7 +5811,7 @@ function renderPvpLobby() {
     if (r.id) addKick(row, r.id);
     list.append(row);
   }
-  $('b-p-lstart').hidden = !pvpHost; $('b-p-lstart').disabled = !myPeerId || !!(pm && pm.chess && peerState.size !== 1);
+  $('b-p-lstart').hidden = !pvpHost; $('b-p-lstart').disabled = !myPeerId || !!(pm && (pm.chess || pm.duel) && peerState.size !== 1);
   $('p-lmsg').textContent = (pvpHost ? 'Share the code, then start when everyone is here.' : 'Waiting for the host to start.') + (pm && pm.chess ? ' Kingfall is 1 vs 1. ' + (pvpHost ? 'Pick who plays White and Black, or leave it on Auto.' : 'The host picks who plays White and Black.') + (peerState.size !== 1 ? ' Waiting for exactly one other player.' : '') : pm && pm.ctf ? ' First to 3 captures, 10 minute limit. ' + (pvpHost ? 'Put players on Red or Blue, or leave them on Auto. Bots even out the teams.' : 'The host puts everyone on a team.') : pm && pm.teams && !pm.tag ? ' ' + (pvpHost ? 'Put players on Red or Blue, or leave them on Auto. Bots fill the smaller team.' : 'The host puts everyone on a team.') + ' Your ultimate: ' + ULTS[pcfg.ult].n + '.' : pm && pm.tag ? ' ' + TAGV[pm.tag.v].d : ' Your ultimate: ' + ULTS[pcfg.ult].n + '.');
 }
 
@@ -5823,14 +5867,14 @@ $('p-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryPvpJo
 $('b-p-copy').addEventListener('click', () => copyCode($('b-p-copy'), $('p-lcode')));
 $('b-p-lstart').addEventListener('click', hostStartPvp);
 $('b-p-leave').addEventListener('click', toMenu);
-$('b-pr-again').addEventListener('click', () => { if (pvp && pvp.online && pvpHost) hostStartPvp(); else if (pvp && pvp.hr) startHrOffline(); else if (pvp && pvp.tag) startTagOffline(); else if (pvp && pvp.ctf) startCtfOffline(); else if (pvp && pvp.chess) startChessOffline(); else startPvpOffline(); });
+$('b-pr-again').addEventListener('click', () => { if (pvp && pvp.online && pvpHost) hostStartPvp(); else if (pvp && pvp.duel) startDuelOffline(); else if (pvp && pvp.hr) startHrOffline(); else if (pvp && pvp.tag) startTagOffline(); else if (pvp && pvp.ctf) startCtfOffline(); else if (pvp && pvp.chess) startChessOffline(); else startPvpOffline(); });
 $('b-pr-menu').addEventListener('click', toMenu);
 
 // ----- PvP drawing -----
 function drawTag(x, y, hp, teamCol) {
   if (pvp && pvp.tag) return;
   if (pvp && pvp.ctf) { if (teamCol) { ctx.strokeStyle = teamCol; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, y + 24, 16, 5, 0, 0, 6.283); ctx.stroke(); } return; }
-  for (let i = 0; i < P_HP; i++) { ctx.fillStyle = i < hp ? '#ff5a6e' : 'rgba(255,255,255,0.25)'; ctx.fillRect(x - 24 + i * 10, y - 46, 8, 4); }
+  for (let i = 0; i < (pvp && pvp.duel ? DUEL_HP : P_HP); i++) { ctx.fillStyle = i < hp ? '#ff5a6e' : 'rgba(255,255,255,0.25)'; ctx.fillRect(x - 24 + i * 10, y - 46, 8, 4); }
   if (teamCol) { ctx.strokeStyle = teamCol; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, y + 24, 16, 5, 0, 0, 6.283); ctx.stroke(); }
 }
 function iceOverlay(x, y) { ctx.fillStyle = 'rgba(191,243,255,0.45)'; ctx.fillRect(x - 20, y - 32, 40, 56); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.strokeRect(x - 20, y - 32, 40, 56); }
@@ -5906,6 +5950,7 @@ function pvpRender(dt) {
   for (const b of pvp.rbots) if (b && b.alive) drawFighter(b, b.rx, b.ry, b.a ? { x: b.a[0], y: b.a[1] } : null, b.invis, false, b.fr, b.nt, dt);
   if (pvp.tag) tagMarkers();
   if (pvp.ctf) ctfDraw();
+  if (pvp.duel) duelDraw(now);
   if (pvp.hr) hrDraw();
   for (const s of pvp.shots) { ctx.fillStyle = s.tag ? '#ff3d55' : s.swap ? '#ffd34d' : s.homing ? '#ff8a3d' : (s.team === pvp.me.team ? '#5ee6c1' : '#ff5a6e'); ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, 6.283); ctx.fill(); }
   ctx.strokeStyle = 'rgba(255,179,71,0.9)'; ctx.lineWidth = 3;
@@ -5940,6 +5985,7 @@ function pvpHudFast() {
   else if (el >= 0 && bn.dataset.cd && bn.dataset.cd !== 'go') {
     bn.dataset.cd = 'go';
     if (pvp.chess) banner('Kingfall', 'Go!', 'You play ' + KF_SIDE[pvp.chess.mySide] + '. Take their King. 1–8 switches pieces.');
+    else if (pvp.duel) { const c = DUEL_CH.find(q => q.id === pvp.duel.ch); banner('Round ' + pvp.duel.round, c ? c.n : 'Fight!', c ? c.d : ''); }
     else if (pvp.hr) banner(hw.name, 'Go!', pvp.hr.laps + ' laps. Race through the gates in order. E uses an item.');
     else if (pvp.ctf) banner('Capture the Flag', 'Go!', 'You\'re on the ' + TEAM_NAMES[pvp.me.team & 1] + '. Grab their flag and bring it home.');
     else if (pvp.tag) { if (pvp.tag.it.has(selfId())) banner(TAGV[pvp.tag.v].n, "You're IT!", 'Everyone else gets a 3 second head start. E fires a tag shot.'); else banner(TAGV[pvp.tag.v].n, 'Run!', 'Don\'t let IT touch you.'); }
@@ -5948,6 +5994,7 @@ function pvpHudFast() {
   if (pvp.tag) tagHudFast(now);
   if (pvp.ctf) ctfHudFast(now);
   if (pvp.hr) hrHudFast(now);
+  if (pvp.duel) duelHudFast(now);
   if (pvp.chess) chessHudFast(now);
   const sv = !m.alive ? specTarget() : null;
   const txt = !m.alive ? (m.lives > 0 ? 'Back in ' + Math.max(1, Math.ceil((m.respawnAt - now) / 1000)) : 'Watching ' + (sv ? sv.name : 'nobody')) : hw.name;
@@ -7783,7 +7830,7 @@ function refreshLast() {
 document.querySelectorAll('#scr-menu .mode').forEach((el) => el.addEventListener('click', () => { if (/^m-(solo|coop|race|world|trial|pvp|tag|ctf|chess)$/.test(el.id)) { save.last = el.id; saveDirty = true; } }));
 $('m-last').addEventListener('click', () => { const src = save.last && document.getElementById(save.last); if (src) src.click(); });
 refreshLast();
-const BACKS = ['b-back-coop', 'b-back-start', 'b-back-race', 'b-lobby-leave', 'b-res-menu', 'b-sum-menu', 'b-set-back', 'g-back', 'l-back', 'b-w-back', 'b-p-back', 'b-g-back', 'b-c-back', 'b-h-back', 'b-dv-back', 'b-k-back', 'b-p-leave', 'b-pr-menu', 'b-tr-back', 'b-ach-back', 'b-help-back', 'b-adm-back', 'b-trr-list'];
+const BACKS = ['b-back-coop', 'b-back-start', 'b-back-race', 'b-lobby-leave', 'b-res-menu', 'b-sum-menu', 'b-set-back', 'g-back', 'l-back', 'b-w-back', 'b-p-back', 'b-g-back', 'b-c-back', 'b-h-back', 'b-du-back', 'b-dv-back', 'b-k-back', 'b-p-leave', 'b-pr-menu', 'b-tr-back', 'b-ach-back', 'b-help-back', 'b-adm-back', 'b-trr-list'];
 function menuBack() {
   const sec = document.getElementById(current);
   const b = sec && BACKS.map(id => sec.querySelector('#' + id)).find(Boolean);
@@ -9240,6 +9287,7 @@ function gbKey() {
   if (gb.rs.length >= 3) { const pw = gbPower(); gb.rs = []; gb.sAt = -1; gb.cd = gt + 3; gbFire(pw); }
 }
 function gbFire(pw) {
+  if (mode === 'pvp' && pvp && pvp.duel) return;
   const a = gLvl('atk'), mult = 1 + 0.15 * a, R = (190 + 130 * pw) * (1 + 0.03 * a), F = (650 + 750 * pw) * mult;
   gb.fx.push({ x: P.x, y: P.y, r: R, t: gt, pw });
   sfx('ult'); if (!reduceMotion) shake = 0.25 + pw * 0.3;
@@ -9957,6 +10005,345 @@ $('b-dv-join').addEventListener('click', tryDiveJoin);
 $('dv-code-in').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryDiveJoin(); });
 $('b-dv-copy').addEventListener('click', () => copyCode($('b-dv-copy'), $('dv-code')));
 
+
+// =================================================================
+// ---------- Duel Arena: 1 vs 1 sword duels, best of 5, a new arena change every round ----------
+// =================================================================
+const SWORDS = [
+  { id: 'wood', n: 'Training Blade', w: 0, c: '#c9a46a', sp: 'Lunge', d: 'Dash forward and cut anyone in your path.' },
+  { id: 'flame', n: 'Flame Sword', w: 1, c: '#ff7a3a', sp: 'Fire Wave', d: 'Throw a wave of fire that flies across the arena.' },
+  { id: 'frost', n: 'Frost Edge', w: 3, c: '#bff3ff', sp: 'Frost Slash', d: 'A long cold slash that freezes whoever it hits.' },
+  { id: 'storm', n: 'Storm Saber', w: 5, c: '#7fb2ff', sp: 'Lightning', d: 'Lightning strikes the other player if they are close.' },
+  { id: 'grapple', n: 'Grapple Blade', w: 10, c: '#9be15d', sp: 'Reel In', d: 'Hook the other player from far away and pull them to you.' },
+  { id: 'shadow', n: 'Shadow Katana', w: 15, c: '#b77cff', sp: 'Blink', d: 'Teleport right behind the other player.' },
+  { id: 'king', n: 'Kingsword', w: 25, c: '#ffd34d', sp: 'Whirlwind', d: 'Spin and hit everything around you hard.' },
+];
+const SWORD = Object.create(null); SWORDS.forEach((q, i) => { q.i = i; SWORD[q.id] = q; });
+const DUEL_CH = [
+  { id: 'lowgrav', n: 'Low Gravity', d: 'Everything floats. Big jumps, slow falls.' },
+  { id: 'lava', n: 'Lava Floor', d: 'The floor is lava! Stay on the platforms and rings.' },
+  { id: 'shrink', n: 'Closing Walls', d: 'Burning walls close in from both sides.' },
+  { id: 'ice', n: 'Ice Floor', d: 'The floor is ice. You slide!' },
+  { id: 'wind', n: 'Strong Wind', d: 'The wind keeps changing direction.' },
+];
+const DUEL_HP = 3, DUEL_WIN = 3, SLASH_R = 82, SLASH_CD = 0.42, SPECIAL_CD = 6;
+function duelSave() {
+  let d = save.duel;
+  if (!d || typeof d !== 'object') d = save.duel = {};
+  for (const k of ['w', 'l', 'streak', 'best']) d[k] = clampInt(d[k] || 0, 0, 1e6);
+  if (!SWORD[d.sw] || SWORD[d.sw].w > d.w) d.sw = 'wood';
+  if (!PDIFF[d.diff]) d.diff = 'medium';
+  return d;
+}
+function buildDuelArena() {
+  const wt = 44, ht = 24, g = new Uint8Array(wt * ht);
+  const get = (x, y) => (x >= 0 && y >= 0 && x < wt && y < ht) ? g[y * wt + x] : TMETAL;
+  const fill = (x0, y0, w, h, v) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (x >= 0 && y >= 0 && x < wt && y < ht) g[y * wt + x] = v; };
+  fill(0, 0, wt, 2, TROCK); fill(0, 20, wt, ht - 20, TROCK); fill(0, 0, 1, ht, TMETAL); fill(wt - 1, 0, 1, ht, TMETAL);
+  for (const [x, y, w] of [[5, 15, 7], [32, 15, 7], [17, 11, 10], [2, 9, 4], [38, 9, 4], [19, 17, 6]]) fill(x, y, w, 1, TROCK);
+  const rings = [];
+  for (const [x, y] of [[6, 5], [13, 6], [22, 5], [30, 6], [37, 5], [9, 11], [34, 11], [22, 14], [14, 15], [29, 15]]) rings.push({ x: x * TS + TS / 2, y: y * TS + TS / 2 });
+  const pal = { n: 'Duel Arena', top: '#e8e4f0', rock: '#5a5470', deep: '#3a3550' };
+  const img = document.createElement('canvas'); img.width = wt; img.height = ht;
+  { const ic = img.getContext('2d'), id2 = ic.createImageData(wt, ht);
+    for (let y = 0; y < ht; y++) for (let x = 0; x < wt; x++) { const v = g[y * wt + x], c = v === TAIR ? [150, 200, 240] : v === TMETAL ? [75, 91, 117] : [90, 84, 112]; const o = (y * wt + x) * 4; id2.data[o] = c[0]; id2.data[o + 1] = c[1]; id2.data[o + 2] = c[2]; id2.data[o + 3] = 255; }
+    ic.putImageData(id2, 0, 0); }
+  const sp = (x, y) => ({ x: x * TS + TS / 2, y: y * TS - PR - 2 });
+  return { name: 'Duel Arena', img, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings, spawns: [sp(8, 15), sp(35, 15)], dsp: [sp(8, 15), sp(35, 15)], floorY: 20 * TS,
+    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
+}
+function initDuel(pm) {
+  const ds = duelSave();
+  pvp.duel = { round: 0, score: [0, 0], hist: [], ch: null, roundOver: false, nextAt: 0, sw: {}, spCd: 0, mySw: ds.sw, swings: {}, bolts: [], windT: 0, wind: 0, res: null, left: 0 };
+  pvp.me.bonus = 0;
+  duelSetRound(1, pm.st);
+}
+function duelPick(round) { const r = mulberry(pvp.id * 31 + round * 977); r(); return DUEL_CH[Math.floor(r() * DUEL_CH.length) % DUEL_CH.length]; }
+function duelSetRound(round, start) {
+  const D = pvp.duel; D.round = round; D.ch = duelPick(round).id; D.roundOver = false; D.windT = 0; D.wind = 0;
+  for (let x = 1; x < hw.wt - 1; x++) hw.g[20 * hw.wt + x] = D.ch === 'ice' ? TICE : TROCK;
+  pvp.start = start; D.t0 = start;
+  $('wbanner').dataset.cd = '';
+}
+function duelSide(f) { return (f.team & 1); }
+function duelPlace() {
+  const m = pvp.me, s = hw.dsp[duelSide(m)];
+  m.hp = DUEL_HP; m.bonus = 0; m.alive = true; m.lives = 1; m.freezeUntil = 0; m.netUntil = 0; m.pull = null; m.inv = pvp.start + 300; m.shotCd = 0;
+  detach(); P.x = s.x; P.y = s.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.stun = 0; P.inv = 0; P.face = duelSide(m) ? -1 : 1;
+  for (const b of pvp.bots) { const q = hw.dsp[duelSide(b)]; Object.assign(b, { hp: DUEL_HP, alive: true, lives: 1, freezeUntil: 0, netUntil: 0, pull: null, inv: pvp.start + 300, x: q.x, y: q.y, vx: 0, vy: 0, rope: null, shotCd: 0.6, yankCd: 2 + Math.random() * 2 }); b.hist.length = 0; }
+  pvp.shots.length = 0;
+}
+function duelOpp() { return pvpViews().find(v => !v.me) || null; }
+function duelSwordOf(id) {
+  if (id === selfId()) return SWORD[pvp.duel.mySw] || SWORDS[0];
+  const b = pvp.bots.find(q => q.id === id); if (b) return SWORD[b.sword] || SWORDS[0];
+  const s = peerState.get ? null : null;
+  for (const p of peerState.values()) if (p.id === id && p.raw && Array.isArray(p.raw.du)) return SWORDS[clampInt(p.raw.du[1], 0, SWORDS.length - 1)];
+  return SWORDS[0];
+}
+function duelSlashAt(src, team, body, ang) {
+  const D = pvp.duel, now = Date.now();
+  D.swings[src] = { ang, t: now };
+  sfx('shoot', 0.6);
+  for (const t of pvpViews()) {
+    if (!t.alive || t.id === src || t.team === team) continue;
+    const dx = t.x - body.x, dy = t.y - body.y, d = Math.hypot(dx, dy);
+    if (d > SLASH_R + 8) continue;
+    const da = Math.atan2(Math.sin(Math.atan2(dy, dx) - ang), Math.cos(Math.atan2(dy, dx) - ang));
+    if (Math.abs(da) > 1.25 && d > 30) continue;
+    deal(src, t.id, 'd', 1, Math.cos(ang) * 560, Math.sin(ang) * 560 - 220);
+  }
+}
+function duelSlash() {
+  if (!pvpReady() || !pvp.duel || pvp.duel.roundOver || pvp.me.shotCd > 0) return;
+  const ang = Math.atan2(mouse.wy - P.y, mouse.wx - P.x);
+  pvp.me.shotCd = SLASH_CD; P.face = Math.cos(ang) < 0 ? -1 : 1;
+  duelSlashAt(selfId(), pvp.me.team, P, ang);
+}
+function duelPower(src, f, body, sw, tx, ty, isMe) {
+  const D = pvp.duel, now = Date.now(), dx = tx - body.x, dy = ty - body.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, ang = Math.atan2(uy, ux);
+  const foes = pvpViews().filter(t => t.alive && t.id !== src && t.team !== f.team);
+  const near = (r) => { let best = null, bd = r; for (const t of foes) { const q = Math.hypot(t.x - body.x, t.y - body.y); if (q < bd && wLos(body.x, body.y, t.x, t.y)) { bd = q; best = t; } } return best; };
+  const setV = (vx, vy) => { if (isMe) { detach(); P.vx = vx; P.vy = vy; } else { f.rope = null; f.vx = vx; f.vy = vy; } };
+  burst(body.x, body.y, sw.c, 18, 220);
+  switch (sw.id) {
+    case 'wood': {
+      // check the whole dash path for anyone to cut
+      for (const t of foes) { const px = t.x - body.x, py = t.y - body.y, al = px * ux + py * uy; if (al > -10 && al < 240 && Math.abs(px * uy - py * ux) < 46) deal(src, t.id, 'd', 1, ux * 600, uy * 600 - 200); }
+      setV(ux * 1150, uy * 1150 - 80); D.swings[src] = { ang, t: now }; break;
+    }
+    case 'flame': spawnShot(src, f.team, body.x, body.y, ux, uy, { speed: 720, life: 1.3, dmg: 1, big: true, kb: 520 }); D.flame = true; break;
+    case 'frost': {
+      D.swings[src] = { ang, t: now, frost: true };
+      for (const t of foes) { const tx2 = t.x - body.x, ty2 = t.y - body.y, td = Math.hypot(tx2, ty2), da = Math.atan2(Math.sin(Math.atan2(ty2, tx2) - ang), Math.cos(Math.atan2(ty2, tx2) - ang)); if (td < 150 && Math.abs(da) < 0.9) deal(src, t.id, 'f', 1300); }
+      break;
+    }
+    case 'storm': { const t = near(330); if (t) { deal(src, t.id, 'd', 1, Math.sign(t.x - body.x || 1) * 500, -400); D.bolts.push({ x1: body.x, y1: body.y, x2: t.x, y2: t.y, until: now + 300 }); } else D.bolts.push({ x1: body.x, y1: body.y, x2: body.x + ux * 120, y2: body.y + uy * 120, until: now + 200 }); break; }
+    case 'grapple': { const t = near(480); if (t) { deal(src, t.id, 'p', body.x, body.y, 650); pvp.lines.push({ x1: body.x, y1: body.y, x2: t.x, y2: t.y, until: now + 400 }); } break; }
+    case 'shadow': {
+      const t = near(400); if (!t) break;
+      const side = Math.sign(t.x - body.x) || 1;
+      for (const off of [side * 56, -side * 56, 0]) {
+        const nx = t.x + off, ny = t.y - 4;
+        if (!wSolid(Math.floor(nx / TS), Math.floor(ny / TS)) && !wSolid(Math.floor(nx / TS), Math.floor((ny - PR) / TS))) {
+          burst(body.x, body.y, sw.c, 16, 200);
+          if (isMe) { detach(); P.x = nx; P.y = ny; P.vx = 0; P.vy = 0; P.hist.length = 0; P.face = -Math.sign(off || side); } else { f.x = nx; f.y = ny; f.vx = 0; f.vy = 0; f.rope = null; }
+          break;
+        }
+      }
+      break;
+    }
+    case 'king': {
+      D.swings[src] = { ang, t: now, spin: true };
+      for (const t of foes) { const q = Math.hypot(t.x - body.x, t.y - body.y) || 1; if (q < 120) deal(src, t.id, 'd', 1, (t.x - body.x) / q * 800, (t.y - body.y) / q * 800 - 250); }
+      break;
+    }
+  }
+  if (isMe) { sfx('ult'); banner(sw.sp, sw.n); }
+}
+function duelSpecial() {
+  const D = pvp && pvp.duel;
+  if (!D || !pvpReady() || D.roundOver || D.spCd > 0) return;
+  D.spCd = SPECIAL_CD;
+  duelPower(selfId(), pvp.me, P, SWORD[D.mySw] || SWORDS[0], mouse.wx, mouse.wy, true);
+}
+function duelHazard(f, body, isMe, now, dt) {
+  const D = pvp.duel;
+  if (!f.alive || now < pvp.start) return;
+  if (D.ch === 'wind') { if (isMe) P.vx += D.wind * dt; else body.vx += D.wind * dt; }
+  let hit = null;
+  if (D.ch === 'lava' && body.y + PR > hw.floorY - 4) hit = [0, -1150];
+  if (D.ch === 'shrink') { const [wl, wr] = duelWalls(now); if (body.x - PR < wl) hit = [750, -450]; else if (body.x + PR > wr) hit = [-750, -450]; }
+  if (hit && now >= f.inv) { applyFighter(f, 'l', 1, hit[0], hit[1], 'arena', isMe); f.inv = now + 900; burst(body.x, body.y, '#ff8a3d', 16, 220); }
+}
+function duelWalls(now) {
+  const k = clamp((now - pvp.start) / 40000, 0, 1), cx = hw.wt * TS / 2, max = cx - 6 * TS - TS;
+  return [TS + k * max, hw.wt * TS - TS - k * max];
+}
+function duelTick(dt) {
+  const now = Date.now(), m = pvp.me, D = pvp.duel;
+  if (pvp.online) readClaims();
+  m.shotCd -= dt; m.yankCd -= dt; D.spCd -= dt;
+  wHP = m.alive ? m.hp : 0;
+  if (D.ch === 'wind') { D.windT -= dt; if (D.windT <= 0) { D.windT = 5; D.wind = (Math.random() < 0.5 ? -1 : 1) * 650; } }
+  duelHazard(m, P, true, now, dt);
+  for (const b of pvp.bots) { botTick(b, dt, now); duelHazard(b, b, false, now, dt); }
+  updateShots(dt);
+  pvp.lines = pvp.lines.filter(l => l.until > now);
+  D.bolts = D.bolts.filter(l => l.until > now);
+  pvp.claims = pvp.claims.filter(c => now - c[7] < 2500).slice(-24);
+  if (pvp.over) return;
+  const opp = duelOpp();
+  if (pvp.online && !opp) { if (!D.left) D.left = now; if (now - D.left > 8000 && now > pvp.start) { D.score[0] = Math.max(D.score[0], DUEL_WIN); D.oppLeft = true; finishDuel(); } return; }
+  D.left = 0;
+  if (!D.roundOver) {
+    if (now < pvp.start + 300) return;
+    let w = null;
+    if (!m.alive) w = 1;
+    else if (opp && !opp.alive && (!opp.peer || (Array.isArray(opp.peer.raw.du) && opp.peer.raw.du[0] === D.round))) w = 0;
+    if (w != null) {
+      D.roundOver = true; D.nextAt = now + 2600; D.score[w]++; D.hist.push([w, D.ch]);
+      sfx(w === 0 ? 'capture' : 'lose');
+      banner(w === 0 ? 'You win the round!' : (opp ? opp.name : 'They') + ' wins the round', 'You ' + D.score[0] + ' – ' + D.score[1] + ' ' + (opp ? opp.name : ''));
+    }
+  } else if (now >= D.nextAt) {
+    if (D.score[0] >= DUEL_WIN || D.score[1] >= DUEL_WIN) finishDuel();
+    else { duelSetRound(D.round + 1, now + 2200); duelPlace(); }
+  }
+}
+function duelBotTick(b, dt, now) {
+  const D = pvp.duel;
+  if (now < pvp.start || pvp.over || D.roundOver || !b.alive) return;
+  b.shotCd -= dt; b.yankCd -= dt;
+  const tgt = pvpViews().find(t => t.alive && t.id !== b.id && t.team !== b.team) || null;
+  b.target = tgt;
+  if (now < b.freezeUntil) { b.vx = 0; b.vy = 0; b.rope = null; return; }
+  if (now < b.netUntil) b.rope = null;
+  botBrain(b, tgt, dt, now);
+  const n = Math.max(1, Math.ceil(dt / STEP)), h = dt / n;
+  for (let i = 0; i < n; i++) botPhysics(b, h, now);
+  if (Math.abs(b.vx) > 20) b.face = Math.sign(b.vx);
+  if (!tgt) return;
+  const td = Math.hypot(tgt.x - b.x, tgt.y - b.y), lv = { easy: [0.85, 0.55], medium: [0.6, 0.8], hard: [0.45, 1] }[b.diff] || [0.6, 0.8];
+  // close in on foot when near; the hook brain does the rest
+  if (td < 220 && b.rope && Math.random() < dt * 2) b.rope = null;
+  if (td < SLASH_R && b.shotCd <= 0) {
+    b.shotCd = lv[0] * (0.8 + Math.random() * 0.5);
+    if (Math.random() < lv[1]) { b.face = Math.sign(tgt.x - b.x) || 1; duelSlashAt(b.id, b.team, b, Math.atan2(tgt.y - b.y, tgt.x - b.x) + (Math.random() - 0.5) * 0.4); }
+  }
+  if (b.yankCd <= 0) {
+    const sw = SWORD[b.sword] || SWORDS[0], los = wLos(b.x, b.y, tgt.x, tgt.y);
+    const want = { wood: td < 220, flame: td < 600 && los, frost: td < 140, storm: td < 320 && los, grapple: td > 160 && td < 470 && los, shadow: td > 120 && td < 390 && los, king: td < 110 }[sw.id];
+    if (want && Math.random() < dt * (b.diff === 'hard' ? 3 : b.diff === 'easy' ? 0.8 : 1.6)) { b.yankCd = SPECIAL_CD + (b.diff === 'easy' ? 3 : 0); duelPower(b.id, b, b, sw, tgt.x, tgt.y, false); }
+  }
+}
+function finishDuel() {
+  const D = pvp.duel, ds = duelSave();
+  pvp.over = true; detach(); for (const k in keys) keys[k] = false;
+  const won = D.score[0] > D.score[1], extra = [];
+  if (won) { ds.w++; ds.streak++; ds.best = Math.max(ds.best, ds.streak); } else { ds.l++; ds.streak = 0; }
+  if (won) { for (const sw of SWORDS) if (sw.w === ds.w) extra.push('New sword: ' + sw.n + '!'); }
+  if (won && ds.w >= 10 && !ownsSkin('duelist')) { for (const iid of Object.values(skinEq('duelist'))) save.owned[iid] = Math.max(1, save.owned[iid] || 0); extra.push('New skin: Duelist!'); }
+  const tok = (won ? 20 : 5) + 3 * D.score[0];
+  addTokens(tok, P.x, P.y);
+  pvp.reward = tok; pvp.won = won; pvp.winTeam = won ? pvp.me.team : null; D.res = { extra };
+  sfx(won ? 'win' : 'lose'); writeSave(); state = 'over';
+  banner(won ? 'Victory' : 'Duel lost', 'You ' + D.score[0] + ' – ' + D.score[1], extra.join(' · '));
+  setTimeout(() => { if (pvp && pvp.over && state === 'over') showPvpResults(); }, 1800);
+}
+function renderDuelResults() {
+  const D = pvp.duel, list = $('pr-list'); list.textContent = '';
+  const opp = duelOpp(), on = opp ? opp.name : 'Opponent';
+  D.hist.forEach(([w, ch], i) => {
+    const li = document.createElement('li'); if (w === 0) li.className = 'me';
+    const pl = document.createElement('span'); pl.className = 'place'; pl.textContent = 'R' + (i + 1);
+    const nm = document.createElement('span'); nm.textContent = (DUEL_CH.find(c => c.id === ch) || {}).n || '';
+    const res = document.createElement('span'); res.className = 'res'; res.textContent = w === 0 ? 'You won' : on + ' won';
+    li.append(pl, nm, res); list.append(li);
+  });
+  const ds = duelSave(), li = document.createElement('li');
+  li.textContent = 'Your record: ' + ds.w + ' wins · ' + ds.l + ' losses · win streak ' + ds.streak + ' (best ' + ds.best + ')' + (D.res && D.res.extra.length ? ' · ' + D.res.extra.join(' · ') : '');
+  list.append(li);
+}
+function duelPack(now) {
+  const D = pvp.duel, sw = D.swings[selfId()];
+  return [D.round, (SWORD[D.mySw] || SWORDS[0]).i, sw && now - sw.t < 260 ? Math.round(sw.ang * 100) / 100 : null, sw && sw.spin ? 1 : sw && sw.frost ? 2 : 0];
+}
+function drawSword(x, y, sw, ang, swing, face) {
+  // the blade sits in front of the climber, pointing where they aim; a swing sweeps it through an arc
+  const now = Date.now();
+  let a = ang, k = 0;
+  if (swing) { k = clamp((now - swing.t) / 240, 0, 1); a = swing.spin ? swing.ang + k * 6.283 : swing.ang - 1.1 + 2.2 * k; }
+  const hx = x + Math.cos(a) * 12, hy = y + 4 + Math.sin(a) * 12, L = 38;
+  ctx.save();
+  if (swing && k < 1) {
+    ctx.strokeStyle = swing.frost ? 'rgba(191,243,255,0.6)' : sw.c; ctx.globalAlpha = 0.45 * (1 - k); ctx.lineWidth = swing.frost ? 18 : 10; ctx.beginPath();
+    if (swing.spin) ctx.arc(x, y, SLASH_R * 0.9, 0, 6.283); else ctx.arc(x, y, swing.frost ? 120 : SLASH_R - 14, swing.ang - 1.1, a);
+    ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#3a2f2a'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(hx - Math.cos(a) * 6, hy - Math.sin(a) * 6); ctx.lineTo(hx, hy); ctx.stroke();
+  ctx.strokeStyle = '#d9a441'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(hx - Math.sin(a) * 7, hy + Math.cos(a) * 7); ctx.lineTo(hx + Math.sin(a) * 7, hy - Math.cos(a) * 7); ctx.stroke();
+  ctx.shadowBlur = 10; ctx.shadowColor = sw.c; ctx.strokeStyle = sw.c; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + Math.cos(a) * L, hy + Math.sin(a) * L); ctx.stroke();
+  ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(hx + Math.cos(a) * 4, hy + Math.sin(a) * 4); ctx.lineTo(hx + Math.cos(a) * (L - 4), hy + Math.sin(a) * (L - 4)); ctx.stroke();
+  ctx.restore();
+}
+function duelDraw(now) {
+  const D = pvp.duel, W = hw.wt * TS;
+  if (D.ch === 'lava') {
+    const y = hw.floorY - 6;
+    ctx.fillStyle = '#ff6a2a'; ctx.shadowBlur = 20; ctx.shadowColor = '#ff6a2a';
+    ctx.beginPath(); ctx.moveTo(TS, y + 40);
+    for (let x = TS; x <= W - TS; x += 16) ctx.lineTo(x, y + Math.sin(x / 30 + gt * 3) * 3);
+    ctx.lineTo(W - TS, y + 40); ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffd34d'; for (let k = 0; k < 8; k++) { const x = TS + ((k * 197 + gt * 40) % (W - 2 * TS)); ctx.beginPath(); ctx.arc(x, y + 4 - ((gt * 30 + k * 13) % 14), 3, 0, 6.283); ctx.fill(); }
+  }
+  if (D.ch === 'shrink') {
+    const [wl, wr] = duelWalls(now), H = hw.ht * TS;
+    const g1 = ctx.createLinearGradient(wl - 60, 0, wl, 0); g1.addColorStop(0, 'rgba(255,90,40,0.15)'); g1.addColorStop(1, 'rgba(255,90,40,0.75)');
+    ctx.fillStyle = g1; ctx.fillRect(TS, 0, wl - TS, H);
+    const g2 = ctx.createLinearGradient(wr, 0, wr + 60, 0); g2.addColorStop(0, 'rgba(255,90,40,0.75)'); g2.addColorStop(1, 'rgba(255,90,40,0.15)');
+    ctx.fillStyle = g2; ctx.fillRect(wr, 0, W - TS - wr, H);
+    ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(wl, 0); ctx.lineTo(wl, H); ctx.moveTo(wr, 0); ctx.lineTo(wr, H); ctx.stroke();
+  }
+  if (D.ch === 'wind' && D.wind) {
+    ctx.strokeStyle = 'rgba(232,240,255,0.35)'; ctx.lineWidth = 2; const dir = Math.sign(D.wind);
+    for (let k = 0; k < 24; k++) { const y = 2.5 * TS + ((k * 67) % (17 * TS)), x = (((gt * 500 * dir + k * 211) % W) + W) % W; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - dir * 40, y); ctx.stroke(); }
+  }
+  for (const l of D.bolts) { ctx.strokeStyle = '#e8f0ff'; ctx.shadowBlur = 14; ctx.shadowColor = '#7fb2ff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(l.x1, l.y1); for (let k = 1; k < 6; k++) ctx.lineTo(l.x1 + (l.x2 - l.x1) * k / 6 + (Math.random() - 0.5) * 24, l.y1 + (l.y2 - l.y1) * k / 6 + (Math.random() - 0.5) * 24); ctx.lineTo(l.x2, l.y2); ctx.stroke(); ctx.shadowBlur = 0; }
+  // swords: yours, the bot's and your online opponent's
+  if (pvp.me.alive) drawSword(P.x, P.y, SWORD[D.mySw] || SWORDS[0], Math.atan2(mouse.wy - P.y, mouse.wx - P.x), D.swings[selfId()], P.face);
+  for (const b of pvp.bots) if (b.alive) drawSword(b.x, b.y, SWORD[b.sword] || SWORDS[0], b.target ? Math.atan2(b.target.y - b.y, b.target.x - b.x) : (b.face < 0 ? Math.PI : 0), D.swings[b.id], b.face);
+  for (const p of peerState.values()) {
+    const r = p.raw; if (!r || !r.pv || r.pv.id !== pvp.id || r.pv.al !== 1 || !Array.isArray(r.du)) continue;
+    const sw = SWORDS[clampInt(r.du[1], 0, SWORDS.length - 1)], a = num(r.du[2]);
+    if (a != null) { const prev = p.duelSw; if (!prev || prev.ang !== a || now - prev.t > 300) p.duelSw = { ang: a, t: now, spin: r.du[3] === 1, frost: r.du[3] === 2 }; }
+    drawSword(p.rx, p.ry, sw, Math.atan2(P.y - p.ry, P.x - p.rx), p.duelSw && now - p.duelSw.t < 260 ? p.duelSw : null, 1);
+  }
+}
+function duelHudFast(now) {
+  const D = pvp.duel, opp = duelOpp(), ch = DUEL_CH.find(c => c.id === D.ch);
+  const txt = 'Round ' + D.round + ' · ' + (ch ? ch.n : '') + ' · You ' + D.score[0] + ' – ' + D.score[1] + ' ' + (opp ? opp.name : '…') + ' · ' + (SWORD[D.mySw] || SWORDS[0]).sp + (D.spCd > 0 ? ' ' + Math.ceil(D.spCd) + 's' : ' ready (Q)');
+  const el = $('t-timer'); if (el.textContent !== txt) el.textContent = txt;
+}
+let duelCfgDiff = null;
+function renderDuelSetup() {
+  const ds = duelSave();
+  $('du-rec').textContent = ds.w + ' wins · ' + ds.l + ' losses · streak ' + ds.streak + ' (best ' + ds.best + ')' + (ownsSkin('duelist') ? ' · Duelist skin unlocked' : ' · Duelist skin at 10 wins');
+  const box = $('du-swords'); box.textContent = '';
+  for (const sw of SWORDS) {
+    const open = ds.w >= sw.w, r = document.createElement('div'); r.className = 'abrow';
+    const tx = document.createElement('div'); tx.className = 'txt'; const b = document.createElement('b'); b.textContent = sw.n; b.style.color = sw.c;
+    const sp = document.createElement('span'); sp.textContent = 'Q · ' + sw.sp + ': ' + sw.d; tx.append(b, sp);
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn';
+    btn.textContent = !open ? '🔒 ' + sw.w + ' win' + (sw.w > 1 ? 's' : '') : ds.sw === sw.id ? 'Equipped' : 'Equip';
+    btn.disabled = !open || ds.sw === sw.id;
+    btn.addEventListener('click', () => { duelSave().sw = sw.id; writeSave(); renderDuelSetup(); });
+    r.append(tx, btn); box.append(r);
+  }
+  const dd = $('du-diff'); dd.textContent = '';
+  for (const k of Object.keys(PDIFF)) { const b = document.createElement('button'); b.type = 'button'; b.textContent = DIFF[k].n; b.setAttribute('aria-pressed', String(ds.diff === k)); b.addEventListener('click', () => { duelSave().diff = k; writeSave(); renderDuelSetup(); }); dd.append(b); }
+  $('b-du-host').hidden = !roomApi; $('du-join').hidden = !roomApi;
+}
+function startDuelOffline() { const ds = duelSave(); startPvp({ id: Date.now() % 1e9, st: Date.now() + 3500, map: 'duel', lv: 1, teams: false, nb: 1, df: ds.diff, tm: [], duel: {} }, false); }
+$('m-duel').addEventListener('click', () => { renderDuelSetup(); $('du-err').hidden = true; show('scr-duel'); });
+$('b-du-back').addEventListener('click', () => show('scr-menu'));
+$('b-du-start').addEventListener('click', startDuelOffline);
+$('b-du-host').addEventListener('click', async () => {
+  const err = $('du-err'); err.hidden = true;
+  try { await joinRoom('pvp', newCode()); pvpHost = true; pvpPm = { id: 0, st: 0, map: 'duel', lv: 1, teams: false, nb: 0, df: duelSave().diff, tm: [], ta: {}, duel: {} }; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = 'Could not open an online duel. Try again in a moment.'; err.hidden = false; }
+});
+const tryDuelJoin = async () => {
+  const err = $('du-err'); err.hidden = true;
+  const code = readCode($('du-code'));
+  if (code.length < 4) { err.textContent = 'Duel codes are 5 letters and numbers.'; err.hidden = false; return; }
+  try { await joinRoom('pvp', code); pvpHost = false; lastPvpId = 0; renderPvpLobby(); show('scr-pvp-lobby'); }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join duel "' + code + '". Check the code and try again.'); err.hidden = false; }
+};
+$('b-du-join').addEventListener('click', tryDuelJoin);
+$('du-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryDuelJoin(); });
+
 // =================================================================
 // ---------- Achievements and skins ----------
 // =================================================================
@@ -10104,14 +10491,14 @@ function renderSkins() {
   const s = achState(), owned = SKINS.filter(k => ownsSkin(k.id)).length;
   $('l-count').textContent = 'You own ' + owned + ' of ' + SKINS.length + ' skins. Earn them with gold medals in Time Trials. Tap one to preview it.';
   const grid = $('l-items'); grid.textContent = '';
-  const list = [...(ownsSkin('admin') ? [ADMIN_SKIN] : []), PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.deepdiver, ...PALETTES.filter(p => p.race), ...SKINS];
+  const list = [...(ownsSkin('admin') ? [ADMIN_SKIN] : []), PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.deepdiver, PAL_BY.duelist, ...PALETTES.filter(p => p.race), ...SKINS];
   for (const k of list) {
-    const need = k === ADMIN_SKIN || k.story || k.race || k.dive ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
+    const need = k === ADMIN_SKIN || k.story || k.race || k.dive || k.duel ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
     const eq = skinEq(k.id), wearing = own && Object.keys(eq).every(c => save.eq[c] === eq[c]);
     const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = k.cols[0];
     const t = document.createElement('b'); t.textContent = hidden && !own ? 'Secret skin' : k.n;
     const sm = document.createElement('small'); sm.style.color = own ? 'var(--mint)' : 'var(--dim)';
-    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : k.story ? 'Unlock: finish Chapter ' + k.story + ' of Story Mode' : k.dive ? 'Unlock: beat level 10 of Treasure Dive' : k.race ? 'Unlock: win a Hook Racing race on ' + ((HR_TRACKS.find(t => t.id === k.race) || {}).n || 'its track') : 'Unlock: ' + need + ' gold medals';
+    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : k.story ? 'Unlock: finish Chapter ' + k.story + ' of Story Mode' : k.dive ? 'Unlock: beat level 10 of Treasure Dive' : k.duel ? 'Unlock: win 10 duels in Duel Arena' : k.race ? 'Unlock: win a Hook Racing race on ' + ((HR_TRACKS.find(t => t.id === k.race) || {}).n || 'its track') : 'Unlock: ' + need + ' gold medals';
     const strip = document.createElement('span'); strip.className = 'strip'; strip.style.background = 'linear-gradient(90deg, ' + k.cols.join(', ') + ')';
     b.append(t, sm, strip);
     b.setAttribute('aria-pressed', String(wearing));
