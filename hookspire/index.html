@@ -4597,24 +4597,48 @@ function drawScene(th, cx, cy, sx) {
     else if (th.parts === 'sparkles') { const x = ((a * cw - cx * 0.05) % cw + cw) % cw, y = b * ch, al = Math.max(0, Math.sin(t * 1.3 + k * 1.7)); ctx.strokeStyle = 'rgba(199,168,255,' + al + ')'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x - 4, y); ctx.lineTo(x + 4, y); ctx.moveTo(x, y - 4); ctx.lineTo(x, y + 4); ctx.stroke(); }
   }
 }
-// the home screen: the Spire at sunset, with your own climber swinging from a ring in front of it
-const menuHist = [], menuParts = []; let menuTrail = 0;
+// the home screen: the Spire at sunset, with your own climber climbing it ring by ring, over and over
+const menuHist = [], menuParts = []; let menuTrail = 0, menuPrev = null;
 function renderMenuScene(dt) {
   ctx = mainCtx; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const cx = gt * 25, wide = cw > 1000, side = (cw - 680) / 4; // on wide screens, put them in the margins beside the menu panel
-  const sx = wide ? cw - Math.max(110, side) : cw * 0.8;
+  const cx = gt * 25, wide = cw > 1000, side = (cw - 680) / 4; // on wide screens the Spire stands in the margin beside the menu panel
+  const sx = wide ? cw - Math.max(130, side) : cw * 0.8;
   drawScene(SCENES.menu, cx, 0, sx);
-  const k = Math.max(1, Math.min(cw, ch) / 460), ax = wide ? Math.max(90, side) : cw * 0.25, ay = ch * 0.3;
-  const a = 0.85 * Math.sin(gt * 1.5), da = 0.85 * 1.5 * Math.cos(gt * 1.5), L = ch * 0.2;
-  const x = ax + Math.sin(a) * L, y = ay + Math.cos(a) * L;
+  const h = ch * 0.84, by = ch * 0.98, w = h * 0.11, N = 9, seg = 1.25, cyc = N * seg + 2.2, tc = gt % cyc;
+  const ring = (i) => { const f = 0.06 + i * 0.1, ww = w - w * 0.65 * f; return { x: sx + (i % 2 ? 1 : -1) * (ww + 24), y: by - h * 0.9 * f }; };
+  const L = Math.max(34, ch * 0.05), top = { x: sx, y: by - h * 0.93 };
+  const hang = (r) => ({ x: r.x, y: r.y + L });
+  let pos, anchor = null, alpha = 1, done = false;
+  if (tc < N * seg) {
+    const i = Math.floor(tc / seg), u = (tc % seg) / seg, A = ring(i), last = i + 1 >= N, B = last ? null : ring(i + 1);
+    const p0 = hang(A), p1 = last ? top : hang(B);
+    const c = { x: (p0.x + p1.x) / 2 + (A.x < sx ? -1 : 1) * 40, y: Math.min(p0.y, p1.y) - 30 };
+    const e = u * u * (3 - 2 * u), q = 1 - e;
+    pos = { x: q * q * p0.x + 2 * q * e * c.x + e * e * p1.x, y: q * q * p0.y + 2 * q * e * c.y + e * e * p1.y };
+    anchor = u < 0.55 || last ? A : B;
+    if (last && u > 0.6) anchor = null; // let go and land on top
+    if (tc < 0.35) alpha = tc / 0.35;
+  } else {
+    done = true; pos = { x: top.x, y: top.y + Math.sin((tc - N * seg) * 8) * 3 };
+    const left = cyc - tc; if (left < 0.4) alpha = Math.max(0, left / 0.4);
+    if (Math.random() < 0.3) menuParts.push({ k: 'star', x: pos.x + (Math.random() - 0.5) * 50, y: pos.y - 20 - Math.random() * 30, vx: (Math.random() - 0.5) * 60, vy: -40 - Math.random() * 40, life: 1, color: Math.random() < 0.5 ? '#ffd34d' : '#ffffff', rot: 0 });
+  }
+  const k = Math.max(0.9, Math.min(cw, ch) / 560);
+  const vx = menuPrev && dt ? (pos.x - menuPrev.x) / dt / k : 0, vy = menuPrev && dt ? (pos.y - menuPrev.y) / dt / k : 0;
+  if (menuPrev && Math.hypot(pos.x - menuPrev.x, pos.y - menuPrev.y) > 200) menuHist.length = 0; // a new climb started
+  menuPrev = pos;
   ctx.setTransform(dpr * k, 0, 0, dpr * k, 0, 0);
-  const me = { x: x / k, y: y / k, vx: Math.cos(a) * L * da / k, vy: -Math.sin(a) * L * da / k, base: COLORS[save.color], eq: save.eq, anchor: { x: ax / k, y: ay / k }, face: Math.cos(a) * da < 0 ? -1 : 1, hist: menuHist, label: '', trailAcc: menuTrail };
+  ctx.globalAlpha = 1;
+  for (let i = 0; i < N; i++) { const r = ring(i); drawWRing(r.x / k, r.y / k, false); }
+  ctx.globalAlpha = alpha;
+  const me = { x: pos.x / k, y: pos.y / k, vx, vy, base: COLORS[save.color], eq: save.eq, anchor: anchor ? { x: anchor.x / k, y: anchor.y / k } : null, face: vx < 0 ? -1 : 1, hist: menuHist, label: '', trailAcc: menuTrail };
   pushHist(menuHist, me.x, me.y);
-  drawWRing(ax / k, ay / k, false);
-  drawRope(me.x, me.y, ax / k, ay / k, 0, save.eq.rope, 1);
-  emitTrail(me, dt, menuParts); menuTrail = me.trailAcc;
+  if (me.anchor) drawRope(me.x, me.y, me.anchor.x, me.anchor.y, 0, save.eq.rope, alpha);
+  if (!done) { emitTrail(me, dt, menuParts); menuTrail = me.trailAcc; }
   updateParticles(menuParts, dt); drawParticles(menuParts);
+  ctx.globalAlpha = alpha;
   drawClimber(me);
+  ctx.globalAlpha = 1;
 }
 function mixRGB(a, b, t) { return 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')'; }
 function drawWRing(x, y, targeted) {
