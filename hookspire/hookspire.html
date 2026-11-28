@@ -265,6 +265,14 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
 .slot .bar i { display: block; height: 100%; }
 .slot.active { border-color: var(--gold); }
 .slot.empty { opacity: .5; }
+#ed-bar { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 30; display: grid; gap: 6px; padding: 8px; border-radius: 14px; background: rgba(13,10,24,.88); border: 1px solid rgba(255,255,255,.12); max-width: calc(100vw - 20px); }
+#ed-bar .ed-row { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; align-items: center; }
+#ed-bar .ed-b { font: 600 13px 'Chakra Petch', sans-serif; color: #f3ecdf; background: rgba(255,255,255,.08); border: 2px solid transparent; border-radius: 9px; padding: 5px 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+#ed-bar .ed-b[aria-pressed="true"] { border-color: var(--mint); background: rgba(95,227,208,.18); }
+#ed-bar .ed-b i { width: 16px; height: 16px; border-radius: 4px; display: inline-block; }
+#ed-bar .ed-info { font-size: 12px; color: var(--dim); padding: 0 6px; }
+#ed-tip { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 30; font-size: 13px; color: #f3ecdf; background: rgba(13,10,24,.75); padding: 6px 12px; border-radius: 10px; pointer-events: none; }
+body.touch #ed-tip { display: none; }
 .hp { display: flex; gap: 5px; align-items: center; margin: 4px 0; padding: 5px 8px; border-radius: 10px; background: rgba(13,10,24,.55); width: fit-content; }
 .hp i { width: 26px; height: 24px; background: var(--danger); clip-path: path('M13 23 L2.5 12.5 C-1 9 1 2.5 7 2.5 C10 2.5 12 4.5 13 6.5 C14 4.5 16 2.5 19 2.5 C25 2.5 27 9 23.5 12.5 Z'); filter: drop-shadow(0 1px 0 rgba(0,0,0,.4)); }
 .hp i.off { background: rgba(255,255,255,.22); }
@@ -355,6 +363,7 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
         <button class="mode" id="m-world"><b>Hookworld</b><small>An open world to swing around. Find hidden abilities.</small></button>
         <button class="mode" id="m-story"><b>Story Mode</b><small>The Fallen Spire. The whole story, in five chapters. Play solo or with a friend.</small></button>
         <button class="mode" id="m-dive"><b>Treasure Dive</b><small>10 underwater caves. Grab treasure and get back up before your air runs out. Solo or co-op.</small></button>
+        <button class="mode" id="m-bld"><b>Level Builder</b><small>Build your own levels with blocks, rings, hazards and coins. Play them, share them with a code, or build together online.</small></button>
         <button class="mode" id="m-dshop"><b>🐚 Pearl Shop</b><small>Spend pearls from Treasure Dive on diving gear, pets that follow you everywhere, and ocean items.</small></button>
         <button class="mode" id="m-train" hidden><b>Training Arena</b><small>Spend Grit on upgrades and run drills to earn more.</small></button>
       </div>
@@ -799,6 +808,49 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
     <button class="link" id="b-du-back">Back to menu</button>
   </section>
 
+  <section class="panel wide" id="scr-bld" hidden>
+    <div class="head-row"><h2>Level Builder</h2><span class="note" id="bl-rec"></span></div>
+    <p>Make your own climbing levels. Place rock and steel, rings to swing on, ice, bounce pads and water, add spikes, lava and spinning saws, scatter coins, then put down a start, checkpoints and a finish flag. Test it, save it, and share it with a code.</p>
+    <div class="adm-sec">
+      <h3 style="color:var(--mint)">New level</h3>
+      <div class="row"><input class="adm-in wide" type="text" id="bl-name" maxlength="24" placeholder="Level name" autocomplete="off" spellcheck="false"></div>
+      <div class="field"><span class="label">Size</span><div class="seg" id="bl-size"></div></div>
+      <div class="row"><button class="btn primary" id="b-bl-new">Start building</button></div>
+    </div>
+    <div class="adm-sec">
+      <h3 style="color:var(--mint)">My levels <span class="note" id="bl-count"></span></h3>
+      <div class="ablist" id="bl-list"></div>
+    </div>
+    <div class="adm-sec">
+      <h3 style="color:var(--mint)">Play a level code</h3>
+      <textarea class="adm-in wide" id="bl-code-in" rows="3" placeholder="Paste a level code here" spellcheck="false" style="width:100%;box-sizing:border-box;resize:vertical;font-family:monospace;font-size:12px"></textarea>
+      <div class="row"><button class="btn primary" id="b-bl-play">Play it</button><button class="btn" id="b-bl-import">Save to my levels</button></div>
+      <p class="err" id="bl-code-err" hidden></p>
+    </div>
+    <div class="adm-sec" id="bl-share" hidden>
+      <h3 style="color:var(--mint)">Share code: <span id="bl-share-name"></span></h3>
+      <textarea class="adm-in wide" id="bl-share-code" rows="3" readonly spellcheck="false" style="width:100%;box-sizing:border-box;resize:vertical;font-family:monospace;font-size:12px"></textarea>
+      <div class="row"><button class="btn" id="b-bl-copy">Copy code</button></div>
+      <p class="note">Send this code to a friend. They paste it under "Play a level code".</p>
+    </div>
+    <div class="adm-sec">
+      <h3 style="color:var(--mint)">Build together</h3>
+      <p class="note" id="bl-coop-msg">One of you hosts with a level, the others join with the code and edit the same level live.</p>
+      <div class="row"><select class="adm-in wide" id="bl-host-pick" aria-label="Level to build together"></select><button class="btn" id="b-bl-host">Host</button></div>
+      <div class="join" id="bl-join"><label for="bl-room">Join a friend's build</label><input type="text" id="bl-room" maxlength="6" placeholder="Room code" autocomplete="off" spellcheck="false"><button class="btn" id="b-bl-join">Join</button></div>
+      <p class="err" id="bl-err" hidden></p>
+    </div>
+    <p class="note">Your best time on every level is saved. Beat 5 different custom levels to unlock the Builder skin.</p>
+    <button class="link" id="b-bl-back">Back to menu</button>
+  </section>
+
+  <section class="panel" id="scr-bres" hidden>
+    <h2 id="br-title"></h2>
+    <p id="br-sub"></p>
+    <p class="note" id="br-msg"></p>
+    <div class="row"><button class="btn primary" id="b-br-again">Play again</button><button class="btn" id="b-br-edit">Back to editor</button><button class="btn" id="b-br-menu">Level Builder</button></div>
+  </section>
+
   <section class="panel wide" id="scr-hr" hidden>
     <h2>Hook Racing</h2>
     <p>Race 3 laps around a looping track. Pass every gate in order: the next one glows green, and a checkered line marks the finish. Fly through orange boost rings, find the narrow shortcuts in the middle wall, and grab <b>?</b> boxes for items (press <kbd>E</kbd> to use one).</p>
@@ -1006,6 +1058,18 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
   </section>
 </div>
 
+<div id="ed-bar" hidden>
+  <div class="ed-row" id="ed-tiles"></div>
+  <div class="ed-row">
+    <button type="button" class="ed-b" id="ed-undo" title="Undo (Ctrl+Z)">↶ Undo</button>
+    <button type="button" class="ed-b" id="ed-test">▶ Test</button>
+    <button type="button" class="ed-b" id="ed-save">💾 Save</button>
+    <button type="button" class="ed-b" id="ed-share">🔗 Share</button>
+    <button type="button" class="ed-b" id="ed-exit">✕ Exit</button>
+    <span class="ed-info" id="ed-info"></span>
+  </div>
+</div>
+<div id="ed-tip" hidden>Click or drag to place · Right-click erases · WASD / arrows or the Move tool scroll · Ctrl+Z undo</div>
 <div id="touch" hidden>
   <div class="tstick" id="t-stick" aria-label="Movement stick"><div class="tknob" id="t-knob"></div></div>
   <div class="tab" id="t-abil"></div>
@@ -1175,6 +1239,7 @@ const PALETTES = [
   { id: 'r_sand', n: 'Sand Racer', cols: ['#fff1c9', '#f0d58a', '#c49a5a', '#8a6a3a'], hat: 'racehelm', hc: '#f0d58a', rope: 'plain', rc: '#c49a5a', trail: 'dot', aura: 'glow', ac: '#f0d58a', glow: 8, race: 'hr_dunes' },
   { id: 'r_jungle', n: 'Jungle Racer', cols: ['#c8ff9e', '#5fd36b', '#2f8a3a', '#2f4a26'], hat: 'racehelm', hc: '#5fd36b', rope: 'plain', rc: '#8a6d52', trail: 'leaf', aura: 'orbit', ac: '#5fd36b', glow: 8, race: 'hr_jungle' },
   { id: 'r_crystal', n: 'Crystal Racer', cols: ['#ffffff', '#c7a8ff', '#7fd8ff', '#4a4068'], hat: 'racehelm', hc: '#c7a8ff', rope: 'glow', rc: '#c7a8ff', trail: 'star', aura: 'rainbowring', ac: '#c7a8ff', glow: 14, race: 'hr_crystal' },
+  { id: 'builder', n: 'Builder', cols: ['#ffd34d', '#ff9a3d', '#5a6478', '#2a2f3d'], hat: 'cap', hc: '#ffd34d', rope: 'chain', rc: '#ffd34d', trail: 'sq', aura: 'pulse', ac: '#ffd34d', glow: 8, bld: true },
   { id: 'duelist', n: 'Duelist', cols: ['#f3f0ff', '#c0c8d8', '#5a6478', '#2a2f3d'], hat: 'forgehelm', hc: '#c0c8d8', rope: 'chain', rc: '#e8e4f0', trail: 'spark', aura: 'pulse', ac: '#ff5a6e', glow: 10, duel: true },
   { id: 'deepdiver', n: 'Deep Diver', cols: ['#ffd98a', '#d9a441', '#1f4f8a', '#0b1e3f'], hat: 'bubble', hc: '#d9a441', rope: 'chain', rc: '#d9a441', trail: 'ring', aura: 'tide', ac: '#5fd8ff', glow: 10, dive: true },
   { id: 'spireheart', n: 'Spireheart', cols: ['#ffe14a', '#5fd8ff', '#5fe3d0', '#ff8a3d', '#ffffff'], hat: 'spirecrown', hc: '#ffffff', rope: 'grad', rc: '#ffffff', trail: 'elements', aura: 'elements', ac: '#ffffff', glow: 18, story: 5 },
@@ -1191,7 +1256,7 @@ for (const s of PALETTES) PAL_BY[s.id] = s;
 const SKINS = SKIN_ORDER.map(id => PAL_BY[id]);
 const HAT_NAMES = { cap: 'Cap', beanie: 'Beanie', band: 'Headband', top: 'Top Hat', bucket: 'Hat', crown: 'Crown', prop: 'Propeller', halo: 'Halo', comet: 'Crown', flame: 'Flame', antenna: 'Antenna', tricorn: 'Tricorn', flower: 'Blossom', horns: 'Horns', bubble: 'Helmet', shards: 'Shards', moon: 'Moon', boltcrown: 'Bolt Crown', icecrown: 'Ice Crown', coralcrown: 'Coral Crown', glacier: 'Glacier Crown', forgehelm: 'Forge Helm', spirecrown: 'Spire Crown', racehelm: 'Racing Helmet' };
 const SKIN_BY = Object.create(null);
-for (const s of [...SKINS, PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.deepdiver, PAL_BY.duelist, ...PALETTES.filter(p => p.race)]) {
+for (const s of [...SKINS, PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.deepdiver, PAL_BY.duelist, PAL_BY.builder, ...PALETTES.filter(p => p.race)]) {
   SKIN_BY[s.id] = s;
   const base = { r: 5, ex: true, sk: s.id };
   ITEMS.push(Object.assign({ cat: 'hat', id: 'k_' + s.id + '_h', n: s.n + ' ' + HAT_NAMES[s.hat], k: s.hat, c: s.hc || s.cols[1], c2: s.cols[0] }, base));
@@ -1252,7 +1317,7 @@ const fmtClock = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 6
 
 // ---------- save (this device only) ----------
 const SAVE_KEY = 'hookspire.save.v1';
-const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0, story: null, grit: null, hrCfg: null, hrBest: null, hrWins: null, dive: null, pet: null, duel: null };
+const save = { name: '', color: 0, best: 0, cp: 0, runs: 0, tokens: 0, hTok: 0, got: [], owned: {}, eq: Object.assign({}, NOEQ), summits: 0, fastest: 0, raceWins: 0, raceCfg: null, hw: null, pvpCfg: null, ach: null, trials: null, skinV: 2, adm: false, tagCfg: null, ctfCfg: null, kfDiff: 'medium', set: null, seen: null, last: null, kfSide: 0, story: null, grit: null, hrCfg: null, hrBest: null, hrWins: null, dive: null, pet: null, duel: null, blds: null, bldBest: null, bldDone: null };
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
   if (s && typeof s === 'object') {
@@ -1292,6 +1357,9 @@ try {
     if (s.dive && typeof s.dive === 'object') save.dive = s.dive;
     if (typeof s.pet === 'string') save.pet = s.pet.slice(0, 20);
     if (s.duel && typeof s.duel === 'object') save.duel = s.duel;
+    if (Array.isArray(s.blds)) save.blds = s.blds.slice(0, 10);
+    if (s.bldBest && typeof s.bldBest === 'object') save.bldBest = s.bldBest;
+    if (Array.isArray(s.bldDone)) save.bldDone = s.bldDone.slice(0, 500);
     if (typeof s.last === 'string' && /^m-[a-z]+$/.test(s.last)) save.last = s.last;
   }
 } catch (e) { /* storage unavailable: play without saving */ }
@@ -1453,7 +1521,7 @@ function musicWant() {
   if (state === 'menu') return 'menu';
   if (mode === 'story') return story && story.L && story.L.goal === 'boss' ? 'boss' : 'story';
   if (mode === 'pvp') return 'pvp';
-  if (mode === 'world' || mode === 'trial' || mode === 'train' || mode === 'dive') return 'world';
+  if (mode === 'world' || mode === 'trial' || mode === 'train' || mode === 'dive' || mode === 'edit' || mode === 'build') return 'world';
   return 'climb';
 }
 function musicTick() {
@@ -1639,6 +1707,7 @@ addEventListener('keydown', (e0) => {
   const e = { code: vcode(e0.code), repeat: e0.repeat, target: e0.target, key: e0.key, preventDefault: () => e0.preventDefault() };
   if (sDlg.lines) { if (!e.repeat && (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE' || e0.code === 'Enter')) { e.preventDefault(); dlgNext(); } return; } // story dialogue
   if (e.code === 'KeyN' && !e.repeat) { toggleMute(); return; }
+  if (state === 'edit') { edKey(Object.assign(e, { code: e0.code, ctrlKey: e0.ctrlKey, metaKey: e0.metaKey })); return; }
   if (state === 'play' && e.code === 'KeyH' && !e.repeat) { openModeHelp(); return; }
   if (state === 'paused' && current === 'scr-mhelp' && (e.code === 'KeyH' || e.code === 'Escape') && !e.repeat) { $('b-mh-close').click(); return; }
   if (state === 'menu' && e.code === 'Escape' && current && current !== 'scr-menu') { menuBack(); return; }
@@ -1650,10 +1719,11 @@ addEventListener('keydown', (e0) => {
     if (save.adm && !e.repeat && (e.code === 'KeyG' || e.code === 'KeyF')) admToggle(e.code === 'KeyG' ? 'god' : 'fly');
     if (e.code === 'Escape' && (kfMenuOpen() || (pvp && pvp.chess && pvp.chess.picking))) { kfCloseMenu(); pvp.chess.picking = null; }
     else if (e.code === 'Escape' || e.code === 'KeyP') pause();
-    else if (mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive') {
+    else if (mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive' || mode === 'edit' || mode === 'build') {
       if (mode === 'pvp' && pvp && pvp.chess) chessKey(e);
       else if (mode === 'story') { if (e.code === 'KeyR' && !e.repeat && story && !story.done) storyRespawn(); else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1); else if (e.code === 'Tab') openLoadout(); }
       else if (mode === 'trial') { if (e.code === 'KeyR' && !e.repeat && trial) startTrial(trial.n); }
+      else if (mode === 'build') { if (e.code === 'KeyR' && !e.repeat && bld && !bld.done) { bld.cp = hw.bstart; bld.cps.clear(); bld.got.clear(); bld.time = 0; bld.deaths = 0; bld.count = 0.6; detach(); P.x = hw.bstart.x; P.y = hw.bstart.y; P.vx = 0; P.vy = 0; P.hist.length = 0; banner('Restart', bld.lv.n); } else if (e.code === 'KeyB' && !e.repeat && bld && bld.ed) bldBackToEditor(); }
       else if (mode === 'dive') { if (e.code === 'KeyR' && !e.repeat && dive && !dive.done) { diveSurface(true); banner('Back to the boat', 'You dropped what you were carrying'); } else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1); else if (e.code === 'Tab') openLoadout(); }
       else if (mode === 'train') { if (e.code === 'KeyR' && !e.repeat) trainRespawn(); else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1); else if (e.code === 'Tab') openLoadout(); }
       else if (!e.repeat && /^Digit[1-5]$/.test(e.code)) useAbility(+e.code.slice(5) - 1);
@@ -1679,6 +1749,7 @@ let aimTouch = null;
 canvas.addEventListener('pointerdown', (e) => {
   if (e.pointerType !== 'touch') return;
   touchSeen();
+  if (mode === 'edit') return;
   if (mode === 'pvp' && pvp && pvp.chess && pvp.chess.picking) return; // picking a spot in Kingfall
   aimTouch = e.pointerId; mouse.sx = e.clientX; mouse.sy = e.clientY; mouse.inside = true; snapAim();
   try { canvas.setPointerCapture(e.pointerId); } catch (er) {}
@@ -1718,7 +1789,7 @@ function rayCircle(ox, oy, ux, uy, cx, cy, r) {
 // ---------- rope wrapping: the rope bends around corners it swings into ----------
 function ropeCorners(x0, y0, x1, y1) {
   const out = [];
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive') && hw) {
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive' || mode === 'edit' || mode === 'build') && hw) {
     const vx0 = Math.floor(x0 / TS), vx1 = Math.ceil(x1 / TS), vy0 = Math.floor(y0 / TS), vy1 = Math.ceil(y1 / TS);
     if ((vx1 - vx0 + 1) * (vy1 - vy0 + 1) > 1600) return out;
     for (let vy = vy0; vy <= vy1; vy++) for (let vx = vx0; vx <= vx1; vx++) {
@@ -1739,7 +1810,7 @@ function ropeBlocked(ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
   if (d < 24) return false;
   const sx = ax + dx / d * 8, sy = ay + dy / d * 8; // skip the bit of rope right at the hook or corner
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive') && hw) return !wLos(sx, sy, bx, by);
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive' || mode === 'edit' || mode === 'build') && hw) return !wLos(sx, sy, bx, by);
   return lineBlocked(sx, sy, bx, by, chunksBetween(Math.min(ay, by) - 60, Math.max(ay, by) + 60));
 }
 const triSide = (p, a, b) => (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
@@ -2023,7 +2094,7 @@ function burst(x, y, color, n, spd) {
 }
 let bannerTimer = 0;
 function banner(small, big, detail) {
-  const el = $(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive' ? 'wbanner' : 'banner'); // the arena modes use the world HUD
+  const el = $(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive' || mode === 'edit' || mode === 'build' ? 'wbanner' : 'banner'); // the arena modes use the world HUD
   el.textContent = '';
   const s = document.createElement('small'); s.textContent = small;
   el.append(s, document.createTextNode(big));
@@ -2251,6 +2322,7 @@ function sendPresence(dt) {
   }
   if (teamKind === 'story') storyPresence(pr);
   if (teamKind === 'dive') divePresence(pr);
+  if (teamKind === 'build') bldPresence(pr);
   if (teamKind === 'world' || teamKind === 'pvp' || teamKind === 'story') pr.fx = (ab.active.invis > 0 ? 1 : 0) | (ab.active.shrink > 0 ? 2 : 0) | (ab.active.fly > 0 ? 4 : 0) | (ab.active.shield > 0 ? 8 : 0);
   if (teamKind === 'pvp') pvpPresence(pr);
   const kk = admKicks();
@@ -2355,7 +2427,7 @@ function followerCheck() {
 }
 
 // ---------- screens ----------
-const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-train', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-hr', 'scr-duel', 'scr-dive', 'scr-dshop', 'scr-dive-res', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
+const screens = ['scr-menu', 'scr-coop', 'scr-start', 'scr-race', 'scr-lobby', 'scr-results', 'scr-summit', 'scr-pause', 'scr-help', 'scr-gacha', 'scr-locker', 'scr-world', 'scr-loadout', 'scr-train', 'scr-map', 'scr-pvp', 'scr-pvp-lobby', 'scr-pvp-res', 'scr-ach', 'scr-trials', 'scr-trial-res', 'scr-admin', 'scr-tag', 'scr-ctf', 'scr-hr', 'scr-bld', 'scr-bres', 'scr-duel', 'scr-dive', 'scr-dshop', 'scr-dive-res', 'scr-chess', 'scr-settings', 'scr-mhelp', 'scr-story', 'scr-story-res'];
 let helpReturn = 'scr-menu', current = 'scr-menu';
 function show(id) {
   current = id;
@@ -2442,7 +2514,7 @@ function toMenu() {
   ab.active = {}; ab.cd = {};
   kfCloseMenu();
   if (typeof sDlg !== 'undefined') { sDlg.lines = null; $('dlg').hidden = true; $('radio').hidden = true; }
-  story = null; storyHost = false; train = null; dive = null; diveHost = false;
+  story = null; storyHost = false; train = null; dive = null; diveHost = false; bld = null; bldHost = false; bldSync = null; $('ed-bar').hidden = true; $('ed-tip').hidden = true;
   pvp = null; pvpHost = false; pvpPm = null; $('w-ult').hidden = true; $('g-hint').hidden = true; $('c-hint').hidden = true; $('r-hint').hidden = true; $('d-hint').hidden = true; $('k-hint').hidden = true; $('k-roster').hidden = true;
   trial = null; $('t-timer').hidden = true; $('t-hint').hidden = true; $('w-hp').hidden = false; $('w-slots').hidden = false;
   toCheckpoint(0);
@@ -4116,7 +4188,7 @@ function stepWorld(dt) {
   else if (rope) ax = dir * SWING * km * (mode === 'pvp' && pvp && pvp.me.od > Date.now() ? 1.6 : 1);
   else if (!P.ground) ax = dir * (feather ? 1000 : AIR) * km;
   // water (Story Mode, the Sunken Ruins): you float up unless you swim; currents push, bubbles lift
-  const wk = mode === 'story' && story ? storyWaterAt(P.x, P.y) : mode === 'dive' && dive ? diveWaterAt(P.x, P.y) : 0;
+  const wk = mode === 'story' && story ? storyWaterAt(P.x, P.y) : mode === 'dive' && dive ? diveWaterAt(P.x, P.y) : mode === 'build' && bld ? bldWaterAt(P.x, P.y) : 0;
   if (wk && !fly) {
     const up = (held('KeyS', 'ArrowDown') && !gbCharging() ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0);
     ay = up ? up * 1250 * (mode === 'dive' ? 1 + 0.1 * dUp('fins') : 1) : -140;
@@ -4194,6 +4266,7 @@ function useAbility(i) {
   const h = hs(), id = h.slots[i];
   if (!id || state !== 'play') return;
   if (mode === 'pvp' && pvp && pvp.duel) return; // duels are sword + hook only
+  if (mode === 'build') return; // custom levels: hook only, so best times are fair
   if (mode === 'pvp' && pvp && (Date.now() < pvp.start || !pvp.me.alive || pvp.over || Date.now() < pvp.me.freezeUntil)) return;
   if (ab.cd[id] > 0 || ab.active[id] > 0) return;
   const A = ABIL[id];
@@ -4492,6 +4565,7 @@ function updateWorldHud(dt) {
   if (mode === 'story' && story) storyHudFast();
   if (mode === 'train' && train) trainHud();
   if (mode === 'dive' && dive) diveHud();
+  if (mode === 'build' && bld) bldHud();
   wHudT -= dt;
   if (wHudT > 0) return;
   wHudT = 0.4;
@@ -4573,6 +4647,7 @@ function sceneKey() {
   if (mode === 'pvp' && pvp) return pvp.hr ? (HR_SCENE[pvp.cfg.map] || 'day') : pvp.chess ? 'dusk' : pvp.ctf ? ({ run: 'desert', sky: 'day', forts: 'jungle' }[pvp.cfg.map] || 'day') : 'dusk';
   if (mode === 'train') return 'dusk';
   if (mode === 'dive') return 'ruins';
+  if (mode === 'edit' || mode === 'build') return 'day';
   return 'day';
 }
 const hsh = (i) => { const v = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
@@ -4775,7 +4850,7 @@ function shieldBubble(x, y, r) {
 function renderWorld(dt) {
   ctx = mainCtx;
   const sc = wScale(), vw = cw / sc, vh = ch / sc;
-  const fpos = camFocus(), WPw = hw.wt * TS, HPw = hw.ht * TS;
+  const fpos = camFocus(), WPw = hw.wt * TS, HPw = hw.ht * TS + (mode === 'edit' ? 240 : 0); // the editor can scroll past the bottom, clear of its toolbar
   const tx = clamp(fpos.x - vw / 2, 0, Math.max(0, WPw - vw)), ty = clamp(fpos.y - vh * 0.55, 0, Math.max(0, HPw - vh));
   const k = Math.min(1, dt * 7);
   wcamX += (tx - wcamX) * k; wcamY += (ty - wcamY) * k;
@@ -4907,7 +4982,8 @@ function renderWorld(dt) {
   if (mode === 'story' && story) storyRender(dt);
   if (mode === 'train' && train) trainRender();
   if (mode === 'dive' && dive) diveRender();
-  if (mode !== 'pvp' || (pvp && pvp.me.alive)) {
+  if ((mode === 'edit' || mode === 'build') && bld) bldRender();
+  if (mode !== 'edit' && (mode !== 'pvp' || (pvp && pvp.me.alive))) {
     if (A) drawRopeW(P.x, P.y, A, rope.w, rope.L, ab.active.static > 0 ? 'r_bolt' : save.eq.rope);
     if (ab.active.flip > 0) { ctx.save(); ctx.translate(P.x, P.y); ctx.scale(1, -1); ctx.translate(-P.x, -P.y); drawClimber(me); ctx.restore(); } else drawClimber(me);
     if (ab.active.shield > 0) for (let k = 0; k < Math.max(1, ab.shieldHits || 1); k++) shieldBubble(P.x, P.y, curR() + k * 7);
@@ -4921,6 +4997,7 @@ function renderWorld(dt) {
   drawParticles(particles);
   if (mode === 'story' && story) storyOverlay();
   if (mode === 'dive' && dive) diveOverlay();
+  if ((mode === 'edit' || mode === 'build') && bld) bldOverlay();
 }
 function worldFrame(dt) {
   const sc = wScale();
@@ -4934,6 +5011,8 @@ function worldFrame(dt) {
     else if (mode === 'story' && story) storyTick(dt);
     else if (mode === 'train' && train) trainTick(dt);
     else if (mode === 'dive' && dive) diveTick(dt);
+    else if (mode === 'build' && bld) bldTick(dt);
+  } else if (state === 'edit' && mode === 'edit' && bld) { edTick(dt); gt += dt;
   } else { acc = 0; wAim = null; gt += dt; }
   if (mode === 'pvp' && pvp && (state === 'play' || (pvp.online && state !== 'menu'))) pvpTick(dt);
   sendPresence(dt);
@@ -5129,6 +5208,7 @@ function specCycle(d) {
   pvp.spec = list[i].id;
 }
 function camFocus() {
+  if (mode === 'edit' && bld) return bld.cam;
   if (mode === 'pvp' && pvp && !pvp.me.alive) { const v = specTarget(); if (v) return v; }
   return P;
 }
@@ -7841,7 +7921,7 @@ function refreshLast() {
 document.querySelectorAll('#scr-menu .mode').forEach((el) => el.addEventListener('click', () => { if (/^m-(solo|coop|race|world|trial|pvp|tag|ctf|chess)$/.test(el.id)) { save.last = el.id; saveDirty = true; } }));
 $('m-last').addEventListener('click', () => { const src = save.last && document.getElementById(save.last); if (src) src.click(); });
 refreshLast();
-const BACKS = ['b-back-coop', 'b-back-start', 'b-back-race', 'b-lobby-leave', 'b-res-menu', 'b-sum-menu', 'b-set-back', 'g-back', 'l-back', 'b-w-back', 'b-p-back', 'b-g-back', 'b-c-back', 'b-h-back', 'b-du-back', 'b-dv-back', 'b-k-back', 'b-p-leave', 'b-pr-menu', 'b-tr-back', 'b-ach-back', 'b-help-back', 'b-adm-back', 'b-trr-list'];
+const BACKS = ['b-back-coop', 'b-back-start', 'b-back-race', 'b-lobby-leave', 'b-res-menu', 'b-sum-menu', 'b-set-back', 'g-back', 'l-back', 'b-w-back', 'b-p-back', 'b-g-back', 'b-c-back', 'b-h-back', 'b-bl-back', 'b-du-back', 'b-dv-back', 'b-k-back', 'b-p-leave', 'b-pr-menu', 'b-tr-back', 'b-ach-back', 'b-help-back', 'b-adm-back', 'b-trr-list'];
 function menuBack() {
   const sec = document.getElementById(current);
   const b = sec && BACKS.map(id => sec.querySelector('#' + id)).find(Boolean);
@@ -7893,7 +7973,7 @@ function touchSeen() { if (!touchUsed) { touchUsed = true; touchRefresh(); } }
 addEventListener('touchstart', touchSeen, { passive: true, capture: true });
 function snapAim() {
   // touch aim assist: snap to the nearest ring within a thumb's width of your finger
-  const R2 = 70, tower = !(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive') || !hw;
+  const R2 = 70, tower = !(mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive' || mode === 'edit' || mode === 'build') || !hw;
   let best = null, bd = R2;
   const consider = (x, y, toScreen) => {
     if (Math.hypot(x - P.x, y - P.y) > (tower ? RANGE * gRng() : curRange()) * 0.97) return;
@@ -7986,7 +8066,7 @@ function touchLayout() {
   }
   if (mode === 'world') tbtn(side, 'sm', '⚙', keyOf('equip'), { tap: true }).title = 'Equip';
   if (mode === 'world' || pv) tbtn(side, 'sm', '🗺', keyOf('map'), { tap: true }).title = 'Map';
-  if ((pv && pvp.hr) || mode === 'world' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive' || mode === 'solo' || mode === 'coop' || (mode === 'race' && !raceCountdown())) tbtn(side, 'sm', mode === 'world' ? '🔥' : '↺', keyOf('reset'), { tap: true }).title = mode === 'world' ? 'Campfire' : mode === 'trial' ? 'Restart' : 'Checkpoint';
+  if ((pv && pvp.hr) || mode === 'world' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive' || mode === 'build' || mode === 'solo' || mode === 'coop' || (mode === 'race' && !raceCountdown())) tbtn(side, 'sm', mode === 'world' ? '🔥' : '↺', keyOf('reset'), { tap: true }).title = mode === 'world' ? 'Campfire' : mode === 'trial' ? 'Restart' : 'Checkpoint';
   tbtn(side, 'sm', SET.mute ? '🔇' : '🔊', keyOf('mute'), { tap: true }).title = 'Mute';
   tbtn(side, 'sm', '?', keyOf('help'), { tap: true }).title = 'How to play';
   tbtn(side, 'sm', 'II', 'Escape', { tap: true }).title = 'Pause';
@@ -10360,6 +10440,418 @@ const tryDuelJoin = async () => {
 $('b-du-join').addEventListener('click', tryDuelJoin);
 $('du-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryDuelJoin(); });
 
+
+// =================================================================
+// ---------- Level Builder: make, play, share and co-build your own levels ----------
+// =================================================================
+const BT = [
+  { id: 0, k: 'erase', n: 'Erase', c: '#3a3550' },
+  { id: 1, k: 'rock', n: 'Rock', c: '#8a7a68', d: 'Solid. You can hook it.' },
+  { id: 2, k: 'steel', n: 'Steel', c: '#5a6c8c', d: 'Solid. Hooks can\'t grab it.' },
+  { id: 3, k: 'ice', n: 'Ice', c: '#a9dcf5', d: 'Slippery floor.' },
+  { id: 4, k: 'bounce', n: 'Bounce pad', c: '#5ee66b', d: 'Land on it to launch up high.' },
+  { id: 5, k: 'spikes', n: 'Spikes', c: '#e6e2ee', d: 'Touch them and you go back to your checkpoint.' },
+  { id: 6, k: 'lava', n: 'Lava', c: '#ff6a2a', d: 'Deadly. Don\'t fall in.' },
+  { id: 7, k: 'water', n: 'Water', c: '#3f9fd8', d: 'Swim with W and S. Watch your air.' },
+  { id: 8, k: 'ring', n: 'Ring', c: '#5fe3d0', d: 'Hook it and swing.' },
+  { id: 9, k: 'boost', n: 'Boost ring', c: '#ff9a3d', d: 'Fly through it for a burst of speed.' },
+  { id: 10, k: 'saw', n: 'Saw', c: '#c0c8d8', d: 'Spins back and forth. Deadly.' },
+  { id: 11, k: 'coin', n: 'Coin', c: '#ffd34d', d: 'Collect them all for a perfect run.' },
+  { id: 12, k: 'start', n: 'Start', c: '#9be15d', d: 'Where you begin. Only one.' },
+  { id: 13, k: 'cp', n: 'Checkpoint', c: '#7fb2ff', d: 'Saves your spot.' },
+  { id: 14, k: 'finish', n: 'Finish', c: '#f3ecdf', d: 'Reach it to win. Only one.' },
+];
+const BSIZES = [{ id: 's', n: 'Small', w: 40, h: 30 }, { id: 'm', n: 'Medium', w: 80, h: 60 }, { id: 'l', n: 'Large', w: 160, h: 100 }];
+const BLD_SLOTS = 10, BLD_SKIN_NEED = 5, BLD_AIR = 12;
+let bld = null, bldHost = false, bldSize = 'm', edTool = 1, bldSync = null, bldSyncT = 0;
+const bldCell = (lv, x, y) => (x >= 0 && y >= 0 && x < lv.w && y < lv.h) ? lv.c[y * lv.w + x] : 2;
+function newLevel(n, sz) {
+  const S = BSIZES.find(q => q.id === sz) || BSIZES[1], w = S.w, h = S.h, c = new Uint8Array(w * h);
+  for (let x = 0; x < w; x++) { c[(h - 1) * w + x] = 1; c[(h - 2) * w + x] = 1; }
+  c[(h - 3) * w + 3] = 12; c[(h - 3) * w + w - 4] = 14;
+  for (let x = 8; x < w - 6; x += 7) c[(h - 9) * w + x] = 8;
+  return { n: n || 'My level', w, h, c };
+}
+// ----- share codes: name, size and run-length cells, packed into base64 -----
+function lvCode(lv) {
+  const name = new TextEncoder().encode(lv.n.slice(0, 24)), out = [lv.w >> 8, lv.w & 255, lv.h >> 8, lv.h & 255, name.length, ...name];
+  for (let i = 0; i < lv.c.length;) { const v = lv.c[i]; let n = 1; while (i + n < lv.c.length && lv.c[i + n] === v && n < 255) n++; out.push(v, n); i += n; }
+  let bin = ''; for (let i = 0; i < out.length; i += 4096) bin += String.fromCharCode.apply(null, out.slice(i, i + 4096));
+  return 'HS1-' + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function lvFromCode(code) {
+  try {
+    code = String(code || '').trim().replace(/\s+/g, '');
+    if (!code.startsWith('HS1-')) return null;
+    let b = code.slice(4).replace(/-/g, '+').replace(/_/g, '/'); while (b.length % 4) b += '=';
+    const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const w = (u[0] << 8) | u[1], h = (u[2] << 8) | u[3], nl = u[4];
+    if (!BSIZES.some(S => S.w === w && S.h === h) || 5 + nl > u.length) return null;
+    const n = new TextDecoder().decode(u.slice(5, 5 + nl)).replace(/[\u0000-\u001f]/g, '').slice(0, 24) || 'Level', c = new Uint8Array(w * h);
+    let p = 0;
+    for (let i = 5 + nl; i + 1 < u.length; i += 2) { const v = u[i], k = u[i + 1]; if (v >= BT.length || !k || p + k > c.length) return null; c.fill(v, p, p + k); p += k; }
+    if (p !== c.length) return null;
+    return { n, w, h, c };
+  } catch (e) { return null; }
+}
+function lvHash(code) { let h = 2166136261; for (let i = 0; i < code.length; i++) { h ^= code.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+function blds() { if (!Array.isArray(save.blds)) save.blds = []; save.blds = save.blds.filter(q => q && typeof q.d === 'string').slice(0, BLD_SLOTS); return save.blds; }
+// ----- turning a level into a world the engine can run -----
+function bldWorld(lv) {
+  const { w: wt, h: ht } = lv, g = new Uint8Array(wt * ht);
+  const get = (x, y) => (x >= 0 && y >= 0 && x < wt && y < ht) ? g[y * wt + x] : TMETAL;
+  const pal = { n: lv.n, top: '#9be15d', rock: '#8a7a68', deep: '#6a5a4c' };
+  const c = { name: lv.n, wt, ht, g, get, surf: new Int16Array(wt).fill(ht + 20), colB: new Array(wt).fill(pal), rings: [], img: null,
+    shrines: [], chests: [], camps: [], trees: [], towers: [], turrets: [], drones: [], bars: [], shots: [], sentry: null, vault: null, treasure: null };
+  for (let i = 0; i < lv.c.length; i++) g[i] = bldSolid(lv.c[i]);
+  bldObjects(c, lv);
+  return c;
+}
+function bldSolid(v) { return v === 1 || v === 4 ? TROCK : v === 2 ? TMETAL : v === 3 ? TICE : v === 5 ? TSPIKE : TAIR; }
+function bldObjects(c, lv) {
+  const px = (t) => t * TS + TS / 2;
+  c.rings = []; c.boosts = []; c.saws = []; c.coins = []; c.cpl = []; c.bstart = null; c.bfin = null;
+  for (let y = 0; y < lv.h; y++) for (let x = 0; x < lv.w; x++) {
+    const v = lv.c[y * lv.w + x];
+    if (v === 8) c.rings.push({ x: px(x), y: px(y) });
+    else if (v === 9) c.boosts.push({ x: px(x), y: px(y), cd: 0 });
+    else if (v === 10) { let a = x, b = x; while (a > 0 && a > x - 5 && !bldSolid(lv.c[y * lv.w + a - 1])) a--; while (b < lv.w - 1 && b < x + 5 && !bldSolid(lv.c[y * lv.w + b + 1])) b++; c.saws.push({ x0: px(a), x1: px(b), y: px(y), ph: (x * 0.7 + y * 0.3) % 6.28 }); }
+    else if (v === 11) c.coins.push({ id: x + '_' + y, x: px(x), y: px(y) });
+    else if (v === 12) c.bstart = { x: px(x), y: (y + 1) * TS - PR - 2 };
+    else if (v === 13) c.cpl.push({ id: x + '_' + y, x: px(x), y: (y + 1) * TS - PR - 2, fy: (y + 1) * TS });
+    else if (v === 14) c.bfin = { x: px(x), y: px(y) };
+  }
+}
+const bSawPos = (q) => { const k = (Math.sin(gt * 1.6 + q.ph) + 1) / 2; return { x: q.x0 + (q.x1 - q.x0) * k, y: q.y }; };
+function bldCellAt(x, y) { return bld ? bldCell(bld.lv, Math.floor(x / TS), Math.floor(y / TS)) : 0; }
+const bldWaterAt = (x, y) => (bld && bld.mode === 'play' && bldCellAt(x, y) === 7) ? 1 : 0;
+// ----- the editor -----
+function openEditor(lv, slot) {
+  bld = { lv, slot: slot == null ? -1 : slot, mode: 'edit', undo: [], stroke: null, cam: { x: 0, y: 0 }, dirty: false, ops: bld && bld.ops || [], seq: bld && bld.seq || 0 };
+  hw = bldWorld(lv); mode = 'edit'; state = 'edit'; story = null; train = null; dive = null; trial = null;
+  detach(); P.x = -9999; P.y = -9999; P.vx = 0; P.vy = 0; P.hist.length = 0;
+  const st = hw.bstart || { x: TS * 4, y: (lv.h - 4) * TS };
+  bld.cam.x = st.x; bld.cam.y = st.y;
+  const sc = wScale(); wcamX = clamp(st.x - cw / sc / 2, 0, Math.max(0, lv.w * TS - cw / sc)); wcamY = clamp(st.y - ch / sc * 0.55, 0, Math.max(0, lv.h * TS - ch / sc));
+  particles.length = 0;
+  show(null); $('hud').hidden = true; $('whud').hidden = true; $('ed-bar').hidden = false; $('ed-tip').hidden = false; $('touch').hidden = true;
+  renderEdBar(); canvas.focus();
+}
+function renderEdBar() {
+  const box = $('ed-tiles'); box.textContent = '';
+  const tools = [{ id: -1, n: 'Move', c: 'transparent', icon: '✋' }, ...BT];
+  for (const t of tools) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'ed-b'; b.title = t.d || t.n;
+    if (t.icon) b.textContent = t.icon + ' ' + t.n; else { const i = document.createElement('i'); i.style.background = t.c; if (t.id === 0) i.style.border = '2px dashed #8a86a0'; b.append(i, document.createTextNode(t.n)); }
+    b.setAttribute('aria-pressed', String(edTool === t.id));
+    b.addEventListener('click', () => { edTool = t.id; renderEdBar(); });
+    box.append(b);
+  }
+  edInfo();
+}
+function edInfo() {
+  if (!bld) return;
+  const room = teamKind === 'build' ? ' · building together (' + (peerState.size + 1) + ')' + (bldHost ? ' · host' : '') + ' · code ' + teamCode : '';
+  $('ed-info').textContent = bld.lv.n + ' · ' + bld.lv.w + '×' + bld.lv.h + (bld.dirty ? ' · not saved' : '') + room;
+}
+function edSet(i, v, fromNet) {
+  const lv = bld.lv; if (i < 0 || i >= lv.c.length || lv.c[i] === v) return false;
+  // only one start and one finish
+  if (v === 12 || v === 14) for (let j = 0; j < lv.c.length; j++) if (lv.c[j] === v && j !== i) { if (!fromNet && bld.stroke) bld.stroke.push([j, v]); lv.c[j] = 0; hw.g[j] = TAIR; if (!fromNet) bldOp(j, 0); }
+  if (!fromNet && bld.stroke) bld.stroke.push([i, lv.c[i]]);
+  lv.c[i] = v; hw.g[i] = bldSolid(v); bld.objDirty = true; bld.dirty = true;
+  if (!fromNet) bldOp(i, v);
+  return true;
+}
+function bldOp(i, v) { if (teamKind !== 'build') return; bld.seq++; bld.ops.push([bld.seq, i, v]); if (bld.ops.length > 400) bld.ops.splice(0, bld.ops.length - 400); if (bldHost) bldSync.v++; presenceClock = 0; }
+function edPaintAt(sx, sy, erase) {
+  const sc = wScale(), x = Math.floor((wcamX + sx / sc) / TS), y = Math.floor((wcamY + sy / sc) / TS);
+  if (x < 0 || y < 0 || x >= bld.lv.w || y >= bld.lv.h) return;
+  const v = erase ? 0 : edTool;
+  const last = bld.lastCell; bld.lastCell = [x, y];
+  // fill the gap if the pointer moved fast
+  if (last && (Math.abs(last[0] - x) > 1 || Math.abs(last[1] - y) > 1)) { const n = Math.max(Math.abs(last[0] - x), Math.abs(last[1] - y)); for (let k = 1; k < n; k++) edSet(Math.round(last[1] + (y - last[1]) * k / n) * bld.lv.w + Math.round(last[0] + (x - last[0]) * k / n), v); }
+  edSet(y * bld.lv.w + x, v);
+  if (bld.objDirty) { bldObjects(hw, bld.lv); bld.objDirty = false; }
+  edInfo();
+}
+const edPtr = { down: false, pan: false, erase: false, lx: 0, ly: 0, id: null };
+canvas.addEventListener('pointerdown', (e) => {
+  if (mode !== 'edit' || !bld) return;
+  e.preventDefault(); canvas.focus();
+  try { canvas.setPointerCapture(e.pointerId); } catch (er) {}
+  edPtr.down = true; edPtr.id = e.pointerId; edPtr.lx = e.clientX; edPtr.ly = e.clientY;
+  edPtr.pan = edTool === -1 || e.button === 1 || keys.Space; edPtr.erase = e.button === 2;
+  if (!edPtr.pan) { bld.stroke = []; bld.lastCell = null; edPaintAt(e.clientX, e.clientY, edPtr.erase); }
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (mode !== 'edit' || !bld) return;
+  bld.hover = [e.clientX, e.clientY];
+  if (!edPtr.down || e.pointerId !== edPtr.id) return;
+  if (edPtr.pan) { const sc = wScale(); bld.cam.x -= (e.clientX - edPtr.lx) / sc; bld.cam.y -= (e.clientY - edPtr.ly) / sc; edClampCam(); wcamX = clamp(bld.cam.x - cw / sc / 2, 0, Math.max(0, bld.lv.w * TS - cw / sc)); wcamY = clamp(bld.cam.y - ch / sc * 0.55, 0, Math.max(0, bld.lv.h * TS - ch / sc)); }
+  else edPaintAt(e.clientX, e.clientY, edPtr.erase);
+  edPtr.lx = e.clientX; edPtr.ly = e.clientY;
+});
+const edUp = (e) => { if (!edPtr.down || (e && e.pointerId !== edPtr.id)) return; edPtr.down = false; if (bld && bld.stroke && bld.stroke.length) { bld.undo.push(bld.stroke); if (bld.undo.length > 60) bld.undo.shift(); } if (bld) bld.stroke = null; };
+canvas.addEventListener('pointerup', edUp); canvas.addEventListener('pointercancel', edUp);
+function edUndo() {
+  if (!bld || !bld.undo.length) return;
+  const st = bld.undo.pop();
+  for (let k = st.length - 1; k >= 0; k--) { const [i, v] = st[k]; bld.lv.c[i] = v; hw.g[i] = bldSolid(v); bldOp(i, v); }
+  bldObjects(hw, bld.lv); bld.dirty = true; edInfo();
+}
+function edClampCam() { bld.cam.x = clamp(bld.cam.x, 0, bld.lv.w * TS); bld.cam.y = clamp(bld.cam.y, 0, bld.lv.h * TS); }
+function edKey(e) {
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab'].includes(e.code)) e.preventDefault();
+  keys[e.code] = true;
+  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') { e.preventDefault(); edUndo(); }
+  else if (e.code === 'Escape') edExit();
+  else if (e.code === 'KeyN' && !e.repeat) toggleMute();
+}
+function edTick(dt) {
+  const sp = 900 * dt;
+  if (keys.KeyA || keys.ArrowLeft) bld.cam.x -= sp; if (keys.KeyD || keys.ArrowRight) bld.cam.x += sp;
+  if (keys.KeyW || keys.ArrowUp) bld.cam.y -= sp; if (keys.KeyS || keys.ArrowDown) bld.cam.y += sp;
+  edClampCam();
+}
+function edSave(quiet) {
+  if (!bld) return false;
+  const list = blds(), code = lvCode(bld.lv);
+  let slot = bld.slot;
+  if (slot < 0 || slot >= list.length) { if (list.length >= BLD_SLOTS) { if (!quiet) notice('All ' + BLD_SLOTS + ' level slots are full. Delete one in the Level Builder first.'); return false; } list.push({ n: bld.lv.n, d: code }); slot = bld.slot = list.length - 1; }
+  else list[slot] = { n: bld.lv.n, d: code };
+  bld.dirty = false; writeSave(); edInfo();
+  if (!quiet) notice('Saved "' + bld.lv.n + '" to slot ' + (slot + 1) + '.');
+  return true;
+}
+function edExit() {
+  if (!bld) return;
+  if (bld.dirty) edSave(true);
+  const room = teamKind === 'build';
+  $('ed-bar').hidden = true; $('ed-tip').hidden = true;
+  if (room) leaveTeam();
+  bld = null; bldHost = false; bldSync = null; hw = null; mode = 'solo'; state = 'menu';
+  refreshMenu(); openBldMenu();
+}
+// ----- playing a level -----
+function bldStart(lv, test, slot) {
+  const code = lvCode(lv), keep = bld && bld.mode === 'edit' ? bld : bld && bld.ed;
+  if (test && keep) { keep.stroke = null; }
+  hw = bldWorld(lv);
+  if (!hw.bstart) { notice('Put down a Start first.'); if (keep) { hw = bldWorld(keep.lv); } return false; }
+  if (!hw.bfin) { notice('Put down a Finish first.'); if (keep) { hw = bldWorld(keep.lv); } return false; }
+  bld = { lv, mode: 'play', test: !!test, ed: test ? keep : null, slot: slot == null ? (keep ? keep.slot : -1) : slot, hash: lvHash(code), code,
+    time: 0, cp: hw.bstart, got: new Set(), deaths: 0, done: false, air: BLD_AIR, cps: new Set(), count: 1.2, ops: keep ? keep.ops : [], seq: keep ? keep.seq : 0 };
+  mode = 'build'; state = 'play'; story = null; train = null; dive = null; trial = null;
+  ab.active = {}; ab.cd = {}; ab.dashLeft = 2; ab.shieldHits = 0;
+  detach(); P.x = hw.bstart.x; P.y = hw.bstart.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.inv = 0; P.stun = 0;
+  particles.length = 0; runHeight = 0;
+  const sc = wScale();
+  wcamX = clamp(P.x - cw / sc / 2, 0, Math.max(0, hw.wt * TS - cw / sc)); wcamY = clamp(P.y - ch / sc * 0.55, 0, Math.max(0, hw.ht * TS - ch / sc));
+  wRegion = hw.name; $('w-region').textContent = hw.name; regionT = gt;
+  show(null); $('ed-bar').hidden = true; $('ed-tip').hidden = true;
+  $('hud').hidden = true; $('whud').hidden = false;
+  $('w-ult').hidden = true; $('w-mini').hidden = true; $('w-hint').hidden = true; $('p-hint').hidden = true;
+  $('t-hint').hidden = false; $('t-timer').hidden = false; $('w-hp').hidden = true; $('w-slots').hidden = true;
+  canvas.focus();
+  banner(test ? 'Test run' : 'Custom level', lv.n, (hw.coins.length ? 'Grab the ' + hw.coins.length + ' coins and reach' : 'Reach') + ' the finish flag.' + (test ? ' B goes back to the editor.' : ''));
+  return true;
+}
+function bldDie(why) {
+  const B = bld; B.deaths++; sfx('hurt'); burst(P.x, P.y, '#ff5a6e', 20, 260);
+  detach(); P.x = B.cp.x; P.y = B.cp.y; P.vx = 0; P.vy = 0; P.hist.length = 0; P.inv = 0.6; B.air = BLD_AIR;
+  banner(why, B.cp === hw.bstart ? 'Back to the start' : 'Back to your checkpoint');
+}
+function bldTick(dt) {
+  const B = bld, c = hw; if (!B || B.done) return;
+  if (B.count > 0) { B.count -= dt; return; }
+  B.time += dt;
+  // spikes, lava, saws
+  const r0 = PR - 3, x0 = Math.floor((P.x - r0) / TS), x1 = Math.floor((P.x + r0) / TS), y0 = Math.floor((P.y - r0) / TS), y1 = Math.floor((P.y + r0) / TS);
+  let dead = null;
+  if (!ADM.god) {
+    for (let ty = y0; ty <= y1 && !dead; ty++) for (let tx = x0; tx <= x1; tx++) { const v = bldCell(B.lv, tx, ty); if ((v === 5 && circleRect(P.x, P.y, r0, tx * TS, ty * TS, TS, TS)) || (v === 6 && circleRect(P.x, P.y, r0 - 4, tx * TS, ty * TS, TS, TS))) { dead = v === 5 ? 'Ouch, spikes!' : 'Too hot!'; break; } }
+    for (const q of c.saws) { const p2 = bSawPos(q); if (Math.hypot(P.x - p2.x, P.y - p2.y) < PR + 14) dead = 'Sliced by a saw!'; }
+    if (P.y > c.ht * TS + 200) dead = 'You fell!';
+  }
+  if (dead && P.inv <= 0) { bldDie(dead); return; }
+  // air underwater
+  if (bldWaterAt(P.x, P.y - PR + 3) && !ADM.god) { B.air -= dt; if (B.air <= 0) { bldDie('Out of air!'); return; } if (Math.random() < dt * 3) particles.push({ k: 'ring', x: P.x + P.face * 6, y: P.y - 8, vx: 0, vy: -60, life: 0.8, color: '#e8fffb' }); }
+  else B.air = Math.min(BLD_AIR, B.air + dt * 5);
+  // bounce pads launch you
+  if (P.ground && bldCell(B.lv, Math.floor(P.x / TS), Math.floor((P.y + PR + 4) / TS)) === 4) { detach(); P.vy = -1500; P.ground = false; sfx('jump'); burst(P.x, P.y + PR, '#5ee66b', 12, 200); }
+  // boost rings
+  for (const q of c.boosts) { q.cd -= dt; if (q.cd <= 0 && Math.hypot(P.x - q.x, P.y - q.y) < 34) { q.cd = 0.8; const sp = Math.hypot(P.vx, P.vy), ux = sp > 60 ? P.vx / sp : P.face, uy = sp > 60 ? P.vy / sp : 0, ns = Math.max(sp, 500) * 1.6; P.vx = ux * ns; P.vy = uy * ns; sfx('ult', 0.5); burst(q.x, q.y, '#ff9a3d', 16, 240); } }
+  // coins, checkpoints and the finish
+  for (const q of c.coins) if (!B.got.has(q.id) && Math.hypot(P.x - q.x, P.y - q.y) < 32) { B.got.add(q.id); sfx('pickup'); burst(q.x, q.y, '#ffd34d', 12, 180); }
+  for (const q of c.cpl) if (!B.cps.has(q.id) && Math.hypot(P.x - q.x, P.y - q.y) < 40) { B.cps.add(q.id); B.cp = q; sfx('capture'); banner('Checkpoint', 'Saved'); }
+  if (Math.hypot(P.x - c.bfin.x, P.y - c.bfin.y) < 40) bldWin();
+}
+function bldWin() {
+  const B = bld; B.done = true; detach(); for (const k in keys) keys[k] = false;
+  if (!save.bldBest || typeof save.bldBest !== 'object') save.bldBest = {};
+  if (!Array.isArray(save.bldDone)) save.bldDone = [];
+  const ms = Math.round(B.time * 1000), old = save.bldBest[B.hash], rec = !old || ms < old, extra = [];
+  if (rec) save.bldBest[B.hash] = ms;
+  if (!save.bldDone.includes(B.hash)) save.bldDone.push(B.hash);
+  if (save.bldDone.length >= BLD_SKIN_NEED && !ownsSkin('builder')) { for (const iid of Object.values(skinEq('builder'))) save.owned[iid] = Math.max(1, save.owned[iid] || 0); extra.push('New skin: Builder!'); }
+  writeSave(); sfx('win'); state = 'over';
+  banner('Finished!', fmtTime(B.time), rec ? 'New best time!' : '');
+  B.res = { rec, old, extra };
+  setTimeout(() => { if (bld && bld.done) showBldResult(); }, 1300);
+}
+function showBldResult() {
+  const B = bld, r = B.res, nc = hw.coins.length;
+  $('br-title').textContent = B.lv.n + ' complete!';
+  $('br-sub').textContent = fmtTime(B.time) + (r.rec ? ' · new best!' : ' · best ' + fmtTime(r.old / 1000)) + (nc ? ' · coins ' + B.got.size + ' / ' + nc : '') + ' · ' + B.deaths + (B.deaths === 1 ? ' restart' : ' restarts');
+  $('br-msg').textContent = (r.extra.length ? r.extra.join(' · ') + ' · ' : '') + 'Custom levels beaten: ' + save.bldDone.length + (ownsSkin('builder') ? '' : ' / ' + BLD_SKIN_NEED + ' for the Builder skin');
+  $('b-br-edit').hidden = !B.ed;
+  show('scr-bres');
+}
+function bldBackToEditor() { const ed = bld && bld.ed; if (!ed) return; $('t-hint').hidden = true; $('t-timer').hidden = true; openEditor(ed.lv, ed.slot); bld.undo = ed.undo; bld.dirty = ed.dirty; bld.ops = ed.ops; bld.seq = ed.seq; edInfo(); }
+function bldHud() {
+  const B = bld, nc = hw.coins.length, el = $('t-timer');
+  const txt = B.lv.n + ' · ' + fmtTime(B.time) + (nc ? ' · coins ' + B.got.size + '/' + nc : '') + (B.deaths ? ' · restarts ' + B.deaths : '') + (B.test ? ' · B: back to editor' : '');
+  if (el.textContent !== txt) el.textContent = txt;
+}
+// ----- drawing (editor and play) -----
+function bldRender() {
+  const B = bld, lv = B.lv, c = hw, sc = wScale(), vw = cw / sc, vh = ch / sc, edit = B.mode === 'edit';
+  const x0 = Math.max(0, Math.floor(wcamX / TS) - 1), x1 = Math.min(lv.w - 1, Math.floor((wcamX + vw) / TS) + 1), y0 = Math.max(0, Math.floor(wcamY / TS) - 1), y1 = Math.min(lv.h - 1, Math.floor((wcamY + vh) / TS) + 1);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const v = lv.c[y * lv.w + x], px = x * TS, py = y * TS;
+    if (v === 4) { ctx.fillStyle = '#3f8f3f'; ctx.fillRect(px, py, TS + 0.5, TS + 0.5); ctx.fillStyle = '#5ee66b'; ctx.fillRect(px + 2, py, TS - 4, 8); ctx.strokeStyle = '#e8ffe8'; ctx.lineWidth = 2; ctx.beginPath(); for (let k = 0; k < 3; k++) { ctx.moveTo(px + 8 + k * 12, py + 30); ctx.lineTo(px + 12 + k * 12, py + 14); ctx.lineTo(px + 16 + k * 12, py + 30); } ctx.stroke(); }
+    else if (v === 6) { const top = bldCell(lv, x, y - 1) !== 6; ctx.fillStyle = '#ff6a2a'; ctx.fillRect(px, py + (top ? 6 + Math.sin(gt * 3 + x) * 2 : 0), TS + 0.5, TS + 0.5 - (top ? 6 + Math.sin(gt * 3 + x) * 2 : 0)); if (top) { ctx.fillStyle = '#ffd34d'; ctx.fillRect(px, py + 8 + Math.sin(gt * 3 + x) * 2, TS + 0.5, 3); } }
+    else if (v === 9) { const q = { x: px + TS / 2, y: py + TS / 2 }; ctx.strokeStyle = '#ff9a3d'; ctx.lineWidth = 4; ctx.shadowBlur = 10; ctx.shadowColor = '#ff9a3d'; ctx.beginPath(); ctx.arc(q.x, q.y, 16, 0, 6.283); ctx.stroke(); ctx.shadowBlur = 0; ctx.fillStyle = '#ffd34d'; ctx.beginPath(); ctx.moveTo(q.x - 6, q.y - 7); ctx.lineTo(q.x + 7, q.y); ctx.lineTo(q.x - 6, q.y + 7); ctx.closePath(); ctx.fill(); }
+    else if (v === 11 && (edit || !B.got.has(x + '_' + y))) { ctx.fillStyle = '#ffd34d'; ctx.shadowBlur = 10; ctx.shadowColor = '#ffd34d'; ctx.beginPath(); ctx.ellipse(px + TS / 2, py + TS / 2 + Math.sin(gt * 3 + x) * 2, 8 * Math.abs(Math.cos(gt * 2 + x)) + 2, 9, 0, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0; }
+    else if (v === 12 && edit) { ctx.fillStyle = 'rgba(155,225,93,0.35)'; ctx.fillRect(px, py, TS, TS); ctx.fillStyle = '#9be15d'; ctx.font = '700 11px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('START', px + TS / 2, py + TS / 2 + 4); }
+    else if (v === 13) { const on = !edit && B.cps.has(x + '_' + y); ctx.fillStyle = '#d8d4e4'; ctx.fillRect(px + 17, py - 14, 4, TS + 14); ctx.fillStyle = on ? '#9be15d' : '#7fb2ff'; ctx.beginPath(); ctx.moveTo(px + 21, py - 14); ctx.lineTo(px + 38, py - 6); ctx.lineTo(px + 21, py + 2); ctx.closePath(); ctx.fill(); }
+    else if (v === 14) { const fx = px + 8, fy = py - 30; ctx.fillStyle = '#d8d4e4'; ctx.fillRect(fx, fy, 4, TS + 30); for (let a = 0; a < 3; a++) for (let b = 0; b < 4; b++) { ctx.fillStyle = (a + b) % 2 ? '#12101f' : '#f3ecdf'; ctx.fillRect(fx + 4 + b * 7, fy + a * 7 + Math.sin(gt * 4 + b) * 1.5, 7, 7); } }
+    else if (v === 10 && edit) { ctx.strokeStyle = 'rgba(192,200,216,0.5)'; ctx.setLineDash([6, 6]); ctx.lineWidth = 2; const q = c.saws.find(s2 => Math.abs(s2.y - (py + TS / 2)) < 1 && s2.x0 <= px + TS / 2 && s2.x1 >= px + TS / 2); if (q) { ctx.beginPath(); ctx.moveTo(q.x0, q.y); ctx.lineTo(q.x1, q.y); ctx.stroke(); } ctx.setLineDash([]); }
+  }
+  for (const q of c.saws) { const p2 = bSawPos(q); ctx.save(); ctx.translate(p2.x, p2.y); ctx.rotate(gt * 10); ctx.fillStyle = '#c0c8d8'; ctx.beginPath(); for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283, rr = k % 2 ? 13 : 18; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); ctx.fillStyle = '#5a6478'; ctx.beginPath(); ctx.arc(0, 0, 5, 0, 6.283); ctx.fill(); ctx.restore(); }
+}
+function bldOverlay() {
+  const B = bld, lv = B.lv, sc = wScale(), vw = cw / sc, vh = ch / sc;
+  const x0 = Math.max(0, Math.floor(wcamX / TS) - 1), x1 = Math.min(lv.w - 1, Math.floor((wcamX + vw) / TS) + 1), y0 = Math.max(0, Math.floor(wcamY / TS) - 1), y1 = Math.min(lv.h - 1, Math.floor((wcamY + vh) / TS) + 1);
+  ctx.fillStyle = 'rgba(40,130,210,0.38)';
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (lv.c[y * lv.w + x] === 7) ctx.fillRect(x * TS, y * TS, TS + 0.5, TS + 0.5);
+  if (B.mode === 'edit') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let x = x0; x <= x1 + 1; x++) { ctx.moveTo(x * TS, y0 * TS); ctx.lineTo(x * TS, (y1 + 1) * TS); }
+    for (let y = y0; y <= y1 + 1; y++) { ctx.moveTo(x0 * TS, y * TS); ctx.lineTo((x1 + 1) * TS, y * TS); }
+    ctx.stroke();
+    ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 3; ctx.strokeRect(0, 0, lv.w * TS, lv.h * TS);
+    if (B.hover && !edPtr.pan) { const hx = Math.floor((wcamX + B.hover[0] / sc) / TS), hy = Math.floor((wcamY + B.hover[1] / sc) / TS); if (hx >= 0 && hy >= 0 && hx < lv.w && hy < lv.h) { const t = BT.find(q => q.id === edTool); ctx.strokeStyle = t ? t.c : '#fff'; ctx.lineWidth = 3; ctx.strokeRect(hx * TS + 1.5, hy * TS + 1.5, TS - 3, TS - 3); } }
+    // friends' cursors while building together
+    if (teamKind === 'build') for (const p of peerState.values()) { const cc = p.raw && p.raw.bc; if (!Array.isArray(cc) || num(cc[0]) == null || num(cc[1]) == null) continue; ctx.strokeStyle = p.c; ctx.lineWidth = 3; ctx.strokeRect(cc[0] * TS + 1.5, cc[1] * TS + 1.5, TS - 3, TS - 3); ctx.fillStyle = p.c; ctx.font = '600 12px "Chakra Petch", sans-serif'; ctx.textAlign = 'left'; ctx.fillText(p.n || 'Friend', cc[0] * TS, cc[1] * TS - 4); }
+  } else if (B.air < BLD_AIR - 0.05) {
+    const f = Math.max(0, B.air / BLD_AIR), n = 10;
+    for (let k = 0; k < n; k++) { const x = P.x - (n - 1) * 3.5 + k * 7, y = P.y - 40; ctx.strokeStyle = f < 0.3 ? '#ff8a7a' : '#e8fffb'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, 3, 0, 6.283); ctx.stroke(); if (k < Math.ceil(f * n)) { ctx.fillStyle = f < 0.3 ? 'rgba(255,138,122,0.8)' : 'rgba(143,227,255,0.8)'; ctx.fill(); } }
+  }
+}
+// ----- building together: the host's copy is the real one; everyone sends their edits -----
+function bldPresence(pr) {
+  if (!bld) return;
+  const lv = bld.mode === 'edit' ? bld.lv : bld.ed ? bld.ed.lv : null;
+  if (bld.mode === 'edit' && bld.hover) { const sc = wScale(); pr.bc = [Math.floor((wcamX + bld.hover[0] / sc) / TS), Math.floor((wcamY + bld.hover[1] / sc) / TS)]; }
+  if (bldHost && bldSync && lv) {
+    pr.bv = bldSync.v; pr.ba = bldSync.ack;
+    // the whole level goes out for a moment after each change, and every few seconds for anyone just joining
+    const now = performance.now();
+    if (bldSync.v !== bldSync.cv) { bldSync.cv = bldSync.v; bldSync.code = null; bldSync.until = now + 1200; }
+    if (now > bldSync.next) { bldSync.next = now + 3000; bldSync.until = Math.max(bldSync.until, now + 500); }
+    if (now < bldSync.until) { if (!bldSync.code) bldSync.code = lvCode(lv); pr.bk = bldSync.code; }
+  } else pr.bo = (bld.ops || []).slice(-300);
+}
+function bldRoomTick() {
+  if (teamKind !== 'build') return;
+  if (current === 'scr-bld') renderBldMenu();
+  const edB = bld && (bld.mode === 'edit' ? bld : bld.ed);
+  if (bldHost) {
+    if (!edB || !bldSync) return;
+    for (const p of peerState.values()) {
+      const ops = p.raw && p.raw.bo; if (!Array.isArray(ops)) continue;
+      let last = bldSync.ack[p.id] || 0;
+      for (const o of ops) { if (!Array.isArray(o) || num(o[0]) == null || o[0] <= last) continue; const i = clampInt(o[1], 0, edB.lv.c.length - 1), v = clampInt(o[2], 0, BT.length - 1); if (bld.mode === 'edit') edSet(i, v, true); else { edB.lv.c[i] = v; } last = o[0]; bldSync.v++; }
+      bldSync.ack[p.id] = last;
+    }
+    if (bld.mode === 'edit' && bld.objDirty) { bldObjects(hw, bld.lv); bld.objDirty = false; edInfo(); }
+    return;
+  }
+  // a guest: follow the host's level
+  let h = null; for (const p of peerState.values()) if (p.raw && num(p.raw.bv) != null) h = p;
+  if (!h) return;
+  const hv = h.raw.bv, code = typeof h.raw.bk === 'string' ? h.raw.bk : null;
+  if (code && hv !== (bldSync && bldSync.hv)) {
+    const lv = lvFromCode(code); if (!lv) return;
+    const ack = (h.raw.ba && num(h.raw.ba[myPeerId])) || 0;
+    const mine = edB ? edB.ops.filter(o => o[0] > ack) : [];
+    for (const o of mine) lv.c[o[1]] = o[2];
+    bldSync = { hv };
+    if (!edB) { openEditor(lv, -1); bld.ops = []; bld.seq = 0; notice('Joined the build: ' + lv.n); }
+    else if (bld.mode === 'edit') { const cam = bld.cam, undo = bld.undo, ops = bld.ops, seq = bld.seq, slot = bld.slot; bld.lv = lv; hw.g.length === lv.c.length && lv.w === hw.wt ? (() => { for (let i = 0; i < lv.c.length; i++) hw.g[i] = bldSolid(lv.c[i]); bldObjects(hw, lv); })() : (hw = bldWorld(lv)); Object.assign(bld, { cam, undo, ops, seq, slot }); edInfo(); }
+    else edB.lv = lv;
+  }
+}
+// ----- the Level Builder screen -----
+function openBldMenu() { renderBldMenu(); $('bl-code-err').hidden = true; $('bl-err').hidden = true; show('scr-bld'); }
+function renderBldMenu() {
+  const list = blds(), box = $('bl-list'); box.textContent = '';
+  $('bl-rec').textContent = 'Levels beaten: ' + (Array.isArray(save.bldDone) ? save.bldDone.length : 0) + (ownsSkin('builder') ? ' · Builder skin unlocked' : ' · Builder skin at ' + BLD_SKIN_NEED);
+  $('bl-count').textContent = '(' + list.length + ' / ' + BLD_SLOTS + ' slots)';
+  const sz = $('bl-size'); sz.textContent = '';
+  for (const S of BSIZES) { const b = document.createElement('button'); b.type = 'button'; b.textContent = S.n + ' ' + S.w + '×' + S.h; b.setAttribute('aria-pressed', String(bldSize === S.id)); b.addEventListener('click', () => { bldSize = S.id; renderBldMenu(); }); sz.append(b); }
+  if (!list.length) { const p = document.createElement('p'); p.className = 'note'; p.textContent = 'No saved levels yet. Start building one above.'; box.append(p); }
+  list.forEach((q, i) => {
+    const lv = lvFromCode(q.d); if (!lv) return;
+    const best = save.bldBest && save.bldBest[lvHash(q.d)];
+    const r = document.createElement('div'); r.className = 'abrow';
+    const tx = document.createElement('div'); tx.className = 'txt'; const b = document.createElement('b'); b.textContent = (i + 1) + '. ' + lv.n; const sp = document.createElement('span'); sp.textContent = lv.w + '×' + lv.h + (best ? ' · best ' + fmtTime(best / 1000) : ''); tx.append(b, sp);
+    const bt = document.createElement('div'); bt.className = 'row'; bt.style.margin = '0';
+    for (const [lab, fn] of [['Edit', () => openEditor(lv, i)], ['Play', () => bldStart(lv, false, i)], ['Share', () => { $('bl-share').hidden = false; $('bl-share-name').textContent = lv.n; $('bl-share-code').value = q.d; $('bl-share').scrollIntoView({ block: 'nearest' }); }], ['Delete', () => { if (!confirm('Delete "' + lv.n + '"?')) return; blds().splice(i, 1); writeSave(); renderBldMenu(); }]]) { const x = document.createElement('button'); x.type = 'button'; x.className = 'btn'; x.textContent = lab; x.addEventListener('click', fn); bt.append(x); }
+    r.append(tx, bt); box.append(r);
+  });
+  const pick = $('bl-host-pick'), keep = pick.value; pick.textContent = '';
+  const o0 = document.createElement('option'); o0.value = 'new'; o0.textContent = 'A new ' + (BSIZES.find(S => S.id === bldSize) || BSIZES[1]).n.toLowerCase() + ' level'; pick.append(o0);
+  list.forEach((q, i) => { const o = document.createElement('option'); o.value = String(i); o.textContent = q.n; pick.append(o); });
+  if ([...pick.options].some(o => o.value === keep)) pick.value = keep;
+  const inRoom = teamKind === 'build';
+  $('b-bl-host').hidden = inRoom || !roomApi; $('bl-join').hidden = inRoom || !roomApi; $('bl-host-pick').hidden = inRoom || !roomApi;
+  $('bl-coop-msg').textContent = !roomApi ? 'Building together needs an online connection.' : inRoom ? 'In a build room (code ' + teamCode + '). Waiting for the host\'s level…' : 'One of you hosts with a level, the others join with the code and edit the same level live.';
+}
+$('m-bld').addEventListener('click', openBldMenu);
+$('b-bl-back').addEventListener('click', () => { if (teamKind === 'build') leaveTeam(); show('scr-menu'); });
+$('b-bl-new').addEventListener('click', () => openEditor(newLevel($('bl-name').value.trim() || 'My level', bldSize), -1));
+$('b-bl-copy').addEventListener('click', () => { const t = $('bl-share-code'); t.select(); try { navigator.clipboard.writeText(t.value).then(() => { $('b-bl-copy').textContent = 'Copied'; setTimeout(() => $('b-bl-copy').textContent = 'Copy code', 1500); }, () => {}); } catch (e) {} });
+const readLvCode = () => { const lv = lvFromCode($('bl-code-in').value); const err = $('bl-code-err'); err.hidden = !!lv; if (!lv) err.textContent = 'That code doesn\'t look right. Copy the whole code, starting with HS1-.'; return lv; };
+$('b-bl-play').addEventListener('click', () => { const lv = readLvCode(); if (lv && !bldStart(lv, false, -1)) { $('bl-code-err').textContent = 'That level has no start or finish yet.'; $('bl-code-err').hidden = false; } });
+$('b-bl-import').addEventListener('click', () => { const lv = readLvCode(); if (!lv) return; const list = blds(); if (list.length >= BLD_SLOTS) { $('bl-code-err').textContent = 'All ' + BLD_SLOTS + ' slots are full. Delete a level first.'; $('bl-code-err').hidden = false; return; } list.push({ n: lv.n, d: lvCode(lv) }); writeSave(); renderBldMenu(); notice('Saved "' + lv.n + '" to your levels.'); });
+$('b-bl-host').addEventListener('click', async () => {
+  const err = $('bl-err'); err.hidden = true;
+  const v = $('bl-host-pick').value, list = blds(), lv = v === 'new' ? newLevel($('bl-name').value.trim() || 'Our level', bldSize) : lvFromCode(list[+v] && list[+v].d);
+  if (!lv) return;
+  try { await joinRoom('build', newCode()); bldHost = true; bldSync = { v: 1, cv: 0, ack: {}, until: 0, next: 0, code: null }; openEditor(lv, v === 'new' ? -1 : +v); notice('Room code: ' + teamCode + '. Friends join from the Level Builder.'); }
+  catch (e) { team = null; err.textContent = 'Could not open a build room. Try again in a moment.'; err.hidden = false; }
+});
+const tryBldJoin = async () => {
+  const err = $('bl-err'); err.hidden = true;
+  const code = readCode($('bl-room'));
+  if (code.length < 4) { err.textContent = 'Codes are 5 letters and numbers.'; err.hidden = false; return; }
+  try { await joinRoom('build', code); bldHost = false; bldSync = null; renderBldMenu(); }
+  catch (e) { team = null; err.textContent = joinErr(e, 'Could not join "' + code + '". Check the code and try again.'); err.hidden = false; }
+};
+$('b-bl-join').addEventListener('click', tryBldJoin);
+$('bl-room').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryBldJoin(); });
+$('ed-undo').addEventListener('click', edUndo);
+$('ed-test').addEventListener('click', () => { if (bld && bld.mode === 'edit') bldStart(new Object({ n: bld.lv.n, w: bld.lv.w, h: bld.lv.h, c: bld.lv.c.slice() }), true); });
+$('ed-save').addEventListener('click', () => edSave(false));
+$('ed-share').addEventListener('click', () => { if (!bld) return; const code = lvCode(bld.lv); edSave(true); try { navigator.clipboard.writeText(code).then(() => notice('Level code copied. Paste it to a friend.'), () => notice('Your level code is in the Level Builder under Share.')); } catch (e) { notice('Your level code is in the Level Builder under Share.'); } });
+$('ed-exit').addEventListener('click', edExit);
+$('b-br-again').addEventListener('click', () => { if (bld) bldStart(bld.lv, bld.test, bld.slot); });
+$('b-br-edit').addEventListener('click', bldBackToEditor);
+$('b-br-menu').addEventListener('click', () => { const room = teamKind === 'build'; $('t-hint').hidden = true; $('t-timer').hidden = true; $('whud').hidden = true; if (room) leaveTeam(); bld = null; bldHost = false; hw = null; mode = 'solo'; state = 'menu'; refreshMenu(); openBldMenu(); });
+
 // =================================================================
 // ---------- Achievements and skins ----------
 // =================================================================
@@ -10507,14 +10999,14 @@ function renderSkins() {
   const s = achState(), owned = SKINS.filter(k => ownsSkin(k.id)).length;
   $('l-count').textContent = 'You own ' + owned + ' of ' + SKINS.length + ' skins. Earn them with gold medals in Time Trials. Tap one to preview it.';
   const grid = $('l-items'); grid.textContent = '';
-  const list = [...(ownsSkin('admin') ? [ADMIN_SKIN] : []), PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.deepdiver, PAL_BY.duelist, ...PALETTES.filter(p => p.race), ...SKINS];
+  const list = [...(ownsSkin('admin') ? [ADMIN_SKIN] : []), PAL_BY.stormbreaker, PAL_BY.frostbite, PAL_BY.tidecaller, PAL_BY.emberforged, PAL_BY.spireheart, PAL_BY.deepdiver, PAL_BY.duelist, PAL_BY.builder, ...PALETTES.filter(p => p.race), ...SKINS];
   for (const k of list) {
-    const need = k === ADMIN_SKIN || k.story || k.race || k.dive || k.duel ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
+    const need = k === ADMIN_SKIN || k.story || k.race || k.dive || k.duel || k.bld ? 0 : SKIN_GOLDS(k.id), own = ownsSkin(k.id), hidden = false;
     const eq = skinEq(k.id), wearing = own && Object.keys(eq).every(c => save.eq[c] === eq[c]);
     const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.style.borderLeftColor = k.cols[0];
     const t = document.createElement('b'); t.textContent = hidden && !own ? 'Secret skin' : k.n;
     const sm = document.createElement('small'); sm.style.color = own ? 'var(--mint)' : 'var(--dim)';
-    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : k.story ? 'Unlock: finish Chapter ' + k.story + ' of Story Mode' : k.dive ? 'Unlock: beat level 10 of Treasure Dive' : k.duel ? 'Unlock: win 10 duels in Duel Arena' : k.race ? 'Unlock: win a Hook Racing race on ' + ((HR_TRACKS.find(t => t.id === k.race) || {}).n || 'its track') : 'Unlock: ' + need + ' gold medals';
+    sm.textContent = own ? (wearing ? 'Wearing' : 'Wear set') : k.story ? 'Unlock: finish Chapter ' + k.story + ' of Story Mode' : k.dive ? 'Unlock: beat level 10 of Treasure Dive' : k.duel ? 'Unlock: win 10 duels in Duel Arena' : k.bld ? 'Unlock: beat 5 different custom levels in the Level Builder' : k.race ? 'Unlock: win a Hook Racing race on ' + ((HR_TRACKS.find(t => t.id === k.race) || {}).n || 'its track') : 'Unlock: ' + need + ' gold medals';
     const strip = document.createElement('span'); strip.className = 'strip'; strip.style.background = 'linear-gradient(90deg, ' + k.cols.join(', ') + ')';
     b.append(t, sm, strip);
     b.setAttribute('aria-pressed', String(wearing));
@@ -11163,7 +11655,7 @@ $('b-adm-tower').addEventListener('click', () => goTower($('adm-m').value));
 $('b-adm-summit').addEventListener('click', () => goTower(TOP_M));
 
 // ---------- loop ----------
-let last = performance.now(), acc = 0, storyLobbyT = 0, diveLobbyT = 0;
+let last = performance.now(), acc = 0, storyLobbyT = 0, diveLobbyT = 0, bldRoomT = 0;
 function frame(ts) {
   const dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
   st = sharedTime();
@@ -11171,9 +11663,10 @@ function frame(ts) {
   touchTick(dt);
   admTick(dt);
   syncPeers(dt);
+  if (teamKind === 'build') { bldRoomT -= dt; if (bldRoomT <= 0) { bldRoomT = 0.2; bldRoomTick(); } }
   if (teamKind === 'dive') { diveLobbyT -= dt; if (diveLobbyT <= 0) { diveLobbyT = 0.3; diveLobbyTick(); } }
   if (teamKind === 'story') { storyLobbyT -= dt; if (storyLobbyT <= 0) { storyLobbyT = 0.3; storyLobbyTick(); } }
-  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
+  if ((mode === 'world' || mode === 'pvp' || mode === 'trial' || mode === 'story' || mode === 'train' || mode === 'dive' || mode === 'edit' || mode === 'build') && hw) { worldFrame(dt); requestAnimationFrame(frame); return; }
   const camX = (W - viewW()) / 2;
   mouse.wx = camX + mouse.sx / scale; mouse.wy = camY + mouse.sy / scale;
   if (state === 'play') {
