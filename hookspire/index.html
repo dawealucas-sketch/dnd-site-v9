@@ -862,6 +862,10 @@ kbd { font-family: var(--ui); font-size: 12px; border: 1px solid var(--line); bo
           <input class="adm-in" type="number" id="adm-tok" min="0" max="999999999" value="1000" aria-label="Tokens">
           <button class="btn" id="b-adm-tadd">Add tokens</button><button class="btn" id="b-adm-tset">Set tokens</button>
         </div>
+        <div class="row">
+          <input class="adm-in" type="number" id="adm-grit" min="0" max="9999999" value="500" aria-label="Grit">
+          <button class="btn" id="b-adm-gadd">Add Grit</button><button class="btn" id="b-adm-gset">Set Grit</button><button class="btn" id="b-adm-gall">Grit Blast, arena + max upgrades</button>
+        </div>
         <div class="seg small">
           <button type="button" id="b-adm-items">All items and skins</button>
           <button type="button" id="b-adm-skin">Admin skin (wear it)</button>
@@ -9353,10 +9357,19 @@ $('b-adm-lockbtn').addEventListener('click', () => { save.adm = false; ADM.god =
 $('b-pause-adm').addEventListener('click', () => openAdmin('scr-pause'));
 $('b-adm-all').addEventListener('click', () => {
   save.tokens = Math.max(save.tokens, 999999);
-  giveItems(); giveAdminSkin(); giveWorld(); giveMedals(); giveAch();
-  admDone('Done: tokens, every item and skin, the admin skin, all abilities and the map, all gold medals, all achievements and the title.');
+  giveItems(); giveAdminSkin(); giveWorld(); giveMedals(); giveAch(); giveGrit();
+  admDone('Done: tokens, every item and skin, the admin skin, all abilities and the map, all gold medals, all achievements and the title, plus the Grit Blast, the arena and every upgrade.');
 });
 const tokIn = () => clampInt($('adm-tok').value, 0, 999999999);
+const gritIn = () => clampInt($('adm-grit').value, 0, 9999999);
+function giveGrit() {
+  // the Grit Blast, the training arena, every secret that raises the cap, and every stat at the top level
+  const g = gs(); g.atk = 1; g.arena = 1; g.sec.drill = 1; g.sec.relic = 1; g.sec.code = 1;
+  for (const [k] of GSTATS) g.up[k] = 15;
+}
+$('b-adm-gadd').addEventListener('click', () => { const g = gs(); g.g = Math.min(9999999, g.g + gritIn()); admDone('Grit: ' + g.g); });
+$('b-adm-gset').addEventListener('click', () => { const g = gs(); g.g = gritIn(); admDone('Grit: ' + g.g); });
+$('b-adm-gall').addEventListener('click', () => { giveGrit(); admDone('Grit Blast unlocked, the Training Arena is open, the level cap is 15 and every upgrade is maxed.'); });
 $('b-adm-tadd').addEventListener('click', () => { save.tokens = Math.min(999999999, save.tokens + tokIn()); admDone('Tokens: ' + save.tokens); });
 $('b-adm-tset').addEventListener('click', () => { save.tokens = tokIn(); admDone('Tokens: ' + save.tokens); });
 $('b-adm-items').addEventListener('click', () => { giveItems(); admDone('You own every item and skin.'); });
